@@ -33,7 +33,7 @@ Entry template:
 
 ## Version 1.2 — 2026-11-07
 
-**Author:** Josh — full name pending confirmation before commit
+**Author:** Josh Sebastian
 
 ### Changes
 
