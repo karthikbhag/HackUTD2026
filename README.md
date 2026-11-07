@@ -35,7 +35,7 @@ This is a hackathon prototype using synthetic households and simulated response 
 
 We will estimate potential exposure from available forecasts, hazard data, or clearly labeled demonstration scenarios. We are not training a new disaster-prediction model during the hackathon.
 
-Floods, tornadoes, and earthquakes are part of the broader vision, but they need different data and workflows. Earthquake features should use hazard scenarios or post-detection information rather than claim reliable advance prediction. For the MVP, use **one flood scenario in one region** to complete the full preparation-to-response workflow. Additional disaster types are stretch goals.
+Floods, tornadoes, and earthquakes are part of the broader vision, but they need different data and workflows. Earthquake features should use hazard scenarios or post-detection information rather than claim reliable advance prediction. For the MVP, use **one nationwide U.S. flood scenario** with a national overview and a small set of seeded high-risk neighborhoods/areas to complete the full preparation-to-response workflow. Additional disaster types and scenarios are stretch goals.
 
 Every impact layer should show whether it is a forecast, a report, or a simulation. Recommendations support employee decisions and require human review before dispatch or outreach.
 
@@ -45,7 +45,7 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 
 | Feature | Required behavior | Completion evidence |
 | --- | --- | --- |
-| Disaster map | Display one region with shaded flood-risk zones, households, and response teams | Selecting a zone shows its severity, source, and affected households |
+| Disaster map | Display a pannable and zoomable nationwide U.S. map with shaded flood-risk zones, households, and response teams | Selecting a neighborhood/zone shows its severity, source, and affected households |
 | Before/after views | Switch between preparedness and response information for the same scenario | Each view exposes the relevant needs and actions |
 | Household details | Show customer/community status, check-in status, needs, and last contact | An employee can update a household and see the result |
 | Prioritization | Rank unresolved cases and explain the contributing factors | Increased risk or a new urgent request changes the queue |
@@ -63,7 +63,7 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 - Real road routing, travel times, and road-closure awareness.
 - Public help-request form and mobile responder view.
 - Shelter/resource inventory, damage photos, and claims follow-up.
-- Additional disaster types and regions.
+- Additional disaster types and nationwide scenarios.
 - Actual notification integrations; the MVP only records or simulates outreach.
 
 ## Technical design
@@ -73,10 +73,10 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 | Layer | Proposed approach | Responsibility |
 | --- | --- | --- |
 | Employee interface | Next.js + TypeScript | Map, preparedness/response views, household panel, priority queue, assignments |
-| Map | Choose a mapping library and compatible basemap early | Zone polygons, household/team markers, selection, assignment lines |
+| Map | Choose a mapping library and compatible basemap early | Nationwide overview, pan/zoom navigation, zone polygons, neighborhood/household/team markers, selection, assignment lines |
 | Core backend | SpacetimeDB module written in TypeScript | Tables, validated changes, assignments, prioritization, activity history |
 | Live synchronization | Generated client bindings and SpacetimeDB subscriptions | Share operational updates between employee sessions |
-| Scenario data | Seeded fictional households, teams, and flood zones | Repeatable demo independent of outside feeds |
+| Scenario data | Seeded fictional households, teams, and flood zones distributed across the U.S., with concentrated high-risk neighborhoods | Repeatable demo independent of outside feeds |
 | Optional external services | Forecast provider, routing provider, or AI provider | Integrate only after the core workflow is stable |
 
 Spacetime must power the application's primary functionality for its main track. The database will hold disaster zones, households, requests, teams, tasks, and assignments. Employee actions will invoke server-side functions, and subscriptions will propagate committed changes to other dashboards. The main workflow must not depend on browser-only mock state.
@@ -90,13 +90,15 @@ Agree on exact field names, types, IDs, and status enums before separate fronten
 | Entity | Suggested fields |
 | --- | --- |
 | Disaster | `id`, `name`, `type`, `phase`, `source`, `is_simulated`, `updated_at` |
-| Zone | `id`, `disaster_id`, `name`, `boundary`, `risk_level`, `updated_at` |
+| Zone | `id`, `disaster_id`, `name`, `level`, `parent_zone_id` (optional), `boundary`, `risk_level`, `updated_at` |
 | Household | `id`, `zone_id`, `display_name`, `latitude`, `longitude`, `is_customer`, `check_in_status`, `vulnerability_flags`, `last_contact_at` |
 | Help request | `id`, `household_id`, `need_type`, `urgency`, `status`, `created_at`, `resolved_at` |
 | Response team | `id`, `name`, `latitude`, `longitude`, `status`, `capacity`, `capabilities` |
 | Assignment | `id`, `request_id`, `team_id`, `status`, `estimated_distance`, `estimated_eta`, `created_at`, `completed_at` |
 | Preparedness task | `id`, `zone_id`, `household_id` (optional), `action_type`, `status`, `created_at`, `completed_at` |
 | Activity event | `id`, `entity_type`, `entity_id`, `action`, `actor_id`, `timestamp`, `summary` |
+
+For the nationwide map, use a simple geographic hierarchy: national overview, broad affected areas or metro areas, and neighborhood-level flood zones. The map should remain useful at every zoom level: national and broad-area layers provide context, while neighborhood layers reveal households, teams, and detailed risk. Keep the seeded MVP data intentionally sparse outside the selected hotspots so the national view is readable and the demo can quickly zoom into actionable areas. `level` and `parent_zone_id` support this hierarchy without changing the household and response workflows.
 
 Keep statuses separate so “safe” does not incorrectly imply all assistance needs are resolved:
 
@@ -120,9 +122,9 @@ Names are pending assignment. Aalvee Ahtav is a confirmed contributor; no role h
 
 | Owner | Workstream | Concrete deliverables | Dependencies and handoff |
 | --- | --- | --- | --- |
-| Person 1 — name TBD | Map and interface | App shell, map layers, before/after toggle, zone selection, household detail panel, loading/error states | Agree on data contract with Person 2; consume shared data and actions through Person 4's integration |
+| Person 1 — name TBD | Map and interface | App shell, nationwide pannable/zoomable map, map layers, before/after toggle, zone/neighborhood selection, household detail panel, loading/error states | Agree on data contract with Person 2; consume shared data and actions through Person 4's integration |
 | Person 2 — name TBD | Spacetime backend | Project/module setup, schema, reducers, validation, subscriptions support, seed/reset behavior, activity events | Publish initial schema and generate bindings early; coordinate status enums with everyone |
-| Person 3 — name TBD | Disaster data and decision logic | Fictional flood dataset, zone geometry, household exposure, priority rules/reasons, preparedness suggestions, team recommendation and approximate ETA logic | Agree on geometry and score contract; hand tested logic/data to Person 2 for authoritative backend use |
+| Person 3 — name TBD | Disaster data and decision logic | Fictional nationwide flood dataset, national/metro/neighborhood geometry, household exposure, priority rules/reasons, preparedness suggestions, team recommendation and approximate ETA logic | Agree on geographic hierarchy and score contract; hand tested logic/data to Person 2 for authoritative backend use |
 | Person 4 — name TBD | Operational workflow, integration, and demo | Priority queue, outreach/task controls, request/assignment controls, shared client connection, two-session verification, demo script and documentation | Pair with Persons 1 and 2 to wire UI actions; use Person 3's explanations and recommendations |
 
 Integration ownership does not make Person 4 responsible for fixing every workstream. Each owner must deliver a working vertical slice and resolve issues in their own area. Person 1 owns map/detail components; Person 4 owns queue/action components to reduce editing conflicts.
@@ -133,8 +135,8 @@ Times are relative to the team's build start, not a claim about the official sub
 
 | Window | Team milestone |
 | --- | --- |
-| Hours 0–2 | Assign names, confirm one region/flood scenario, choose map provider, agree on schema/statuses, start app and Spacetime module |
-| Hours 2–6 | Show seeded zones/households/teams on the map; establish the real subscription connection; implement first persisted status update |
+| Hours 0–2 | Assign names, confirm the nationwide U.S. flood scenario and seeded hotspot areas, choose map provider, agree on schema/statuses, start app and Spacetime module |
+| Hours 2–6 | Show the nationwide map with seeded zones/households/teams and zoom into a hotspot; establish the real subscription connection; implement first persisted status update |
 | Hours 6–12 | Complete preparedness tasks, household updates, priority reasons, help requests, and team assignments |
 | Hours 12–17 | Integrate disaster escalation, overlooked-case detection, before/after flow, approximate ETAs, and activity history |
 | Hours 17–20 | Verify two sessions, assignment validation, reset/replay, loading/errors, and the complete demo |
@@ -153,7 +155,7 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 - [x] Document the employee-facing pre-disaster and post-disaster concept.
 - [x] Draft MVP, technical approach, data contract, four workstreams, and schedule.
 - [x] Confirm Next.js + TypeScript for the application and TypeScript + SpacetimeDB for the core backend.
-- [ ] Confirm working name, team role assignments, target region, and flood scenario.
+- [ ] Confirm working name, team role assignments, nationwide geographic scope, seeded hotspot areas, and flood scenario.
 - [ ] Confirm map provider, schema, status enums, scoring weights, and contact threshold.
 - [ ] Confirm official submission deadline and sponsor eligibility requirements.
 
@@ -162,7 +164,7 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 - [x] Scaffold the Next.js + TypeScript frontend and document how to run it.
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
 - [ ] Verify the production build and browser rendering in an environment that permits local worker/server ports.
-- [ ] Render the map and flood-risk polygons with a severity legend.
+- [ ] Render a pannable/zoomable nationwide map and flood-risk polygons with a severity legend.
 - [ ] Render selectable household and response-team markers.
 - [ ] Build before/after views and household/zone detail panels.
 - [ ] Display source timestamps and simulation/estimate labels.
@@ -181,7 +183,7 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 
 ### Data and decision logic — Person 3
 
-- [ ] Create flood zones, fictional households, teams, and help requests for one region.
+- [ ] Create a fictional nationwide flood dataset with national context and concentrated high-risk neighborhoods/areas.
 - [ ] Determine affected households from the scenario zones.
 - [ ] Implement priority scores and readable reasons.
 - [ ] Implement overdue-contact/overlooked-case detection.
@@ -206,7 +208,7 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 All checks are pending until implemented and exercised. Record outcomes and remaining limitations in `changelog.md`.
 
 1. **Shared updates:** Open two sessions on the same database. Change a check-in status in one; the other updates without refreshing.
-2. **Preparedness:** Select a forecast/scenario zone, inspect affected households, and record outreach. Both sessions show its new status and activity event.
+2. **Preparedness:** Pan/zoom to a forecast/scenario hotspot, inspect affected households, and record outreach. Both sessions show its new status and activity event.
 3. **Escalation:** Increase the seeded flood severity. Affected-case priorities and displayed reasons update consistently.
 4. **Dispatch:** Assign an eligible available team to an open request. The request, assignment, and team all update together.
 5. **Conflicting dispatch:** Try assigning the same request or unavailable team from another session. The backend rejects the invalid change without inconsistent state.
@@ -217,7 +219,7 @@ All checks are pending until implemented and exercised. Record outcomes and rema
 
 ## Judge demonstration — target 2–3 minutes
 
-1. Show the pre-disaster flood map, potentially affected households, and recommended preparation tasks.
+1. Show the nationwide pre-disaster flood map, pan/zoom into a high-risk hotspot, and review potentially affected households and recommended preparation tasks.
 2. Record proactive outreach and show the change in a second employee session.
 3. Escalate the scenario and switch to post-disaster response.
 4. Inspect an urgent case, explain its priority, and assign a suitable team.
