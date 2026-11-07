@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.2 — 2026-11-07.** A local Person 1 dashboard is implemented with Leaflet, six fictional hazard hotspots, layer controls, before/after guidance, and zone/household/team details. Lint and type checking pass. The contributor verified the original starter production build locally; the new dashboard build remains blocked in the agent environment by Turbopack worker-port restrictions. Browser interaction checks and SpacetimeDB integration remain pending.
+**Current checkpoint: v1.2 — 2026-11-07.** The fixture-backed Person 1 dashboard now fits its national overview to the canvas and distinguishes selections by entity kind and ID. Lint, type checking, and focused bounds/selection regression checks pass. The contributor verified the original starter production build locally; the dashboard build remains blocked in the agent environment by Turbopack worker-port restrictions. The user confirmed browser verification of the fixture-backed map/interface tasks. SpacetimeDB integration and production build verification remain pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -161,15 +161,18 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 
 ### Map and interface — Person 1
 
+Browser verification covers the fixture-backed UI. Live backend connection checks remain pending integration.
+
 - [x] Scaffold the Next.js + TypeScript frontend and document how to run it.
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
-- [ ] Verify the production build and browser rendering in an environment that permits local worker/server ports. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Allow employees to filter visible hazards and inspect overlapping disaster zones. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Render selectable household and response-team markers. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Build before/after views and household/zone detail panels. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Display source timestamps and simulation/estimate labels. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
-- [ ] Handle loading, connection errors, empty states, and narrower screens. (in progress — Aalvee Ahtav; UI implemented, browser verification pending)
+- [x] Verify browser rendering of the fixture-backed dashboard. (verified by user)
+- [ ] Verify the production build in an environment that permits local worker/server ports. (blocked in agent environment — Turbopack worker-port restriction)
+- [x] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends. (verified by user)
+- [x] Allow employees to filter visible hazards and inspect overlapping disaster zones. (verified by user)
+- [x] Render selectable household and response-team markers. (verified by user)
+- [x] Build before/after views and household/zone detail panels. (verified by user)
+- [x] Display source timestamps and simulation/estimate labels. (verified by user)
+- [x] Handle loading, connection errors, empty states, and narrower screens. (verified by user)
 
 ### Backend — Person 2
 
@@ -234,7 +237,7 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ### Current checkpoint — v1.2
 
-The frontend includes the Person 1 map dashboard with temporary fictional UI data. Backend code, generated bindings, live subscriptions, authoritative scenario data/decision logic, and operational controls remain pending. The map code includes comments explaining behavior and integration assumptions. See [changelog v1.2](changelog.md#version-12--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
+The frontend includes the Person 1 map dashboard with temporary fictional UI data, a canvas-fitted national overview, and selection highlights scoped by entity kind and ID. Backend code, generated bindings, live subscriptions, authoritative scenario data/decision logic, and operational controls remain pending. The map code includes comments explaining behavior and integration assumptions. See [changelog v1.2](changelog.md#version-12--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
 
 ### Local setup
 
@@ -262,7 +265,7 @@ Run these commands from `frontend/`. From the repository root, use `npm --prefix
 
 | Command | Purpose | Current verification |
 | --- | --- | --- |
-| `npm run dev` | Start local development | New dashboard browser/server smoke check pending |
+| `npm run dev` | Start local development | Dashboard browser smoke check passed (user-reported) |
 | `npm run lint` | Run ESLint | Passed |
 | `npm run typecheck` | Generate route types and check TypeScript | Passed |
 | `npm run build` | Create a production build | Starter passed on contributor machine; new dashboard blocked here by Turbopack worker ports |

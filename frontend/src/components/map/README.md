@@ -27,7 +27,7 @@ From a client integration component, adapt subscription rows to `MapData`, then 
 
 ## Persons 2 and 3: data assumptions to reconcile
 
-- IDs are stable strings in these view models; convert generated numeric IDs in the adapter if necessary.
+- IDs are stable strings in these view models; convert generated numeric IDs in the adapter if necessary. IDs may overlap across entity types; selection matches both kind and ID.
 - `boundary` is a single polygon ring in **[latitude, longitude]** order. GeoJSON uses the reverse order; convert explicitly. MultiPolygons and holes require extending the renderer.
 - Households and teams are linked to a zone by `zoneId`; household exposure is supplied by the dataset, not calculated in the UI. A team `zoneId` is a UI grouping, not a proposed database requirement.
 - Timestamps are valid ISO strings or null for unknown last contact. Display uses America/Chicago with an explicit time-zone label.
@@ -39,4 +39,4 @@ From a client integration component, adapt subscription rows to `MapData`, then 
 
 Leaflet 1.9.4 with OpenStreetMap standard raster tiles and visible attribution. No API key is needed. Browsers need internet access to load the basemap. Tile failure displays a connection warning; polygons and the hotspot list still work. Review the provider's usage policy before public deployment: https://operations.osmfoundation.org/policies/tiles/.
 
-The initial view covers the contiguous United States. Pan and zoom support Alaska and Hawaii; dedicated seeded hotspots there are not included in these temporary fixtures.
+The initial and reset views fit the contiguous United States to the canvas with padding. Resizing refits this overview until a user pans, zooms, or selects a record; subsequent resizes preserve that navigation. Pan and zoom support Alaska and Hawaii; dedicated seeded hotspots there are not included in these temporary fixtures.
