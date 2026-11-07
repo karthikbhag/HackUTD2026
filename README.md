@@ -68,12 +68,12 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 
 ## Technical design
 
-**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Next.js frontend skeleton is scaffolded; the SpacetimeDB backend and disaster workflows are not yet implemented. Mapping and optional external-service choices remain open.
+**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Next.js frontend now includes a fixture-backed map dashboard using Leaflet and OpenStreetMap tiles. SpacetimeDB and persisted disaster workflows are not yet implemented. The initial map choice can be revisited during team integration.
 
 | Layer | Proposed approach | Responsibility |
 | --- | --- | --- |
 | Employee interface | Next.js + TypeScript | Map, preparedness/response views, household panel, priority queue, assignments |
-| Map | Choose a mapping library and compatible basemap early | Nationwide overview, pan/zoom navigation, hazard-specific polygons, neighborhood/household/team markers, selection, assignment lines |
+| Map | Leaflet 1.9.4 + OpenStreetMap raster tiles (initial UI implementation) | Nationwide overview, pan/zoom navigation, hazard-specific polygons, neighborhood/household/team markers, selection, assignment lines |
 | Core backend | SpacetimeDB module written in TypeScript | Tables, validated changes, assignments, prioritization, activity history |
 | Live synchronization | Generated client bindings and SpacetimeDB subscriptions | Share operational updates between employee sessions |
 | Scenario data | Seeded fictional households, teams, and hazard zones distributed across the U.S., with concentrated high-risk neighborhoods for all six disaster types | Repeatable demo independent of outside feeds |
@@ -118,11 +118,11 @@ An optional AI feature can summarize structured evidence and suggest next steps 
 
 ## Four-person work split
 
-Names are pending assignment. Aalvee Ahtav is a confirmed contributor; no role has been assigned yet. Each person owns one workstream and helps with integration.
+Aalvee Ahtav owns Person 1's map and interface work. Other role assignments remain pending. Each person owns one workstream and helps with integration.
 
 | Owner | Workstream | Concrete deliverables | Dependencies and handoff |
 | --- | --- | --- | --- |
-| Person 1 — name TBD | Map and interface | App shell, nationwide pannable/zoomable map, hazard-layer controls, before/after toggle, zone/neighborhood selection, household detail panel, loading/error states | Agree on hazard-layer and geographic contracts with Persons 2 and 3; consume shared data and actions through Person 4's integration |
+| Person 1 — Aalvee Ahtav | Map and interface | App shell, nationwide pannable/zoomable map, hazard-layer controls, before/after toggle, zone/neighborhood selection, household detail panel, loading/error states | Agree on hazard-layer and geographic contracts with Persons 2 and 3; consume shared data and actions through Person 4's integration |
 | Person 2 — name TBD | Spacetime backend | Project/module setup, multi-hazard schema, reducers, validation, subscriptions support, seed/reset behavior, activity events, and concurrent updates | Publish initial schema and generate bindings early; coordinate disaster types, status enums, and validation rules with everyone |
 | Person 3 — name TBD | Disaster data and decision logic | Fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods; hazard geometry, household exposure, priority rules/reasons, hazard-specific preparedness suggestions, team capability matching, and approximate ETA logic | Agree on geographic and hazard contracts with Persons 1 and 2; hand tested logic/data to Person 2 for authoritative backend use |
 | Person 4 — name TBD | Operational workflow, integration, and demo | Multi-hazard filters, priority queue, outreach/task controls, request/assignment controls, shared client connection, two-session verification, hazard escalation flow, demo script, and documentation | Pair with Persons 1 and 2 to wire UI actions; use Person 3's explanations and recommendations |
@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.1 — 2026-11-07.** The project documentation and Next.js + TypeScript frontend skeleton are complete. Linting and type checking pass; production build verification is blocked by the current environment’s restriction on Turbopack worker ports. SpacetimeDB and all disaster workflows remain pending.
+**Current checkpoint: v1.2 — 2026-11-07.** The fixture-backed Person 1 dashboard now fits its national overview to the canvas and distinguishes selections by entity kind and ID. Lint, type checking, and focused bounds/selection regression checks pass. The contributor verified the original starter production build locally; the dashboard build remains blocked in the agent environment by Turbopack worker-port restrictions. The user confirmed browser verification of the fixture-backed map/interface tasks. SpacetimeDB integration and production build verification remain pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -161,15 +161,18 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 
 ### Map and interface — Person 1
 
+Browser verification covers the fixture-backed UI. Live backend connection checks remain pending integration.
+
 - [x] Scaffold the Next.js + TypeScript frontend and document how to run it.
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
-- [ ] Verify the production build and browser rendering in an environment that permits local worker/server ports.
-- [ ] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends.
-- [ ] Allow employees to filter visible hazards and inspect overlapping disaster zones.
-- [ ] Render selectable household and response-team markers.
-- [ ] Build before/after views and household/zone detail panels.
-- [ ] Display source timestamps and simulation/estimate labels.
-- [ ] Handle loading, connection errors, empty states, and narrower screens.
+- [x] Verify browser rendering of the fixture-backed dashboard. (verified by user)
+- [ ] Verify the production build in an environment that permits local worker/server ports. (blocked in agent environment — Turbopack worker-port restriction)
+- [x] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends. (verified by user)
+- [x] Allow employees to filter visible hazards and inspect overlapping disaster zones. (verified by user)
+- [x] Render selectable household and response-team markers. (verified by user)
+- [x] Build before/after views and household/zone detail panels. (verified by user)
+- [x] Display source timestamps and simulation/estimate labels. (verified by user)
+- [x] Handle loading, connection errors, empty states, and narrower screens. (verified by user)
 
 ### Backend — Person 2
 
@@ -232,9 +235,9 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.1
+### Current checkpoint — v1.2
 
-The completed foundation consists of the project documentation, a Next.js + TypeScript frontend skeleton in `frontend/`, and a reserved SpacetimeDB backend directory in `backend/`. The starter page and frontend tooling exist; the backend, live connection, map, and disaster workflows remain pending. All work completed so far is recorded together in [changelog v1.1](changelog.md#version-11--2026-11-07).
+The frontend includes the Person 1 map dashboard with temporary fictional UI data, a canvas-fitted national overview, and selection highlights scoped by entity kind and ID. Backend code, generated bindings, live subscriptions, authoritative scenario data/decision logic, and operational controls remain pending. The map code includes comments explaining behavior and integration assumptions. See [changelog v1.2](changelog.md#version-12--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
 
 ### Local setup
 
@@ -252,9 +255,9 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the RiskReach placeholder. If SpacetimeDB later runs locally on port 3000, use `npm run dev -- --port 3001` for Next.js.
+Open [http://localhost:3000](http://localhost:3000) to see the RiskReach simulation dashboard. If SpacetimeDB later runs locally on port 3000, use `npm run dev -- --port 3001` for Next.js.
 
-No environment variables, API keys, or SpacetimeDB instance are required for the current placeholder. Backend startup, generated bindings, and seed/reset commands will be documented when implemented. Never commit API keys or real customer information.
+No environment variables, API keys, or SpacetimeDB instance are required for the current fixture-backed dashboard. Internet access is needed for OpenStreetMap basemap tiles; the UI displays a warning when tile loading fails. Backend startup, generated bindings, and seed/reset commands will be documented when implemented. Never commit API keys or real customer information.
 
 ### Available commands
 
@@ -262,10 +265,10 @@ Run these commands from `frontend/`. From the repository root, use `npm --prefix
 
 | Command | Purpose | Current verification |
 | --- | --- | --- |
-| `npm run dev` | Start local development | Browser/server smoke check pending |
+| `npm run dev` | Start local development | Dashboard browser smoke check passed (user-reported) |
 | `npm run lint` | Run ESLint | Passed |
 | `npm run typecheck` | Generate route types and check TypeScript | Passed |
-| `npm run build` | Create a production build | Blocked here: Turbopack CSS worker cannot bind a local port |
+| `npm run build` | Create a production build | Starter passed on contributor machine; new dashboard blocked here by Turbopack worker ports |
 | `npm start` | Serve a successful production build | Pending production build |
 
 ### Repository structure
@@ -275,11 +278,11 @@ frontend/
   src/
     app/
       layout.tsx      # Shared layout and project metadata
-      page.tsx        # RiskReach starter page
+      page.tsx        # Fixture-backed map dashboard entry
       globals.css     # Tailwind and base styling
       favicon.ico     # Starter favicon; branding pending
-    components/       # Shared UI components (placeholder)
-    lib/              # Shared helpers and future client integration (placeholder)
+    components/map/   # Map dashboard, Leaflet renderer, detail panel, integration notes
+    lib/map/          # Frontend view models and disposable fictional UI fixtures
   public/             # Static assets from the starter
   next.config.ts      # Next.js and Tailwind/Turbopack configuration
   eslint.config.mjs   # ESLint configuration
