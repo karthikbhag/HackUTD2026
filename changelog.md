@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.1**
+Current version: **1.2**
 
 ## Instructions for future updates
 
@@ -30,6 +30,29 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.2 — 2026-11-07
+
+**Author:** Aalvee Ahtav
+
+### Changes
+
+- Replaced the placeholder with Person 1's local map/interface dashboard: hazard visibility controls, hotspot navigation, before/after guidance, and zone/household/team detail panels.
+- Added browser-only Leaflet 1.9.4 with attributed OpenStreetMap raster tiles, selectable hazard polygons and record markers, severity outlines, reset navigation, resizing support, and a basemap-load warning.
+- Added disposable fictional UI fixtures for all six supported hazards across the contiguous U.S.; these are separate from Person 3's future authoritative datasets and are clearly labeled simulations.
+- Added responsive layouts, keyboard-accessible hotspot/record selection, loading/empty/connection-error presentations, and fixed scenario source timestamps displayed in America/Chicago.
+- Defined frontend data view models and a prop-based integration boundary with a workflow composition slot for Person 4. Documented coordinate ordering, IDs, status assumptions, and remaining backend integration in `frontend/src/components/map/README.md`.
+- Assigned Person 1 ownership in the README and updated setup/progress documentation. Current scope follows the README's nationwide six-hazard plan; v1.1's single-region flood description records the earlier plan.
+- Added explanatory comments to map components, frontend view models, temporary fixtures, and global styles covering Leaflet lifecycle/cleanup, selection/filter behavior, coordinate conventions, teammate integration, and responsive layout choices.
+- No persisted operational changes, live hazard feeds, decision scoring, or SpacetimeDB integration were added.
+
+### Verification
+
+- `npm --prefix frontend run lint` and `npm --prefix frontend run typecheck` passed after implementation. Lint passed again after adding comments; `git diff --check` also passed.
+- The contributor reported successful lint, type checking, and production build for the original starter before these dashboard changes.
+- The new dashboard production build was attempted in the agent environment and retried with escalation; both attempts failed because Turbopack's CSS worker could not bind a local port. Compilation completion is not claimed for this version.
+- Browser rendering, tile loading, pan/zoom, selection, overlapping-zone inspection, narrow-screen behavior, and real connection states still require interactive verification. Map/interface checklist items remain in progress.
+- npm installation reported eight moderate dependency findings. Backend acceptance checks and two-session verification remain pending.
 
 ## Version 1.1 — 2026-11-07
 
