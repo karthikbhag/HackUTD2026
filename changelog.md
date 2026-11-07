@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.1**
+Current version: **1.2**
 
 ## Instructions for future updates
 
@@ -30,6 +30,32 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.2 — 2026-11-07
+
+**Author:** Josh — full name pending confirmation before commit
+
+### Changes
+
+- Aligned the README and Person 2 implementation plan with main commit `39893be`: nationwide tornado, earthquake, hurricane, wildfire, blizzard, and flood support, with national/metro/neighborhood zone hierarchies. Preserved Josh's Person 2 assignment.
+- Added a TypeScript SpacetimeDB 2.14.1 module under `backend/`, pinned dependencies/lockfile, local project configuration, and build/typecheck/test/binding-generation commands.
+- Implemented the eight operational entities with lookup indexes, plus a private employee allowlist. The publishing identity is the initial administrator; only an administrator can grant/revoke employee access or seed/reset/escalate scenarios. Private tables are exposed through employee-authorized views.
+- Implemented validated check-in, outreach, preparedness tasks, help requests, assignment creation/progress/completion/cancellation, and transactional durable activity events. Conflicting dispatch, unavailable teams, capability/capacity violations, invalid statuses, and unauthorized calls are rejected. Safety status stays separate from assistance resolution.
+- Added synthetic integration fixtures for all six hazards: 18 zones, 12 households/requests/tasks, and six teams. Added targeted disaster escalation and controlled reset that preserves memberships and activity history. Geometry and hazard-specific tasks are demonstration placeholders for Person 3's final data/rules.
+- Added straight-line assignment distance (km) and approximate ETA (minutes, assumed 30 km/h); these are not road routing or automatic team recommendations.
+- Generated frontend bindings and installed the matching frontend SDK. Added datastore tests and a repeatable local-only live-client smoke script. Browser connection/UI integration remains Person 4's work.
+- Documented setup, identity enrollment, reducer contracts, multi-hazard handoffs, and remaining work in `backend/README.md` and `backend/PLAN.md`; updated the root tracker and ignored backend bundles/local test output.
+
+### Verification
+
+- Backend TypeScript checking passed; SpacetimeDB module build and binding generation passed using CLI/SDK 2.14.1.
+- Eight datastore-harness tests passed, covering authorization/revocation, check-in/contact separation, task/request validation, dispatch conflicts, capability/capacity rejection, completion/cancellation, all six seeded hazard types, targeted escalation isolation, and repeatable reset.
+- Published to an isolated local verification database on port 3100. Live SDK verification passed for synchronized check-in/outreach, competing dispatch (exactly one succeeds), assignment completion/team release, outsider rejection, and membership revocation removing subscribed data. The same live check passed again after republishing/resetting the six-hazard fixture.
+- Frontend type checking passed after final multi-hazard binding regeneration. ESLint had no errors and one unused-disable warning in generated bindings. Production frontend build/browser rendering remain unverified.
+- Backend dependency installation audit reported zero vulnerabilities after selecting patched test tools. The frontend retains the previously documented eight moderate development-chain findings.
+- Verification used Node 24.20.0; npm warns that SDK 2.14.1 requires `^22.23.4 || ^24.22.1 || >=26.12.1`. Setup documentation records the supported versions; verification on a supported Node patch is still pending.
+- `git diff --check` passed.
+- Final Person 3 geometry/exposure, prioritization/reasons, overlooked-case detection, and team recommendations remain pending. Map/queue/action UI and the root README's complete browser acceptance checks remain pending. No commits, pushes, or cloud deployments were made.
 
 ## Version 1.1 — 2026-11-07
 

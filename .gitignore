@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SpacetimeDB bundles and local verification output
+backend/dist/
+backend/.test-output/
+spacetime.local.json
