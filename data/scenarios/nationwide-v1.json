@@ -1,0 +1,1499 @@
+{
+  "scenario_id": "nationwide-v1",
+  "schema_version": 1,
+  "name": "Fictional nationwide multi-hazard exercise",
+  "is_simulated": true,
+  "reference_time": "2026-11-07T12:00:00Z",
+  "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+  "national_context": {
+    "name": "United States overview",
+    "bounds": [
+      -180,
+      18,
+      -65,
+      72
+    ],
+    "purpose": "Map framing only; not a nationwide impact footprint"
+  },
+  "selected_hotspot_id": "tornado-neighborhood",
+  "disasters": [
+    {
+      "id": "tornado",
+      "name": "Simulated Central Oklahoma tornado exercise",
+      "type": "tornado",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "earthquake",
+      "name": "Simulated Southern California earthquake exercise",
+      "type": "earthquake",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "hurricane",
+      "name": "Simulated Gulf Coast Florida hurricane exercise",
+      "type": "hurricane",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "wildfire",
+      "name": "Simulated Northern California wildfire exercise",
+      "type": "wildfire",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "blizzard",
+      "name": "Simulated Upper Midwest blizzard exercise",
+      "type": "blizzard",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "flood",
+      "name": "Simulated Southeast Texas flood exercise",
+      "type": "flood",
+      "phase": "preparedness",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    }
+  ],
+  "zones": [
+    {
+      "id": "tornado-region",
+      "disaster_id": "tornado",
+      "name": "Central Oklahoma fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -97.92,
+              35.17
+            ],
+            [
+              -97.12,
+              35.17
+            ],
+            [
+              -97.12,
+              35.77
+            ],
+            [
+              -97.92,
+              35.77
+            ],
+            [
+              -97.92,
+              35.17
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "tornado-neighborhood",
+      "disaster_id": "tornado",
+      "name": "Central Oklahoma fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "tornado-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -97.56,
+              35.44
+            ],
+            [
+              -97.48,
+              35.44
+            ],
+            [
+              -97.48,
+              35.5
+            ],
+            [
+              -97.56,
+              35.5
+            ],
+            [
+              -97.56,
+              35.44
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "earthquake-region",
+      "disaster_id": "earthquake",
+      "name": "Southern California fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -118.64,
+              33.75
+            ],
+            [
+              -117.84,
+              33.75
+            ],
+            [
+              -117.84,
+              34.35
+            ],
+            [
+              -118.64,
+              34.35
+            ],
+            [
+              -118.64,
+              33.75
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "earthquake-neighborhood",
+      "disaster_id": "earthquake",
+      "name": "Southern California fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "earthquake-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -118.28,
+              34.02
+            ],
+            [
+              -118.2,
+              34.02
+            ],
+            [
+              -118.2,
+              34.08
+            ],
+            [
+              -118.28,
+              34.08
+            ],
+            [
+              -118.28,
+              34.02
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "hurricane-region",
+      "disaster_id": "hurricane",
+      "name": "Gulf Coast Florida fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -82.86,
+              27.65
+            ],
+            [
+              -82.06,
+              27.65
+            ],
+            [
+              -82.06,
+              28.25
+            ],
+            [
+              -82.86,
+              28.25
+            ],
+            [
+              -82.86,
+              27.65
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "hurricane-neighborhood",
+      "disaster_id": "hurricane",
+      "name": "Gulf Coast Florida fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "hurricane-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -82.5,
+              27.92
+            ],
+            [
+              -82.42,
+              27.92
+            ],
+            [
+              -82.42,
+              27.98
+            ],
+            [
+              -82.5,
+              27.98
+            ],
+            [
+              -82.5,
+              27.92
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "wildfire-region",
+      "disaster_id": "wildfire",
+      "name": "Northern California fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.1,
+              38.14
+            ],
+            [
+              -122.3,
+              38.14
+            ],
+            [
+              -122.3,
+              38.74
+            ],
+            [
+              -123.1,
+              38.74
+            ],
+            [
+              -123.1,
+              38.14
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "wildfire-neighborhood",
+      "disaster_id": "wildfire",
+      "name": "Northern California fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "wildfire-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -122.74,
+              38.41
+            ],
+            [
+              -122.66,
+              38.41
+            ],
+            [
+              -122.66,
+              38.47
+            ],
+            [
+              -122.74,
+              38.47
+            ],
+            [
+              -122.74,
+              38.41
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "blizzard-region",
+      "disaster_id": "blizzard",
+      "name": "Upper Midwest fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -93.67,
+              44.68
+            ],
+            [
+              -92.87,
+              44.68
+            ],
+            [
+              -92.87,
+              45.28
+            ],
+            [
+              -93.67,
+              45.28
+            ],
+            [
+              -93.67,
+              44.68
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "blizzard-neighborhood",
+      "disaster_id": "blizzard",
+      "name": "Upper Midwest fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "blizzard-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -93.31,
+              44.95
+            ],
+            [
+              -93.23,
+              44.95
+            ],
+            [
+              -93.23,
+              45.01
+            ],
+            [
+              -93.31,
+              45.01
+            ],
+            [
+              -93.31,
+              44.95
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "flood-region",
+      "disaster_id": "flood",
+      "name": "Southeast Texas fictional region",
+      "level": "region",
+      "parent_zone_id": null,
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.77,
+              29.46
+            ],
+            [
+              -94.97,
+              29.46
+            ],
+            [
+              -94.97,
+              30.06
+            ],
+            [
+              -95.77,
+              30.06
+            ],
+            [
+              -95.77,
+              29.46
+            ]
+          ]
+        ]
+      },
+      "risk_level": "moderate",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    },
+    {
+      "id": "flood-neighborhood",
+      "disaster_id": "flood",
+      "name": "Southeast Texas fictional neighborhood",
+      "level": "neighborhood",
+      "parent_zone_id": "flood-region",
+      "boundary": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.41,
+              29.73
+            ],
+            [
+              -95.33,
+              29.73
+            ],
+            [
+              -95.33,
+              29.79
+            ],
+            [
+              -95.41,
+              29.79
+            ],
+            [
+              -95.41,
+              29.73
+            ]
+          ]
+        ]
+      },
+      "risk_level": "high",
+      "source": "RiskReach authored synthetic fixture; no live forecasts or observations",
+      "is_simulated": true,
+      "updated_at": "2026-11-07T12:00:00Z"
+    }
+  ],
+  "households": [
+    {
+      "id": "tornado-household-01",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 01",
+      "latitude": 35.458,
+      "longitude": -97.535,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "tornado-household-02",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 02",
+      "latitude": 35.462,
+      "longitude": -97.53,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "tornado-household-03",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 03",
+      "latitude": 35.466,
+      "longitude": -97.525,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "tornado-household-04",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 04",
+      "latitude": 35.47,
+      "longitude": -97.52,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "tornado-household-05",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 05",
+      "latitude": 35.474,
+      "longitude": -97.515,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "tornado-household-06",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 06",
+      "latitude": 35.478,
+      "longitude": -97.51,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "tornado-household-07",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 07",
+      "latitude": 35.482,
+      "longitude": -97.505,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "tornado-household-08",
+      "zone_id": "tornado-neighborhood",
+      "display_name": "Fictional Tornado Household 08",
+      "latitude": 35.486,
+      "longitude": -97.5,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "tornado-household-09",
+      "zone_id": "tornado-region",
+      "display_name": "Fictional Tornado Household 09",
+      "latitude": 35.57,
+      "longitude": -97.37,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "tornado-household-10",
+      "zone_id": "tornado-region",
+      "display_name": "Fictional Tornado Household 10",
+      "latitude": 35.57,
+      "longitude": -97.35,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "earthquake-household-01",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 01",
+      "latitude": 34.038,
+      "longitude": -118.255,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "earthquake-household-02",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 02",
+      "latitude": 34.042,
+      "longitude": -118.25,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "earthquake-household-03",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 03",
+      "latitude": 34.046,
+      "longitude": -118.245,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "earthquake-household-04",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 04",
+      "latitude": 34.05,
+      "longitude": -118.24,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "earthquake-household-05",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 05",
+      "latitude": 34.054,
+      "longitude": -118.235,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "earthquake-household-06",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 06",
+      "latitude": 34.058,
+      "longitude": -118.23,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "earthquake-household-07",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 07",
+      "latitude": 34.062,
+      "longitude": -118.225,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "earthquake-household-08",
+      "zone_id": "earthquake-neighborhood",
+      "display_name": "Fictional Earthquake Household 08",
+      "latitude": 34.066,
+      "longitude": -118.22,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "earthquake-household-09",
+      "zone_id": "earthquake-region",
+      "display_name": "Fictional Earthquake Household 09",
+      "latitude": 34.15,
+      "longitude": -118.09,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "earthquake-household-10",
+      "zone_id": "earthquake-region",
+      "display_name": "Fictional Earthquake Household 10",
+      "latitude": 34.15,
+      "longitude": -118.07,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "hurricane-household-01",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 01",
+      "latitude": 27.938,
+      "longitude": -82.475,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "hurricane-household-02",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 02",
+      "latitude": 27.942,
+      "longitude": -82.47,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "hurricane-household-03",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 03",
+      "latitude": 27.946,
+      "longitude": -82.465,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "hurricane-household-04",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 04",
+      "latitude": 27.95,
+      "longitude": -82.46,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "hurricane-household-05",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 05",
+      "latitude": 27.954,
+      "longitude": -82.455,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "hurricane-household-06",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 06",
+      "latitude": 27.958,
+      "longitude": -82.45,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "hurricane-household-07",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 07",
+      "latitude": 27.962,
+      "longitude": -82.445,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "hurricane-household-08",
+      "zone_id": "hurricane-neighborhood",
+      "display_name": "Fictional Hurricane Household 08",
+      "latitude": 27.966,
+      "longitude": -82.44,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "hurricane-household-09",
+      "zone_id": "hurricane-region",
+      "display_name": "Fictional Hurricane Household 09",
+      "latitude": 28.05,
+      "longitude": -82.31,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "hurricane-household-10",
+      "zone_id": "hurricane-region",
+      "display_name": "Fictional Hurricane Household 10",
+      "latitude": 28.05,
+      "longitude": -82.29,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "wildfire-household-01",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 01",
+      "latitude": 38.428,
+      "longitude": -122.715,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "wildfire-household-02",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 02",
+      "latitude": 38.432,
+      "longitude": -122.71,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "wildfire-household-03",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 03",
+      "latitude": 38.436,
+      "longitude": -122.705,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "wildfire-household-04",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 04",
+      "latitude": 38.44,
+      "longitude": -122.7,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "wildfire-household-05",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 05",
+      "latitude": 38.444,
+      "longitude": -122.695,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "wildfire-household-06",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 06",
+      "latitude": 38.448,
+      "longitude": -122.69,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "wildfire-household-07",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 07",
+      "latitude": 38.452,
+      "longitude": -122.685,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "wildfire-household-08",
+      "zone_id": "wildfire-neighborhood",
+      "display_name": "Fictional Wildfire Household 08",
+      "latitude": 38.456,
+      "longitude": -122.68,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "wildfire-household-09",
+      "zone_id": "wildfire-region",
+      "display_name": "Fictional Wildfire Household 09",
+      "latitude": 38.54,
+      "longitude": -122.55,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "wildfire-household-10",
+      "zone_id": "wildfire-region",
+      "display_name": "Fictional Wildfire Household 10",
+      "latitude": 38.54,
+      "longitude": -122.53,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "blizzard-household-01",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 01",
+      "latitude": 44.968,
+      "longitude": -93.285,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "blizzard-household-02",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 02",
+      "latitude": 44.972,
+      "longitude": -93.28,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "blizzard-household-03",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 03",
+      "latitude": 44.976,
+      "longitude": -93.275,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "blizzard-household-04",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 04",
+      "latitude": 44.98,
+      "longitude": -93.27,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "blizzard-household-05",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 05",
+      "latitude": 44.984,
+      "longitude": -93.265,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "blizzard-household-06",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 06",
+      "latitude": 44.988,
+      "longitude": -93.26,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "blizzard-household-07",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 07",
+      "latitude": 44.992,
+      "longitude": -93.255,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "blizzard-household-08",
+      "zone_id": "blizzard-neighborhood",
+      "display_name": "Fictional Blizzard Household 08",
+      "latitude": 44.996,
+      "longitude": -93.25,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "blizzard-household-09",
+      "zone_id": "blizzard-region",
+      "display_name": "Fictional Blizzard Household 09",
+      "latitude": 45.08,
+      "longitude": -93.12,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "blizzard-household-10",
+      "zone_id": "blizzard-region",
+      "display_name": "Fictional Blizzard Household 10",
+      "latitude": 45.08,
+      "longitude": -93.1,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "flood-household-01",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 01",
+      "latitude": 29.748,
+      "longitude": -95.385,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": null
+    },
+    {
+      "id": "flood-household-02",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 02",
+      "latitude": 29.752,
+      "longitude": -95.38,
+      "is_customer": false,
+      "check_in_status": "urgent",
+      "vulnerability_flags": [
+        "limited_mobility"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "flood-household-03",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 03",
+      "latitude": 29.756,
+      "longitude": -95.375,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T06:00:00Z"
+    },
+    {
+      "id": "flood-household-04",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 04",
+      "latitude": 29.76,
+      "longitude": -95.37,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "flood-household-05",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 05",
+      "latitude": 29.764,
+      "longitude": -95.365,
+      "is_customer": true,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "flood-household-06",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 06",
+      "latitude": 29.768,
+      "longitude": -95.36,
+      "is_customer": false,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "flood-household-07",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 07",
+      "latitude": 29.772,
+      "longitude": -95.355,
+      "is_customer": true,
+      "check_in_status": "needs_help",
+      "vulnerability_flags": [
+        "transport_needed"
+      ],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "flood-household-08",
+      "zone_id": "flood-neighborhood",
+      "display_name": "Fictional Flood Household 08",
+      "latitude": 29.776,
+      "longitude": -95.35,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    },
+    {
+      "id": "flood-household-09",
+      "zone_id": "flood-region",
+      "display_name": "Fictional Flood Household 09",
+      "latitude": 29.86,
+      "longitude": -95.22,
+      "is_customer": true,
+      "check_in_status": "safe",
+      "vulnerability_flags": [],
+      "last_contact_at": "2026-11-07T11:30:00Z"
+    },
+    {
+      "id": "flood-household-10",
+      "zone_id": "flood-region",
+      "display_name": "Fictional Flood Household 10",
+      "latitude": 29.86,
+      "longitude": -95.2,
+      "is_customer": false,
+      "check_in_status": "unknown",
+      "vulnerability_flags": [],
+      "last_contact_at": null
+    }
+  ],
+  "response_teams": [
+    {
+      "id": "tornado-team-1",
+      "name": "Fictional Tornado Team 1",
+      "latitude": 35.485,
+      "longitude": -97.535,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "shelter_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "tornado-team-2",
+      "name": "Fictional Tornado Team 2",
+      "latitude": 35.5,
+      "longitude": -97.55,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "shelter_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "earthquake-team-1",
+      "name": "Fictional Earthquake Team 1",
+      "latitude": 34.065,
+      "longitude": -118.255,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "welfare_check",
+        "supply_delivery"
+      ]
+    },
+    {
+      "id": "earthquake-team-2",
+      "name": "Fictional Earthquake Team 2",
+      "latitude": 34.08,
+      "longitude": -118.27,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "welfare_check",
+        "supply_delivery"
+      ]
+    },
+    {
+      "id": "hurricane-team-1",
+      "name": "Fictional Hurricane Team 1",
+      "latitude": 27.965,
+      "longitude": -82.475,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "evacuation_assistance",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "hurricane-team-2",
+      "name": "Fictional Hurricane Team 2",
+      "latitude": 27.98,
+      "longitude": -82.49,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "evacuation_assistance",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "wildfire-team-1",
+      "name": "Fictional Wildfire Team 1",
+      "latitude": 38.455,
+      "longitude": -122.715,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "smoke_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "wildfire-team-2",
+      "name": "Fictional Wildfire Team 2",
+      "latitude": 38.47,
+      "longitude": -122.73,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "smoke_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "blizzard-team-1",
+      "name": "Fictional Blizzard Team 1",
+      "latitude": 44.995,
+      "longitude": -93.285,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "winter_weather_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "blizzard-team-2",
+      "name": "Fictional Blizzard Team 2",
+      "latitude": 45.01,
+      "longitude": -93.3,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "winter_weather_support",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "flood-team-1",
+      "name": "Fictional Flood Team 1",
+      "latitude": 29.775,
+      "longitude": -95.385,
+      "status": "available",
+      "capacity": 4,
+      "capabilities": [
+        "evacuation_assistance",
+        "welfare_check"
+      ]
+    },
+    {
+      "id": "flood-team-2",
+      "name": "Fictional Flood Team 2",
+      "latitude": 29.79,
+      "longitude": -95.4,
+      "status": "unavailable",
+      "capacity": 4,
+      "capabilities": [
+        "evacuation_assistance",
+        "welfare_check"
+      ]
+    }
+  ],
+  "help_requests": [
+    {
+      "id": "tornado-request-1",
+      "household_id": "tornado-household-02",
+      "need_type": "shelter_support",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "tornado-request-2",
+      "household_id": "tornado-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "earthquake-request-1",
+      "household_id": "earthquake-household-02",
+      "need_type": "welfare_check",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "earthquake-request-2",
+      "household_id": "earthquake-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "hurricane-request-1",
+      "household_id": "hurricane-household-02",
+      "need_type": "evacuation_assistance",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "hurricane-request-2",
+      "household_id": "hurricane-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "wildfire-request-1",
+      "household_id": "wildfire-household-02",
+      "need_type": "smoke_support",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "wildfire-request-2",
+      "household_id": "wildfire-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "blizzard-request-1",
+      "household_id": "blizzard-household-02",
+      "need_type": "winter_weather_support",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "blizzard-request-2",
+      "household_id": "blizzard-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "flood-request-1",
+      "household_id": "flood-household-02",
+      "need_type": "evacuation_assistance",
+      "urgency": "urgent",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "flood-request-2",
+      "household_id": "flood-household-04",
+      "need_type": "supply_delivery",
+      "urgency": "moderate",
+      "status": "open",
+      "created_at": "2026-11-07T11:00:00Z",
+      "resolved_at": null
+    }
+  ]
+}

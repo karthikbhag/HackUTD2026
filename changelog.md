@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.2**
+Current version: **1.4**
 
 ## Instructions for future updates
 
@@ -30,6 +30,43 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.4 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Expanded Person 3's generator with Small (60 households), Demo (10,000), and Stress (100,000) presets. Preserved the original small fixture and default behavior.
+- Added 50 authored state context hotspots, including Alaska and Hawaii, alongside six dense narrative hotspots. Demo/Stress each contain 56 disaster exercises and 112 zones; Demo has 220 teams and 2,000 requests, while Stress has 1,970 teams and 20,000 requests.
+- Added seeded coordinates, varied contact histories, customer/vulnerability mixes, team capacities/capabilities, stable IDs, hotspot count summaries, and explicit generator metadata in fixture schema v2. All data remains labeled synthetic; coordinates are approximate authored locations, not verified population or land-boundary samples.
+- Added preset/seed/output CLI options and generalized validation for state coverage, per-hotspot counts, references, geometry, baseline cases, and team capability coverage. Added regression tests and ignored large generated outputs.
+- Documented commands, schema compatibility, fixture handoff, and planned map aggregation, scoped subscriptions, and batched seeding. Those application integration features remain pending.
+
+### Verification
+
+- All six `unittest` cases passed, including original-fixture equality, national Demo coverage, full Stress validation, repeatability, changed-seed behavior, invalid presets, and ten damaged-data rejection cases.
+- Generated Demo and Stress JSON through the CLI, validated both presets, and confirmed saved files match regenerated data. Verified large outputs are ignored by Git.
+- On this local Python 3.12 run, Demo generation/validation took approximately 0.091/0.041 seconds; Stress took 0.963/0.389 seconds. Saved files were approximately 4.8 MB and 46.4 MB. These are local fixture-tool measurements, not backend, subscription, or browser benchmarks.
+- Application dataset integration, Spacetime seeding, runtime performance, hazard-specific geometry, and remaining Person 3 decision logic are still pending.
+
+## Version 1.3 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3's first task with `data/scenarios/nationwide-v1.json`: six fictional disaster exercises, 12 regional/neighborhood zones, 60 households, 12 response teams, and 12 open help requests. Added national map framing and selected the tornado neighborhood as the initial demo hotspot.
+- Included customer and community households, urgent non-customer requests, never-contacted and older-contact cases, available/unavailable teams, and safe households with unresolved supply requests for later workflow verification.
+- Added stable IDs, explicit simulation/source labels, fixed UTC baseline timestamps, GeoJSON placeholder boundaries, and a deterministic fixture generator without third-party dependencies.
+- Added a fixture validator and documented field conventions, coordinate order, proposed capability values, clock handling, and the handoff to Persons 1 and 2 in `data/scenarios/README.md`. Marked only the first Person 3 checklist item complete in the project README.
+
+### Verification
+
+- `python data/scenarios/validate.py` passed: six disasters, 12 zones, 60 households, 12 teams, and 12 requests. Checked unique IDs, foreign keys, geographic containment, source labels, timestamps, baseline statuses, and per-hazard demonstration coverage.
+- Confirmed generator output equals the checked-in JSON fixture.
+- Confirmed validation rejects seven intentionally damaged copies: duplicate IDs, missing hazards, broken references, invalid coordinates, future contacts, missing urgent community cases, and unlabeled geometry.
+- These are offline fixture checks. Spacetime seeding, replacement of temporary frontend fixtures, hazard-specific impact geometry, runtime exposure calculation, priority scoring, overdue detection, preparedness suggestions, team matching/ETA, escalation, and database reset remain pending. No new application or database integration is claimed.
 
 ## Version 1.2 — 2026-11-07
 
