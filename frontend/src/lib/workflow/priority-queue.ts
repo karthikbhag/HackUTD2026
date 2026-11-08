@@ -63,9 +63,13 @@ function exposures(rows: OperationalRows, ids: string[]): { list: HouseholdExpos
       (row.severity === "moderate" || row.severity === "high") && Object.prototype.hasOwnProperty.call(hazards, row.hazardType) &&
       (row.dataKind === "simulation" || row.dataKind === "forecast" || row.dataKind === "report");
     if (!supported || !geometry) { skipped++; continue; }
-    usable.push({ id: row.id, disaster_id: row.disasterId.toString(), hazard_type: row.hazardType as ExposureHazard, component: row.component,
+    const layer: ExposureLayer<string> = { id: row.id, disaster_id: row.disasterId.toString(), hazard_type: row.hazardType as ExposureHazard, component: row.component,
       severity: row.severity as "moderate" | "high", geometry, data_kind: row.dataKind as ExposureLayer["data_kind"],
-      is_simulated: row.isSimulated, source: row.source, updated_at: isoFromMicros(micros(row.updatedAt)), label: row.label });
+      is_simulated: row.isSimulated, source: row.source, updated_at: isoFromMicros(micros(row.updatedAt)), label: row.label };
+    // Validate each layer with Person 3's own rules, so one bad layer is skipped instead of zeroing exposure for everyone.
+    try { calculateExposure([], [layer]); } catch { skipped++; continue; }
+    if (usable.some(existing => existing.id === layer.id)) { skipped++; continue; }
+    usable.push(layer);
   }
   try {
     const located = rows.households.map(h => ({ id: h.id.toString(), latitude: h.latitude, longitude: h.longitude }));

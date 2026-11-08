@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { displayTime, type DataStatus, type MapData, type Selection } from "@/lib/map/types";
 import type { OperationalRows } from "@/lib/map/backend-data";
 import { ActionFeedback, useActionRunner } from "./action-feedback";
@@ -17,10 +16,10 @@ export function OperationalWorkflow({ data, rows, status, identity, actions, dat
   database?: string; uri?: string; selection?: Selection; onSelect?: (selection: Selection) => void;
 }) {
   const { run, busy, feedback, clear } = useActionRunner();
-  const [householdId, setHouseholdId] = useState("");
   const connected = status === "connected";
-  const households = [...data.households].sort((a, b) => a.name.localeCompare(b.name));
-  const household = households.find(item => item.id === householdId);
+  // Acts on the household selected on the map or in the queue; a dropdown would
+  // render every household (10,000+ in the Demo preset).
+  const household = selection?.kind === "household" ? data.households.find(item => item.id === selection.id) : undefined;
 
   return <div className="workflow">
     <div className="workflow-header">
@@ -32,13 +31,9 @@ export function OperationalWorkflow({ data, rows, status, identity, actions, dat
 
     <div className="workflow-card">
       <h3>Record outreach</h3>
-      <label className="workflow-field">Household
-        <select value={householdId} onChange={event => setHouseholdId(event.target.value)} disabled={!connected || !households.length}>
-          <option value="">{households.length ? "Select a household…" : "No households visible"}</option>
-          {households.map(item => <option key={item.id} value={item.id}>{item.name} · {item.checkIn.replace("_", " ")}</option>)}
-        </select>
-      </label>
-      {household && <p className="muted small">Last contact: {displayTime(household.lastContactAt)}</p>}
+      {household
+        ? <p className="muted small"><strong>{household.name}</strong> · {household.checkIn.replace("_", " ")} · Last contact: {displayTime(household.lastContactAt)}</p>
+        : <p className="muted small">Select a household on the map or in the priority queue.</p>}
       <button type="button" className="workflow-button" disabled={!connected || !household || busy}
         onClick={() => household && run(`Mark ${household.name} contacted`, () => actions.recordOutreach(household.id), `${household.name} marked contacted (simulated outreach).`)}>
         Mark contacted
