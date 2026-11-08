@@ -213,7 +213,7 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Connect operational action controls to the shared SpacetimeDB connection. (typed wrappers for all reducers, shared feedback, and "Mark contacted" wired; two-session browser verification pending)
 - [x] Build priority queue and overlooked-case filtering. (live queue using Person 3's `rankHouseholds`/`detectFollowUp`, with follow-up/overlooked/all and hazard filters, score reasons, map selection, and Mark contacted; offline smoke test passed; interactive browser and two-session verification pending)
 - [ ] Build preparedness/outreach action controls, including employee-approved simulated notifications and separate pre/post-disaster safety check-ins.
-- [ ] Connect AI-generated reviews grounded in scenario evidence. (selectable area information icons and explicitly labeled source-based previews are implemented)
+- [ ] Connect AI-generated reviews grounded in scenario evidence. (selectable area information icons and explicitly labeled source-based previews are implemented; Tien Phan added the server-only Gemini client in `frontend/src/lib/ai/gemini.ts`, with summary generation and UI pending)
 - [ ] Integrate a persisted/shared simulated scenario clock, impact time skip, follow-up deadline, and shorter follow-up time skip. (browser-local rehearsal implemented at `/demo`)
 - [ ] Route explicit help requests and overdue unanswered check-ins into persisted employee-reviewed assistance/welfare-check dispatch. (browser-local welfare-check rehearsal implemented; operational integration pending)
 - [ ] Build help-request and assignment controls.
@@ -283,7 +283,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the RiskReach simulation dashboard. If SpacetimeDB later runs locally on port 3000, use `npm run dev -- --port 3001` for Next.js.
 
-With no connection configuration, the page uses fictional UI fixtures. For subscribed operational data, set both `NEXT_PUBLIC_SPACETIMEDB_URI` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE` in `frontend/.env.local`, restart Next.js, and enroll the displayed browser identity using the [backend setup instructions](backend/README.md). Partial configuration shows an error. Internet access is needed for OpenStreetMap tiles; tile failure displays a warning while scenario overlays remain available. Never commit tokens, API keys, or real customer information.
+With no connection configuration, the page uses fictional UI fixtures. For subscribed operational data, set both `NEXT_PUBLIC_SPACETIMEDB_URI` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE` in `frontend/.env.local`, restart Next.js, and enroll the displayed browser identity using the [backend setup instructions](backend/README.md). Partial configuration shows an error. Internet access is needed for OpenStreetMap tiles; tile failure displays a warning while scenario overlays remain available. Copy `frontend/.env.example` to `frontend/.env.local` for the variable names. The planned AI area review reads `GEMINI_API_KEY` (and optional `GEMINI_MODEL`, default `gemini-3.6-flash`) on the server only; never give either a `NEXT_PUBLIC_` prefix. Without a key the app still runs and AI summaries will be marked unavailable. Free-tier Gemini prompts may be used by Google to improve its products, so send only synthetic scenario data. Never commit tokens, API keys, or real customer information.
 
 ### Available commands
 

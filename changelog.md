@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.18**
+Current version: **1.19**
 
 ## Instructions for future updates
 
@@ -30,6 +30,26 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.19 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a reusable server-only Gemini client in `frontend/src/lib/ai/gemini.ts` for the planned AI area review. It reads `GEMINI_API_KEY` and an optional `GEMINI_MODEL` (default `gemini-3.6-flash`, the stable Flash model with a free API tier per Google's model and pricing pages checked on 2026-11-08). It uses the Gemini Developer API with API-key auth, not Vertex AI, and reuses one client unless the key changes. A missing key throws `GeminiNotConfiguredError`; `isGeminiConfigured()` reports presence without exposing the key.
+- `import "server-only"` makes any Client Component import of the client fail the build, so the key cannot be bundled for the browser.
+- Added the `@google/genai` 3.0.0 dependency (`frontend/package.json`, lockfile).
+- Added `frontend/.env.example` with SpacetimeDB and Gemini placeholders. The root `.gitignore` still ignores `.env*` (including `.env.local`) but now allows `.env.example` to be committed.
+- README: local setup notes for the Gemini variables and the free-tier data-use caveat; Person 4 AI review checklist note.
+- No UI, API route, chat, or SpacetimeDB change in this step. No billing was enabled.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed (`/`, `/demo`, `/_not-found`).
+- A temporary Client Component page importing the client failed the build with the `server-only` error, confirming the guard; the page was removed.
+- Offline check with a fake key and no network calls: no key reports not configured and throws `GeminiNotConfiguredError`; with a key the same client instance is reused with `vertexai` false; `GEMINI_MODEL` overrides the model after trimming, and a blank value falls back to the default.
+- Confirmed `frontend/.env.local` is ignored and has never been committed. No live Gemini request has been made yet.
 
 ## Version 1.18 — 2026-11-08
 
