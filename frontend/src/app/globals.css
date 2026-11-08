@@ -485,7 +485,6 @@ dl { font-size: 12px; margin-bottom: 0; } dt { color: var(--muted); margin-top: 
 .map-action-badge, .map-action-key { display: inline-grid; place-items: center; border-radius: 50%; background: #e9ac13; color: white; border: 2px solid white; font: 800 15px/1 var(--font-sans); }
 .map-action-badge { position: absolute; top: -7px; right: -7px; width: 21px; height: 21px; padding: 0; cursor: pointer; box-shadow: 0 1px 4px #0004; z-index: 2; }
 .map-action-badge.response, .map-action-key.response { background: #c72d27; }
-.map-action-badge.staggered-notification { top: -7px; right: -14px; z-index: 1; pointer-events: none; }
 .map-action-badge:focus-visible { outline: 3px solid #2368a2; outline-offset: 2px; }
 .map-action-key { width: 17px; height: 17px; font-size: 12px; font-style: normal; }
 .map-action-picker { display: grid; gap: 8px; max-width: 280px; }

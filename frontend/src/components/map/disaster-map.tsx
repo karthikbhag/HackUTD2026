@@ -150,10 +150,9 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
       const pending = rows.filter(row => actions?.[row.id]);
       if (!pending.length) return;
       const urgent = pending.some(row => actions?.[row.id].kind === "response");
-      const mixed = urgent && pending.some(row => actions?.[row.id].kind === "notification" || actions?.[row.id].hasNotification);
       const badge = document.createElement("button");
       badge.type = "button";
-      badge.className = `map-action-badge ${urgent ? "response" : "notification"}${mixed ? " mixed-actions" : ""}`;
+      badge.className = `map-action-badge ${urgent ? "response" : "notification"}`;
       badge.textContent = "!";
       const summary = [...new Set(pending.map(row => actions![row.id].label))].join("; ");
       badge.title = summary;
@@ -180,13 +179,6 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
         }
         L.popup().setLatLng(instance.containerPointToLatLng(L.point(badge.getBoundingClientRect().left - instance.getContainer().getBoundingClientRect().left, badge.getBoundingClientRect().top - instance.getContainer().getBoundingClientRect().top))).setContent(picker).openOn(instance);
       });
-      if (mixed) {
-        const behind = document.createElement("span");
-        behind.className = "map-action-badge notification staggered-notification";
-        behind.textContent = "!";
-        behind.setAttribute("aria-hidden", "true");
-        element.append(behind);
-      }
       element.append(badge);
     };
     const group = L.markerClusterGroup({

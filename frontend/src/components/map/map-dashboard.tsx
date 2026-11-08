@@ -94,7 +94,7 @@ export function MapDashboard({ data: suppliedData, status = "demo", errorMessage
     return Object.fromEntries(visible.households.flatMap(row => {
       const areaId = activeAreaIdFor(scenario, row);
       const region = regions.get(areaId);
-      return region ? [[row.id, { areaId, hasNotification: region.notification, kind: region.response ? "response" as const : "notification" as const,
+      return region ? [[row.id, { areaId, kind: region.response ? "response" as const : "notification" as const,
         label: [...region.labels].join("; ") }]] : [];
     }));
   }, [visible.households, scenario, scenarioEnabled]);

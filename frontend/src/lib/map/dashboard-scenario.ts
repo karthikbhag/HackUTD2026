@@ -141,7 +141,7 @@ export function dashboardHouseholdStatus(state: DashboardScenario, row: MapHouse
 }
 
 /** Marker actions follow the same notification rounds and dispatch eligibility as the dialogs. */
-export interface MapAction { areaId?: string; kind: "notification" | "response"; label: string; hasNotification?: boolean }
+export interface MapAction { areaId?: string; kind: "notification" | "response"; label: string }
 export function householdMapAction(state: DashboardScenario, row: MapHousehold, phase: Phase, enabled = true, areaId?: string): MapAction | undefined {
   if (enabled ? confirmedSafe(state, row, phase, areaId) || !!state.assignments[row.id] || !!state.completedRescues?.[row.id] : row.checkIn === "safe") return;
   if (phase === "after" && (enabled ? responseEligible(state, row, areaId) : row.needs.length > 0 || row.checkIn === "needs_help" || row.checkIn === "urgent")) {
