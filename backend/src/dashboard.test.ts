@@ -109,17 +109,25 @@ describe('shared popup dashboard', () => {
     expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: home.id, teamId: 1n }))).toThrow(/Confirmed-safe/);
     expect([...test.db.helpRequest.householdId.filter(home.id)].some(r => r.status === 'open')).toBe(true);
   });
-  it('requires administrator confirmation for shared reset, advances the run and preserves membership/history', () => {
+  it('allows confirmed employee resets, rejects outsiders, and preserves membership/history', () => {
     const { test, run, args, send, impact } = fixture(); send(); impact();
     const old = args(), history = test.db.activityEvent.count();
-    expect(() => run(employee, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow(/authorization/);
-    expect(() => run(admin, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'wrong' }))).toThrow(/confirmation/);
-    run(admin, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'RESET SYNTHETIC DEMO' }));
+    expect(api.dashboardState(test.viewContext(employee))[0].canReset).toBe(true);
+    expect(api.scenarioInfo(test.viewContext(employee))[0].canManageScenario).toBe(false);
+    expect(() => run(outsider, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow(/authorization/);
+    expect(() => run(employee, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'wrong' }))).toThrow(/confirmation/);
+    expect(() => run(employee, (ctx, current) => api.resetDashboard(ctx, { ...old, expectedMinute: -120, confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow(/changed/);
+    expect(args()).toEqual(old);
+    run(employee, (ctx, current) => api.resetDashboard(ctx, { ...old, confirmation: 'RESET SYNTHETIC DEMO' }));
     expect(args()).toEqual({ expectedRunId: old.expectedRunId + 1n, expectedMinute: -120 });
     expect(test.db.dashboardNotice.count()).toBe(0n); expect(test.db.dashboardRecipient.count()).toBe(0n);
     expect(api.households(test.viewContext(employee))).toHaveLength(60);
     expect(test.db.activityEvent.count()).toBeGreaterThan(history);
     expect(() => run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...old, step: 'deadline' }))).toThrow(/changed/);
+    run(admin, ctx => api.setEmployee(ctx, { identity: test.viewContext(employee).sender, enabled: false }));
+    expect(api.dashboardState(test.viewContext(employee))).toEqual([]);
+    expect(() => test.withReducerTx(employee, ctx => api.resetDashboard(ctx, { ...old, confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow(/authorization/);
+    expect(() => test.withReducerTx(employee, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow(/authorization/);
   });
 });
 

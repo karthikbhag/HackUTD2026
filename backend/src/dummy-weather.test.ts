@@ -20,7 +20,7 @@ describe('shared dummy weather stream',()=>{
   const {test,area,next}=setup();const households=[...test.db.household.iter()],teams=[...test.db.responseTeam.iter()],requests=[...test.db.helpRequest.iter()];
   next();const layers=api.impactLayers(test.viewContext(admin)).filter(l=>l.disasterId===area.disasterId);
   expect(layers).toHaveLength(3);
-  expect(layers.map(l=>JSON.parse(l.geometry).riskCircle.radiusMeters)).toEqual([500,1500,3000]);
+  expect(layers.map(l=>JSON.parse(l.geometry).riskCircle.radiusMeters).sort((a,b)=>a-b)).toEqual([500,1500,3000]);
   expect(JSON.parse(layers[0].geometry).riskCircle.eventSeverity).toBe('moderate');
   const rows={disasters:api.disasters(test.viewContext(admin)),zones:api.zones(test.viewContext(admin)),households:api.households(test.viewContext(admin)),teams:api.teams(test.viewContext(admin)),requests:api.requests(test.viewContext(admin)),assignments:[],tasks:api.tasks(test.viewContext(admin)),impactLayers:api.impactLayers(test.viewContext(admin))};
   const model=toMapData(rows),zone=model.zones.find(z=>z.id===String(area.id))!;

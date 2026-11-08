@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.31**
+Current version: **1.32**
 
 ## Instructions for future updates
 
@@ -30,6 +30,23 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.32 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Allow every enrolled employee to reset the shared synthetic dataset through `resetDashboard` or `resetDemo`. Preserve the explicit confirmation, dashboard run/minute checks, membership restrictions and durable activity history. Outsiders and revoked employees remain unauthorized; employee reset access does not grant administrator membership-management or other admin permissions.
+- Return employee reset capability in `dashboardState`, enable the scenario desk reset using that capability, and update the disabled-button explanation and runbooks. Keep `scenarioInfo.canManageScenario` reserved for administrators.
+- Restore missing generated dummy-weather bindings while retaining the deployed cloud dashboard recipient/reducer wire contracts. Gate the optional response-area argument by its generated capability, accept both legacy and risk-enriched recipient snapshots, and use a portable relative import in the shared action wrapper. These repair existing cross-project typecheck failures without changing cloud serialization. Make the weather-band regression compare unordered table rows without depending on iterator order.
+- Apply a permission-only hotfix to the existing shared `statewatch` module, built from its matching `fe42b7a` source and the existing Demo fixture. Verified identical wire schema, normalized for unordered declarations, before publishing with `--delete-data=never`; no newer routing/weather module features were deployed as part of this hotfix.
+
+### Verification
+
+- All 144 backend tests and 40 frontend scenario/notification/AI tests passed. Backend/frontend TypeScript checks, standard backend build, staged Demo build and the hotfix module build passed. Frontend lint passed with two existing warnings.
+- A separate disposable local 10,000-household database verified a non-admin employee reset through the actual frontend action wrapper, restoration of all 10,000 households, clock/run advancement, confirmation enforcement and outsider/revoked-user rejection.
+- Shared cloud before/after checks confirmed the same scenario run/start time, dashboard clock, 10,000 households, assignment count and notice count. The shared database was not reset. No commit or push was made. The final Webpack production build passed, including the shared/local dashboards, outreach, response and AI routes (using the trusted local CA export for the font fetch).
 
 ## Version 1.31 — 2026-11-08
 

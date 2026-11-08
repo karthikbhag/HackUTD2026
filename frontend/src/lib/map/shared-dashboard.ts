@@ -11,7 +11,7 @@ export interface SharedDashboard {
 }
 
 /** A linear join of subscribed rows; never mutates the browser's local rehearsal. */
-export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, notices: readonly DashboardNotice[], recipients: readonly DashboardRecipient[],
+export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, notices: readonly DashboardNotice[], recipients: readonly Omit<DashboardRecipient, "riskLevel" | "approvedMessage" | "eventVersion">[],
   responses: readonly DashboardResponse[], assignments: readonly Assignment[]) {
   const state: DashboardScenario = { minute: info?.minute ?? -120, areas: {}, assignments: {} };
   const rounds = new Map<string, NonNullable<DashboardScenario["areas"][string]["before"]>>();

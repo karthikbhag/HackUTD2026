@@ -81,7 +81,7 @@ describe('backend workflows', () => {
     expect(api.households(test.viewContext(stranger))).toEqual([]);
     expect(api.households(test.viewContext(employee))).toHaveLength(12);
     expect(() => test.withReducerTx(stranger, ctx => api.updateCheckIn(ctx, { householdId: 1n, status: 'safe' }))).toThrow('authorization');
-    expect(() => test.withReducerTx(employee, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow('authorization');
+    expect(() => test.withReducerTx(stranger, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }))).toThrow('authorization');
     expect(() => test.withReducerTx(employee, ctx => api.setEmployee(ctx, { identity: ctx.sender, enabled: true }))).toThrow('authorization');
   });
   it('revokes read and write access', () => {
@@ -156,8 +156,8 @@ describe('backend workflows', () => {
     expect(test.db.zone.id.find(11n)?.riskLevel).toBe(5);
     expect(test.db.zone.id.find(21n)?.riskLevel).toBe(4);
     expect(new Set([...test.db.disaster.iter()].map(row => row.type))).toEqual(new Set(['tornado', 'earthquake', 'hurricane', 'wildfire', 'blizzard', 'flood']));
-    expect(() => test.withReducerTx(admin, ctx => api.resetDemo(ctx, { confirmation: 'wrong' }))).toThrow();
-    for (let i = 0; i < 2; i++) test.withReducerTx(admin, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }));
+    expect(() => test.withReducerTx(employee, ctx => api.resetDemo(ctx, { confirmation: 'wrong' }))).toThrow();
+    for (let i = 0; i < 2; i++) test.withReducerTx(employee, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }));
     expect(test.db.disaster.id.find(1n)?.phase).toBe('preparedness');
     expect(test.db.household.count()).toBe(60n);
     expect(test.db.helpRequest.count()).toBe(12n);

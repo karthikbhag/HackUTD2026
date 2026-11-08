@@ -1,4 +1,4 @@
-import { supportsReplyArea } from "@/lib/map/backend-capabilities";
+import { supportsReplyArea, supportsResponseArea } from "../../lib/map/backend-capabilities";
 import type { DbConnection } from "../../module_bindings";
 import type { DashboardAction } from "../../lib/map/dashboard-scenario";
 
@@ -59,7 +59,7 @@ export function createWorkflowActions(getConnection: () => DbConnection | null):
       switch (action.type) {
         case "send": return connection.reducers.approveDashboardNotice({ ...args, areaId: toId(action.areaId), message: action.message });
         case "reply": return connection.reducers.replyDashboardNotice({ ...args, householdId: toId(action.id), reply: action.reply, ...(supportsReplyArea ? { areaId: action.areaId ? toId(action.areaId) : undefined } : {}) });
-        case "assign": return connection.reducers.approveDashboardResponse({ ...args, householdId: toId(action.id), teamId: toId(action.teamId), areaId: action.areaId ? toId(action.areaId) : undefined });
+        case "assign": return connection.reducers.approveDashboardResponse({ ...args, householdId: toId(action.id), teamId: toId(action.teamId), ...(supportsResponseArea ? { areaId: action.areaId ? toId(action.areaId) : undefined } : {}) });
         case "impact": return connection.reducers.advanceDashboardClock({ ...args, step: "impact" });
         case "deadline": return connection.reducers.advanceDashboardClock({ ...args, step: "deadline" });
         case "reset": return connection.reducers.resetDashboard({ ...args, confirmation: "RESET SYNTHETIC DEMO" });

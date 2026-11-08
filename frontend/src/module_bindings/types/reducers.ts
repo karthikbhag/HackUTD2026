@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AdvanceDashboardClockReducer from "../advance_dashboard_clock_reducer";
+import AdvanceDummyWeatherReducer from "../advance_dummy_weather_reducer";
 import AdvanceExerciseClockReducer from "../advance_exercise_clock_reducer";
 import AdvanceResponseSimulationReducer from "../advance_response_simulation_reducer";
 import ApproveDashboardNoticeReducer from "../approve_dashboard_notice_reducer";
@@ -38,6 +39,7 @@ import ResumeResponseDemoReducer from "../resume_response_demo_reducer";
 import SeedDemoReducer from "../seed_demo_reducer";
 import SeedResponseRoutingDemoReducer from "../seed_response_routing_demo_reducer";
 import SetDispatchApprovalReducer from "../set_dispatch_approval_reducer";
+import SetDummyWeatherFeedReducer from "../set_dummy_weather_feed_reducer";
 import SetEmployeeReducer from "../set_employee_reducer";
 import SetResponseTeamAvailabilityReducer from "../set_response_team_availability_reducer";
 import SetRoutingWorkerReducer from "../set_routing_worker_reducer";
@@ -48,6 +50,7 @@ import UpdateResponseSettingsReducer from "../update_response_settings_reducer";
 import UpdateTaskReducer from "../update_task_reducer";
 
 export type AdvanceDashboardClockParams = __Infer<typeof AdvanceDashboardClockReducer>;
+export type AdvanceDummyWeatherParams = __Infer<typeof AdvanceDummyWeatherReducer>;
 export type AdvanceExerciseClockParams = __Infer<typeof AdvanceExerciseClockReducer>;
 export type AdvanceResponseSimulationParams = __Infer<typeof AdvanceResponseSimulationReducer>;
 export type ApproveDashboardNoticeParams = __Infer<typeof ApproveDashboardNoticeReducer>;
@@ -79,6 +82,7 @@ export type ResumeResponseDemoParams = __Infer<typeof ResumeResponseDemoReducer>
 export type SeedDemoParams = __Infer<typeof SeedDemoReducer>;
 export type SeedResponseRoutingDemoParams = __Infer<typeof SeedResponseRoutingDemoReducer>;
 export type SetDispatchApprovalParams = __Infer<typeof SetDispatchApprovalReducer>;
+export type SetDummyWeatherFeedParams = __Infer<typeof SetDummyWeatherFeedReducer>;
 export type SetEmployeeParams = __Infer<typeof SetEmployeeReducer>;
 export type SetResponseTeamAvailabilityParams = __Infer<typeof SetResponseTeamAvailabilityReducer>;
 export type SetRoutingWorkerParams = __Infer<typeof SetRoutingWorkerReducer>;
