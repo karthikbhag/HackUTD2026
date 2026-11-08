@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.33**
+Current version: **1.34**
 
 ## Instructions for future updates
 
@@ -30,6 +30,21 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.34 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Rewrite the root README as the final project entry point against main `b607f66` (PR #20): project purpose, six supported hazards, implemented workflows, technology versions, architecture, team and documentation links.
+- Document the current regional scheduled-impact workflow, separate 18-household browser rehearsal from backend Small/Demo/Stress fixtures, and explain `DATA_SOURCE=database` for the shared 10,000-household `statewatch` workspace.
+- Add first-run and persistent local Demo setup, browser identity enrollment with Bash/PowerShell examples, employee/admin reset behavior, optional Gemini/routing configuration, development/production commands and troubleshooting. Distinguish simulated operations and remaining acceptance work from production capabilities.
+
+### Verification
+
+- Confirmed the checkout matches the fetched latest main (`b607f66`). Checked every README local link/heading anchor, referenced npm script, configuration path and code fence. Verified seed/generator argument syntax through their non-mutating help commands and cross-checked runtime requirements, routes, schedule, environment variables, reset permissions and optional worker behavior against current source. `git diff --check` passed.
+- Documentation-only changes; application tests were not rerun. No application behavior, environment files, database data, deployment, commit or push changed.
 
 ## Version 1.33 — 2026-11-08
 
