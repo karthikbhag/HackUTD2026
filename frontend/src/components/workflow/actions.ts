@@ -1,4 +1,5 @@
-import type { DbConnection } from "@/module_bindings";
+import type { DbConnection } from "../../module_bindings";
+import type { DashboardAction } from "../../lib/map/dashboard-scenario";
 
 /**
  * Typed wrappers around the shared connection's reducers (Person 4).
@@ -11,6 +12,7 @@ export type TaskStatus = "pending" | "in_progress" | "completed";
 export type AssignmentStatus = "assigned" | "in_progress" | "completed" | "cancelled";
 
 export interface WorkflowActions {
+  dashboardAction(action: DashboardAction, expected: { expectedRunId: bigint; expectedMinute: number }): Promise<void>;
   recordOutreach(householdId: string): Promise<void>;
   updateCheckIn(householdId: string, status: CheckInStatus): Promise<void>;
   createTask(zoneId: string, householdId: string | null, actionType: string): Promise<void>;
@@ -48,6 +50,20 @@ export function createWorkflowActions(getConnection: () => DbConnection | null):
   };
   // async so synchronous validation errors also surface as rejected promises.
   return {
+    dashboardAction: async (action, args) => {
+      const connection = getConnection();
+      if (!connection?.isActive) throw new Error("Not connected to the operational database.");
+      const state = [...connection.db.dashboardState.iter()][0];
+      if (!state) throw new Error("Wait for the shared dashboard subscription and employee enrollment.");
+      switch (action.type) {
+        case "send": return connection.reducers.approveDashboardNotice({ ...args, areaId: toId(action.areaId), message: action.message });
+        case "reply": return connection.reducers.replyDashboardNotice({ ...args, householdId: toId(action.id), reply: action.reply });
+        case "assign": return connection.reducers.approveDashboardResponse({ ...args, householdId: toId(action.id), teamId: toId(action.teamId) });
+        case "impact": return connection.reducers.advanceDashboardClock({ ...args, step: "impact" });
+        case "deadline": return connection.reducers.advanceDashboardClock({ ...args, step: "deadline" });
+        case "reset": return connection.reducers.resetDashboard({ ...args, confirmation: "RESET SYNTHETIC DEMO" });
+      }
+    },
     recordOutreach: async householdId => reducers().recordOutreach({ householdId: toId(householdId) }),
     updateCheckIn: async (householdId, status) => reducers().updateCheckIn({ householdId: toId(householdId), status }),
     createTask: async (zoneId, householdId, actionType) => reducers().createTask({ zoneId: toId(zoneId), householdId: householdId === null ? undefined : toId(householdId), actionType }),

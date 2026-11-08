@@ -1,5 +1,7 @@
 # Repeatable nationwide scenario datasets
 
+> Current v1.21 integration: [shared popup workflow](../../backend/POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Person 3's portable source data supports the map and future Spacetime seed reducer. The Small fixture is connected to backend seed/reset through a validated adapter; the larger presets can be built and loaded into isolated local databases using the [scenario runbook](../../backend/SCENARIOS.md). Python 3.11+ is needed only for generation and validation, with no dependencies.
 
 ## Presets
@@ -33,7 +35,7 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 ## Contract and handoff
 
 - Schema v2 adds `generation`, `hotspots`, and regional `zone_id` on teams. The fixture version is independent of the changelog version. Existing collection field conventions remain intact.
-- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 3. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
+- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 4 (schema remains 3), adding Small team regions; generator-v3 fixtures remain accepted. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
 - IDs are stable strings unique within each collection. `disaster_id`, `parent_zone_id`, `zone_id`, and `household_id` are foreign keys. Infer a zone's hazard through its disaster. The selected narrative hotspot remains `tornado-neighborhood`.
 - V2 hotspots identify state, disaster, neighborhood, dense-demo flag, and household/request/team totals. These summaries describe the initial fixture, not live operational counts; recompute them from authoritative tables after changes.
 - Boundaries are GeoJSON Polygon geometry in **longitude, latitude** order. Household/team coordinates are explicit fields. Zone rectangles now mean geographic context only; use `impact_layers[].geometry` to render actual synthetic hazard footprints. Household coordinates/memberships are preserved. The 80% neighborhood count is geographic membership, not an affected-household count.

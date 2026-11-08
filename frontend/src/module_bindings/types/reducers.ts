@@ -6,11 +6,21 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AdvanceDashboardClockReducer from "../advance_dashboard_clock_reducer";
+import AdvanceExerciseClockReducer from "../advance_exercise_clock_reducer";
+import ApproveDashboardNoticeReducer from "../approve_dashboard_notice_reducer";
+import ApproveDashboardResponseReducer from "../approve_dashboard_response_reducer";
+import ApproveExerciseNoticeReducer from "../approve_exercise_notice_reducer";
+import ApprovePreparednessReducer from "../approve_preparedness_reducer";
 import AssignTeamReducer from "../assign_team_reducer";
 import CreateRequestReducer from "../create_request_reducer";
 import CreateTaskReducer from "../create_task_reducer";
 import EscalateScenarioReducer from "../escalate_scenario_reducer";
+import RecordExerciseReplyReducer from "../record_exercise_reply_reducer";
 import RecordOutreachReducer from "../record_outreach_reducer";
+import RefreshDecisionSnapshotReducer from "../refresh_decision_snapshot_reducer";
+import ReplyDashboardNoticeReducer from "../reply_dashboard_notice_reducer";
+import ResetDashboardReducer from "../reset_dashboard_reducer";
 import ResetDemoReducer from "../reset_demo_reducer";
 import ResolveRequestReducer from "../resolve_request_reducer";
 import SeedDemoReducer from "../seed_demo_reducer";
@@ -19,11 +29,21 @@ import UpdateAssignmentReducer from "../update_assignment_reducer";
 import UpdateCheckInReducer from "../update_check_in_reducer";
 import UpdateTaskReducer from "../update_task_reducer";
 
+export type AdvanceDashboardClockParams = __Infer<typeof AdvanceDashboardClockReducer>;
+export type AdvanceExerciseClockParams = __Infer<typeof AdvanceExerciseClockReducer>;
+export type ApproveDashboardNoticeParams = __Infer<typeof ApproveDashboardNoticeReducer>;
+export type ApproveDashboardResponseParams = __Infer<typeof ApproveDashboardResponseReducer>;
+export type ApproveExerciseNoticeParams = __Infer<typeof ApproveExerciseNoticeReducer>;
+export type ApprovePreparednessParams = __Infer<typeof ApprovePreparednessReducer>;
 export type AssignTeamParams = __Infer<typeof AssignTeamReducer>;
 export type CreateRequestParams = __Infer<typeof CreateRequestReducer>;
 export type CreateTaskParams = __Infer<typeof CreateTaskReducer>;
 export type EscalateScenarioParams = __Infer<typeof EscalateScenarioReducer>;
+export type RecordExerciseReplyParams = __Infer<typeof RecordExerciseReplyReducer>;
 export type RecordOutreachParams = __Infer<typeof RecordOutreachReducer>;
+export type RefreshDecisionSnapshotParams = __Infer<typeof RefreshDecisionSnapshotReducer>;
+export type ReplyDashboardNoticeParams = __Infer<typeof ReplyDashboardNoticeReducer>;
+export type ResetDashboardParams = __Infer<typeof ResetDashboardReducer>;
 export type ResetDemoParams = __Infer<typeof ResetDemoReducer>;
 export type ResolveRequestParams = __Infer<typeof ResolveRequestReducer>;
 export type SeedDemoParams = __Infer<typeof SeedDemoReducer>;

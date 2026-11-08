@@ -1,5 +1,7 @@
 # Person 2 — backend completion plan
 
+> Current v1.21 integration: [shared popup workflow](POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Aligned with main README commit `39893be` (2026-11-07): nationwide multi-hazard MVP with tornado, earthquake, hurricane, wildfire, blizzard, and flood layers. Preserve the national → metro → neighborhood hierarchy; demonstrate the full workflow on one hotspot while retaining all six supported layers.
 
 1. Deliver the shared TypeScript schema, indexes, generated bindings, and employee authorization. Implemented; build/type and authorization checks recorded in the changelog. Coordinate exact enums and geometry with Persons 1, 3, and 4 before they build against it.

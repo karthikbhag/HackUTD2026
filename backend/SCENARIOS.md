@@ -1,10 +1,30 @@
 # Local scenario inspection
 
+> Current v1.21 integration: [shared popup workflow](POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Use the real SpacetimeDB → authorized subscriptions → map path. Small, Demo, and
 Stress use separate local databases; generating/building never changes the tracked
 Small fixture or an existing database. Run commands from the repository root.
 
 ## Requirements
+
+`build:scenario` now compiles its TypeScript runner with the existing esbuild
+dependency before executing JavaScript; it no longer requires Node to load `.ts`
+files directly. Node 22.13.1 is still below the installed SDK's supported range.
+Use supported Node 24.22.1+ in the Node 24 line (or another declared engine range).
+In this existing checkout, the downloaded portable runtime can be selected for
+the current PowerShell session without restarting VS Code:
+
+```powershell
+$env:PATH = (Resolve-Path '.tmp/node-v24.22.1-win-x64').Path + ';' + $env:PATH
+$env:PYTHON = (Get-Command python.exe).Source
+node --version
+npm.cmd --prefix backend run build:scenario -- --preset demo
+```
+
+The portable runtime is ignored by Git; teammates should install a supported Node
+version themselves. Selecting a runtime in one terminal does not change another
+already-open terminal's PATH.
 
 Use CLI/SDK 2.14.1, Python 3.11+, and Node satisfying
 `^22.23.4 || ^24.22.1 || >=26.12.1`. Run `nvm use` if available, then check
@@ -87,9 +107,9 @@ switching back requires only restarting Next.js with the other database name.
 ## Small: 60 households
 
 `npm --prefix backend run build:scenario -- --preset small` stages the tracked
-legacy v1 fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
+modern schema-v3 `backend/src/default-scenario.json` fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
 seed it, and run `verify:scenario -- --preset small --database riskreach-small-60`.
-It has no explicit impact layers; the map labels its outlines as context only.
+It has ten explicit impact layers and 12 reviewed templates; context remains separate.
 The ordinary backend build/seed also still uses this Small fixture.
 
 ## Repeat runs and expected counts
@@ -106,7 +126,7 @@ tasks, 93 impact layers, zero assignments.
 Stress seed 2026: 100,000 households (80,000 neighborhood / 20,000 regional), 56
 hotspots/disasters, 112 zones, 1,970 teams, 20,000 requests, 24,931 outreach tasks,
 93 impact layers, zero assignments. Small: 60 households (48/12), six hotspots,
-12 zones, 12 teams, 12 requests, 18 outreach tasks, zero impact layers/assignments.
+12 zones, 12 teams, 12 requests, 18 outreach tasks, ten impact layers and zero assignments.
 Task counts are calculated from never-contacted source rows and can change with
 another seed; use the manifest as the fixture-specific authority.
 

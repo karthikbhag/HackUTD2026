@@ -21,6 +21,8 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(generate_small(), original)
         self.assertEqual(validate(original)["households"], 60)
         self.assertEqual(validate(generate())["impact_layers"], 10)
+        bundled = Path(__file__).resolve().parents[2] / "backend/src/default-scenario.json"
+        self.assertEqual(generate(), json.loads(bundled.read_text()))
 
     def test_demo_coverage(self):
         self.assertEqual(validate(self.demo)["households"], 10000)

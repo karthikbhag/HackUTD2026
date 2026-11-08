@@ -1,5 +1,7 @@
 # RiskReach SpacetimeDB backend
 
+> Current v1.21 integration: [shared popup workflow](POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Person 2 owns this TypeScript module. It implements the operational backend for the nationwide **six-hazard MVP** in the root README. The default Person 3 dataset covers flood, tornado, earthquake, hurricane, wildfire, and blizzard hotspots; all data and operations are synthetic.
 
 ## Large fixture inspection

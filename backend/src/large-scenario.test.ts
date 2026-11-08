@@ -50,7 +50,7 @@ describe('large fixture inspection', () => {
     expect(() => test.withReducerTx(admin, ctx => api.seedDemo(ctx, {}))).toThrow('already exists');
     test.withReducerTx(admin, ctx => api.resetDemo(ctx, { confirmation: 'RESET SYNTHETIC DEMO' }));
     expect(test.db.household.count()).toBe(60n);
-    expect(test.db.impactLayer.count()).toBe(0n); // Harness default is legacy Small.
+    expect(test.db.impactLayer.count()).toBe(10n); // Modern Small includes explicit footprints.
     const broken = structuredClone(source);
     broken.impact_layers![0].context_zone_id = 'missing';
     expect(() => adaptScenario(broken, clock)).toThrow('impact context');

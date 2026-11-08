@@ -6,8 +6,8 @@
 import { calculateExposure, type Hazard as ExposureHazard, type ImpactLayer as ExposureLayer, type Polygon } from "../../../../backend/src/exposure";
 import { DEFAULT_PRIORITY_CONFIG, type HouseholdExposure, type PriorityHousehold, type PriorityRequest } from "../../../../backend/src/priority";
 import { detectFollowUp, type FollowUpConcern } from "../../../../backend/src/follow-up";
-import type { OperationalRows } from "@/lib/map/backend-data";
-import { hazards, type Hazard } from "@/lib/map/types";
+import type { OperationalRows } from "../map/backend-data";
+import { hazards, type Hazard } from "../map/types";
 
 type FollowUpRow = ReturnType<typeof detectFollowUp<string>>["households"][number];
 
@@ -19,7 +19,7 @@ export interface QueueItem {
   checkIn: PriorityHousehold["checkInStatus"];
   score: number;
   reasons: FollowUpRow["reasons"];
-  concerns: FollowUpConcern<string>[];
+  concerns: (FollowUpConcern<string> | { code: "notification_reply_overdue"; explanation: string; requestIds: string[]; layerIds: string[] })[];
   needsFollowUp: boolean;
   overlooked: boolean;
   contactState: FollowUpRow["contactState"];
@@ -46,7 +46,7 @@ function maxScore() {
   const c = DEFAULT_PRIORITY_CONFIG;
   const contact = Math.max(c.neverContactedPoints, ...c.contactTiers.map(t => t.points));
   return Math.max(...c.urgencyPoints) + c.distinctNeedCap * c.pointsPerDistinctNeed + Math.max(...Object.values(c.checkInPoints)) +
-    c.exposurePoints.high + c.vulnerabilityCap + contact;
+    Math.max(c.exposurePoints.high, c.exposurePoints.critical ?? c.exposurePoints.high) + c.vulnerabilityCap + contact;
 }
 
 /** Converts subscribed impact layers into exposure evidence; falls back to "no exposure" with an explicit note. */
@@ -60,11 +60,11 @@ function exposures(rows: OperationalRows, ids: string[]): { list: HouseholdExpos
     let geometry: Polygon | null = null;
     try { geometry = JSON.parse(row.geometry); } catch { /* counted below */ }
     const supported = geometry?.type === "Polygon" && geometry.coordinates.length === 1 &&
-      (row.severity === "moderate" || row.severity === "high") && Object.prototype.hasOwnProperty.call(hazards, row.hazardType) &&
+      (row.severity === "moderate" || row.severity === "high" || row.severity === "critical") && Object.prototype.hasOwnProperty.call(hazards, row.hazardType) &&
       (row.dataKind === "simulation" || row.dataKind === "forecast" || row.dataKind === "report");
     if (!supported || !geometry) { skipped++; continue; }
     const layer: ExposureLayer<string> = { id: row.id, disaster_id: row.disasterId.toString(), hazard_type: row.hazardType as ExposureHazard, component: row.component,
-      severity: row.severity as "moderate" | "high", geometry, data_kind: row.dataKind as ExposureLayer["data_kind"],
+      severity: row.severity as "moderate" | "high" | "critical", geometry, data_kind: row.dataKind as ExposureLayer["data_kind"],
       is_simulated: row.isSimulated, source: row.source, updated_at: isoFromMicros(micros(row.updatedAt)), label: row.label };
     // Validate each layer with Person 3's own rules, so one bad layer is skipped instead of zeroing exposure for everyone.
     try { calculateExposure([], [layer]); } catch { skipped++; continue; }
@@ -104,6 +104,7 @@ export function buildPriorityQueue(rows: OperationalRows, browserNowMicros: bigi
   const disasterType = new Map(rows.disasters.map(d => [d.id.toString(), d.type]));
   const source = new Map(rows.households.map(h => [h.id.toString(), h]));
   const checkIns = new Map(households.map(h => [h.id, h.checkInStatus]));
+  const overdue = new Set(rows.dashboardOverdueHouseholdIds ?? []);
   const items = result.households.map(row => {
     const household = source.get(row.householdId)!;
     const zone = zones.get(household.zoneId.toString());
@@ -112,7 +113,9 @@ export function buildPriorityQueue(rows: OperationalRows, browserNowMicros: bigi
       householdId: row.householdId, name: household.displayName,
       hazard: type && Object.prototype.hasOwnProperty.call(hazards, type) ? type as Hazard : null,
       zoneName: zone?.name ?? "Unknown zone", checkIn: checkIns.get(row.householdId)!,
-      score: row.score, reasons: row.reasons, concerns: row.concerns, needsFollowUp: row.needsFollowUp, overlooked: row.overlooked,
+      score: row.score, reasons: row.reasons, concerns: overdue.has(row.householdId) ? [...row.concerns, {
+        code: "notification_reply_overdue" as const, explanation: "No reply by this area's shared synthetic second-notification deadline; ordinary contact-age thresholds remain separate.", requestIds: [], layerIds: [],
+      }] : row.concerns, needsFollowUp: row.needsFollowUp || overdue.has(row.householdId), overlooked: row.overlooked || overdue.has(row.householdId),
       contactState: row.contactState, contactExplanation: row.contactExplanation, highestUrgency: row.highestUrgency,
     };
   });

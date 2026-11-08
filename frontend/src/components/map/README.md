@@ -1,5 +1,7 @@
 # Map integration handoff
 
+> Current v1.21 integration: [shared popup workflow](../../../../backend/POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional read-only SpacetimeDB connection. Map and notification details remain read-only in connected mode; the operational workflow below the map now provides persisted Mark contacted on the shared connection. The latest `/demo` preview rehearses notifications and response-unit approvals in popups, with time skips on the dashboard. The older separate outreach page remains available. Both rehearsals use independent browser-local state only.
 
 ## Current presentation — v1.20
