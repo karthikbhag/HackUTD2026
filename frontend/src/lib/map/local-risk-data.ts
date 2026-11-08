@@ -1,3 +1,4 @@
+import { impactRegion, scheduledImpactMinute } from "../../../../backend/src/event-schedule";
 import {riskCircles,riskLevel,eventRevision} from '../../../../backend/src/risk-bands';
 import {calculateExposure,type ImpactLayer} from '../../../../backend/src/exposure';
 import type {Coordinate,MapData} from './types';
@@ -13,7 +14,7 @@ export function localRiskData(data:MapData):MapData {
   const byId=new Map(exposure.households.map(h=>[h.householdId,h]));
   return {...data,zones:data.zones.map(z=>{
     const layers=circles.filter(l=>l.disaster_id===z.id),circle=layers[0]?.geometry.riskCircle;
-    return {...z,eventVersion:eventRevision(layers),...(circle?{eventCenter:[circle.center[1],circle.center[0]] as Coordinate,severity:circle.eventSeverity as typeof z.severity,
+    return {...z,impactRegion:impactRegion(z.name),impactMinute:z.impactMinute ?? scheduledImpactMinute(z.name,z.hazard),eventVersion:eventRevision(layers),...(circle?{eventCenter:[circle.center[1],circle.center[0]] as Coordinate,severity:circle.eventSeverity as typeof z.severity,
       radiiMeters:['critical','high','moderate'].map(band=>layers.find(l=>l.severity===band)?.geometry.riskCircle?.radiusMeters ?? 0) as [number,number,number]}:{})};
   }),impactLayers:circles.map(l=>({...l,boundary:l.geometry.coordinates[0].map(p=>[p[1],p[0]] as Coordinate),riskCircle:l.geometry.riskCircle,label:`${riskLevel(l.severity)} risk`,severityBasis:'Modeled circular exposure'})),
     households:data.households.map(h=>{

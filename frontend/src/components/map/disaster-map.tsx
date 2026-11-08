@@ -161,7 +161,7 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
       L.DomEvent.on(badge, "keydown", event => event.stopPropagation());
       badge.addEventListener("click", event => {
         event.stopPropagation();
-        const ids = [...new Set(pending.map(row => row.hotspotId ?? row.zoneId))];
+        const ids = [...new Set(pending.map(row => actions?.[row.id]?.areaId ?? row.hotspotId ?? row.zoneId))];
         const review = (id: string) => { instance.closePopup(); if (onReview) onReview(id); else onSelect({ kind: "zone", id }); };
         if (ids.length === 1) { review(ids[0]); return; }
         const picker = document.createElement("div");
@@ -172,7 +172,7 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
         for (const id of ids) {
           const button = document.createElement("button");
           button.type = "button";
-          const labels = [...new Set(pending.filter(row => (row.hotspotId ?? row.zoneId) === id).map(row => actions![row.id].label))];
+          const labels = [...new Set(pending.filter(row => (actions?.[row.id]?.areaId ?? row.hotspotId ?? row.zoneId) === id).map(row => actions![row.id].label))];
           button.textContent = `${data.zones.find(zone => zone.id === id)?.name ?? id} · ${labels.join("; ")}`;
           button.addEventListener("click", () => review(id));
           picker.append(button);
@@ -263,11 +263,11 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     const refreshDetails = () => {
       if (instance.getZoom() >= HOUSEHOLD_ZOOM) {
         teams.addTo(instance);
-        footprints.addTo(instance);
       } else {
         teams.remove();
-        footprints.remove();
       }
+      if(instance.getZoom() >= HOUSEHOLD_ZOOM || currentSelection.current?.kind === 'zone' || data.zones.length === 1) footprints.addTo(instance);
+      else footprints.remove();
     };
     instance.on("zoomend", refreshDetails);
     refreshDetails();
@@ -304,9 +304,11 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     if (selection.kind === "zone") {
       const zone = records.zones.find(row => row.id === selection.id);
       if (zone) {
-        const bounds = L.latLngBounds(zone.contextBoundary ?? zone.boundary);
+        const rings = records.impactLayers?.filter(l=>l.hotspotId===zone.id).flatMap(l=>l.boundary);
+        const bounds = L.latLngBounds(rings?.length ? rings : zone.contextBoundary ?? zone.boundary);
         fitMapBounds(instance, bounds, 11);
         fittedView.current = { bounds, maxZoom: 11 };
+        instance.fire("zoomend");
       }
     } else {
       const row = (selection.kind === "household" ? records.households : records.teams).find(row => row.id === selection.id);

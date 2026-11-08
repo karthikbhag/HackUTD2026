@@ -192,3 +192,81 @@ test('map badges suppress safe, unexposed, and non-customer outreach', () => {
   assert.equal(householdMapAction(initial, { ...customer('x'), isCustomer: false }, 'before'), undefined);
   assert.equal(householdMapAction(initial, { ...customer('x'), checkIn: 'safe' }, 'after', false), undefined);
 });
+
+test('risk outreach follows selected event exposure, excludes None, and freezes respective messages', () => {
+  const riskData = {...data, households:[
+    {...customer('high','b'),riskLevel:'High',riskByArea:{a:'High'}},
+    {...customer('medium'),riskLevel:'Medium',riskByArea:{a:'Medium'}},
+    {...customer('low'),riskLevel:'Low',riskByArea:{a:'Low'}},
+    {...customer('outside'),riskLevel:'None',riskByArea:{}},
+  ]};
+  const message=JSON.stringify({format:'risk-messages-v1',messages:{High:'HIGH',Medium:'MEDIUM',Low:'LOW'}});
+  const state=dashboardScenarioReducer(initial,{type:'send',areaId:'a',message},riskData);
+  assert.deepEqual(state.areas.a.before.recipients,['high','medium','low']);
+  assert.deepEqual(state.areas.a.before.recipientMessages,{high:'HIGH',medium:'MEDIUM',low:'LOW'});
+  const replied=dashboardScenarioReducer(state,{type:'reply',areaId:'a',id:'high',reply:'safe'},riskData);
+  assert.equal(replied.areas.a.before.replies.high,'safe');
+  assert.equal(needsAttention(replied,riskData.households[0],'before','a'),false);
+  assert.equal(state.areas.a.before.recipientRisk.high,'High');
+});
+
+test('scheduled impacts leave later regions in preparation with working check-ins', () => {
+  const scheduled = { ...data, zones: [{ id: 'a', impactMinute: 0 }, { id: 'b', impactMinute: 60 }] };
+  const advance = (s, a) => dashboardScenarioReducer(s, a, scheduled);
+  const first = advance(initial, impact);
+  assert.equal(first.minute, 0);
+  assert.equal(loaded.exports.areaPhase(first, 'a'), 'after');
+  assert.equal(loaded.exports.areaPhase(first, 'b'), 'before');
+  const sent = advance(first, send('b'));
+  assert.ok(sent.areas.b.before);
+  assert.equal(sent.areas.b.after, undefined);
+  assert.equal(advance(sent, { type: 'reply', areaId: 'b', id: 'other', reply: 'needs_help' }), sent);
+  const safe = advance(sent, { type: 'reply', areaId: 'b', id: 'other', reply: 'safe' });
+  assert.equal(safe.areas.b.before.replies.other, 'safe');
+  assert.equal(responseEligible(first, { ...customer('other','b'), needs: ['Welfare check'] }), false);
+  const next = advance(safe, impact);
+  assert.equal(next.minute, 60);
+  assert.equal(loaded.exports.areaPhase(next, 'b'), 'after');
+  assert.equal(advance(next, impact), next);
+  assert.deepEqual(advance(next, { type: 'reset' }), initial);
+});
+
+test('phase filters move only due events and scope overlapping map records', () => {
+  const mixed = { ...data, zones: [{id:'a',impactMinute:0},{id:'b',impactMinute:60}],
+    households:[{...customer('both'),riskByArea:{a:'High',b:'Low'}}],
+    impactLayers:[{id:'ring-a',hotspotId:'a'},{id:'ring-b',hotspotId:'b'}] };
+  const prep = loaded.exports.filterPhase(mixed, 0, 'before');
+  const response = loaded.exports.filterPhase(mixed, 0, 'after');
+  assert.deepEqual(prep.zones.map(z=>z.id), ['b']);
+  assert.deepEqual(response.zones.map(z=>z.id), ['a']);
+  assert.deepEqual(prep.households[0].riskByArea, {b:'Low'});
+  assert.deepEqual(prep.impactLayers.map(l=>l.id), ['ring-b']);
+  assert.deepEqual(prep.teams.map(t=>t.id), ['wrong']);
+  assert.deepEqual(mixed.households[0].riskByArea, {a:'High',b:'Low'});
+  assert.equal(loaded.exports.filterPhase(mixed, 60, 'before').zones.length, 0);
+});
+
+test('one map routes pending and impacted households to their respective notification phases', () => {
+  const state = { ...initial, minute: 0, impactMinutes: {a:0,b:60} };
+  const pending = customer('other','b');
+  const impacted = customer('silent','a');
+  const phaseOf = row => loaded.exports.areaPhase(state, loaded.exports.activeAreaIdFor(state,row));
+  assert.equal(phaseOf(pending), 'before');
+  assert.equal(phaseOf(impacted), 'after');
+  assert.equal(householdMapAction(state,pending,phaseOf(pending)).label, 'Preparedness notification needed');
+  assert.equal(householdMapAction(state,impacted,phaseOf(impacted)).label, 'Follow-up notification needed');
+  const prepared = dashboardScenarioReducer(state,send('b'),data);
+  const followedUp = dashboardScenarioReducer(prepared,send('a'),data);
+  assert.ok(followedUp.areas.b.before);
+  assert.ok(followedUp.areas.a.after);
+});
+
+test('overlapping households retain pending event attention after another event confirms safety', () => {
+  const row = {...customer('overlap','a'),riskByArea:{a:'High',b:'Low'}};
+  const state = {...initial,minute:0,impactMinutes:{a:0,b:60},areas:{a:{after:{recipients:['overlap'],sentAt:0,message:'check',replies:{overlap:'safe'}}}}};
+  const selected = loaded.exports.activeAreaIdFor(state,row);
+  assert.equal(selected,'b');
+  assert.equal(loaded.exports.areaPhase(state,selected),'before');
+  assert.equal(needsAttention(state,row,'before',selected),true);
+  assert.equal(householdMapAction(state,row,'before',true,selected).kind,'notification');
+});

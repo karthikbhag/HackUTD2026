@@ -15,4 +15,5 @@ export default __t.row({
   runId: __t.u64().name("run_id"),
   minute: __t.i32(),
   canReset: __t.bool().name("can_reset"),
+  scheduledImpacts: __t.bool().name("scheduled_impacts"),
 });

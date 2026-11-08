@@ -26,6 +26,7 @@ type CheckIns = Record<(typeof CHECK_INS)[number], number>;
 type TeamCounts = Record<(typeof TEAM_STATUSES)[number], number>;
 export interface OverviewArea {
   id: string; name: string; hazard: MapZone["hazard"]; severity: MapZone["severity"]; simulated: boolean;
+  phase?: Phase;
   impactLayers: number;
   /** Households whose geographic area is this one. Membership, not verified exposure. */
   households: number; customers: number; checkIns: CheckIns;
@@ -35,7 +36,7 @@ export interface OverviewArea {
 }
 export interface OverviewSnapshot {
   snapshotAt: string;
-  phase: Phase;
+  phase: Phase | "mixed";
   /** Totals across every area shown on the map, including areas left out of `areas`. */
   totals: { areas: number; households: number; customers: number; checkIns: CheckIns; withRecordedNeeds: number; neverContacted: number; teams: TeamCounts };
   /** Up to OVERVIEW_LIMITS.areas areas, most severe and most urgent first. */
@@ -58,7 +59,7 @@ const emptyCheckIns = (): CheckIns => ({ unknown: 0, safe: 0, needs_help: 0, urg
 const emptyTeams = (): TeamCounts => ({ available: 0, assigned: 0, responding: 0, unavailable: 0 });
 
 /** Summarizes what the map currently shows (same area membership rule as the area popup). */
-export function buildOverviewSnapshot(data: MapData, phase: Phase, snapshotAt: string): OverviewSnapshot {
+export function buildOverviewSnapshot(data: MapData, phase: Phase | "mixed", snapshotAt: string): OverviewSnapshot {
   const byArea = new Map(data.zones.map(zone => [zone.id, {
     zone, households: 0, customers: 0, checkIns: emptyCheckIns(), withRecordedNeeds: 0, withVulnerabilityFlags: 0, neverContacted: 0,
     needs: new Map<string, number>(), teams: emptyTeams(), impactLayers: 0,
@@ -86,7 +87,7 @@ export function buildOverviewSnapshot(data: MapData, phase: Phase, snapshotAt: s
     b.checkIns.needs_help - a.checkIns.needs_help || b.households - a.households || a.zone.name.localeCompare(b.zone.name));
   const areas = ranked.slice(0, OVERVIEW_LIMITS.areas).map(({ zone, needs, ...area }): OverviewArea => ({
     id: clip(zone.id, 120), name: clip(zone.name, 120), hazard: zone.hazard, severity: zone.severity, simulated: zone.simulated,
-    impactLayers: area.impactLayers, households: area.households, customers: area.customers, checkIns: area.checkIns,
+    phase: zone.workflowPhase ?? (phase === "mixed" ? undefined : phase), impactLayers: area.impactLayers, households: area.households, customers: area.customers, checkIns: area.checkIns,
     withRecordedNeeds: area.withRecordedNeeds, withVulnerabilityFlags: area.withVulnerabilityFlags, neverContacted: area.neverContacted,
     topNeeds: [...needs].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, OVERVIEW_LIMITS.topNeeds).map(([label, count]) => ({ label: clip(label, 80), count })),
     teams: area.teams,
@@ -114,7 +115,7 @@ const text = (value: unknown, max: number) => typeof value === "string" && value
 
 function validArea(area: unknown): boolean {
   return isObj(area) && str(area.id, 120) && (area.id as string).length > 0 && str(area.name, 120) && oneOf(HAZARDS, area.hazard) && oneOf(SEVERITIES, area.severity) &&
-    typeof area.simulated === "boolean" && count(area.impactLayers) && count(area.households) && count(area.customers) && countsOf(CHECK_INS, area.checkIns) &&
+    (area.phase === undefined || area.phase === "before" || area.phase === "after") && typeof area.simulated === "boolean" && count(area.impactLayers) && count(area.households) && count(area.customers) && countsOf(CHECK_INS, area.checkIns) &&
     count(area.withRecordedNeeds) && count(area.withVulnerabilityFlags) && count(area.neverContacted) && countsOf(TEAM_STATUSES, area.teams) &&
     Array.isArray(area.topNeeds) && area.topNeeds.length <= OVERVIEW_LIMITS.topNeeds && area.topNeeds.every(item => isObj(item) && str(item.label, 80) && count(item.count));
 }
@@ -124,7 +125,7 @@ export function parseOverviewChatRequest(value: unknown): { request: OverviewCha
   if (!isObj(value) || !isObj(value.snapshot)) return { error: "Request must include an overview snapshot." };
   const s = value.snapshot;
   if (typeof s.snapshotAt !== "string" || s.snapshotAt.length > 40 || Number.isNaN(Date.parse(s.snapshotAt))) return { error: "Invalid snapshotAt." };
-  if (s.phase !== "before" && s.phase !== "after") return { error: "Invalid phase." };
+  if (s.phase !== "before" && s.phase !== "after" && s.phase !== "mixed") return { error: "Invalid phase." };
   const t = s.totals;
   if (!isObj(t) || !count(t.areas) || !count(t.households) || !count(t.customers) || !countsOf(CHECK_INS, t.checkIns) || !count(t.withRecordedNeeds) || !count(t.neverContacted) || !countsOf(TEAM_STATUSES, t.teams)) return { error: "Invalid totals." };
   if (!Array.isArray(s.areas) || s.areas.length > OVERVIEW_LIMITS.areas || !s.areas.every(validArea)) return { error: "Invalid areas." };
