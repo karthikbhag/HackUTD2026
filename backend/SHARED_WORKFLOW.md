@@ -115,7 +115,7 @@ infer evacuation orders or represent actual customer replies.
 
 Preparedness approval rechecks exposure, phase, template conditions and current
 run/history. Pending, in-progress or completed recommendation tasks suppress
-duplicates within the run. Full dataset reset remains administrator-only and
+duplicates within the run. Full dataset reset is available to enrolled employees and administrators and
 requires typed confirmation. It restores the bundled fixture, advances the run,
 clears exercise rounds, allocates fresh operational IDs and preserves access and
 durable activity history. The publishing CLI can reset it:

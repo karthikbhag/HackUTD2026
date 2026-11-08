@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AdvanceDashboardClockReducer from "./advance_dashboard_clock_reducer";
+import AdvanceDummyWeatherReducer from "./advance_dummy_weather_reducer";
 import AdvanceExerciseClockReducer from "./advance_exercise_clock_reducer";
 import AdvanceResponseSimulationReducer from "./advance_response_simulation_reducer";
 import ApproveDashboardNoticeReducer from "./approve_dashboard_notice_reducer";
@@ -66,6 +67,7 @@ import ResumeResponseDemoReducer from "./resume_response_demo_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
 import SeedResponseRoutingDemoReducer from "./seed_response_routing_demo_reducer";
 import SetDispatchApprovalReducer from "./set_dispatch_approval_reducer";
+import SetDummyWeatherFeedReducer from "./set_dummy_weather_feed_reducer";
 import SetEmployeeReducer from "./set_employee_reducer";
 import SetResponseTeamAvailabilityReducer from "./set_response_team_availability_reducer";
 import SetRoutingWorkerReducer from "./set_routing_worker_reducer";
@@ -87,6 +89,7 @@ import DashboardStateRow from "./dashboard_state_table";
 import DecisionsRow from "./decisions_table";
 import DisastersRow from "./disasters_table";
 import DispatchApprovalsRow from "./dispatch_approvals_table";
+import DummyWeatherStateRow from "./dummy_weather_state_table";
 import ExerciseRepliesRow from "./exercise_replies_table";
 import ExercisesRow from "./exercises_table";
 import HouseholdDecisionsRow from "./household_decisions_table";
@@ -173,6 +176,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, DispatchApprovalsRow),
+  dummyWeatherState: __table({
+    name: 'dummy_weather_state',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DummyWeatherStateRow),
   exerciseReplies: __table({
     name: 'exercise_replies',
     indexes: [
@@ -304,6 +314,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("advance_dashboard_clock", AdvanceDashboardClockReducer),
+  __reducerSchema("advance_dummy_weather", AdvanceDummyWeatherReducer),
   __reducerSchema("advance_exercise_clock", AdvanceExerciseClockReducer),
   __reducerSchema("advance_response_simulation", AdvanceResponseSimulationReducer),
   __reducerSchema("approve_dashboard_notice", ApproveDashboardNoticeReducer),
@@ -335,6 +346,7 @@ const reducersSchema = __reducers(
   __reducerSchema("seed_demo", SeedDemoReducer),
   __reducerSchema("seed_response_routing_demo", SeedResponseRoutingDemoReducer),
   __reducerSchema("set_dispatch_approval", SetDispatchApprovalReducer),
+  __reducerSchema("set_dummy_weather_feed", SetDummyWeatherFeedReducer),
   __reducerSchema("set_employee", SetEmployeeReducer),
   __reducerSchema("set_response_team_availability", SetResponseTeamAvailabilityReducer),
   __reducerSchema("set_routing_worker", SetRoutingWorkerReducer),

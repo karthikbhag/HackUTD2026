@@ -29,11 +29,29 @@ test('joins subscribed recipient/reply snapshots without conflating runs or phas
 
 test('projects real assignment transitions, suppresses cancellation, and clears on revocation', () => {
   const response = { runId: 1n, householdId: 10n, assignmentId: 22n };
-  for (const status of ['assigned', 'in_progress', 'completed']) {
+  for (const status of ['assigned', 'in_progress']) {
     const s = sharedDashboardSnapshot({ runId: 1n, minute: 30, canReset: true }, [], [], [response], [{ id: 22n, teamId: 90n, status }]);
     assert.equal(s.state.assignments['10'], '90'); assert.equal(s.assignmentStatuses['10'], status);
   }
+  const completed = sharedDashboardSnapshot({ runId: 1n, minute: 60 }, [], [], [response], [{ id: 22n, teamId: 90n, status: 'completed' }]);
+  assert.deepEqual(completed.state.assignments, {});
+  assert.deepEqual(completed.state.completedRescues, { '10': { teamId: '90' } });
+  assert.equal(completed.assignmentStatuses['10'], 'completed');
   assert.deepEqual(sharedDashboardSnapshot({ runId: 1n }, [], [], [response], [{ id: 22n, status: 'cancelled' }]).state.assignments, {});
   const empty = sharedDashboardSnapshot(undefined, [], [], [], []);
   assert.equal(empty.ready, false); assert.equal(empty.canReset, false); assert.deepEqual(empty.state.areas, {});
+});
+
+test('a completed rescue does not reserve a team reused for another shared household', () => {
+  const snapshot = sharedDashboardSnapshot({ runId: 1n, minute: 60 }, [], [], [
+    { runId: 1n, householdId: 10n, assignmentId: 22n },
+    { runId: 1n, householdId: 11n, assignmentId: 23n },
+    { runId: 0n, householdId: 12n, assignmentId: 24n },
+  ], [
+    { id: 22n, teamId: 90n, status: 'completed' },
+    { id: 23n, teamId: 90n, status: 'assigned' },
+    { id: 24n, teamId: 91n, status: 'completed' },
+  ]);
+  assert.deepEqual(snapshot.state.assignments, { '11': '90' });
+  assert.deepEqual(snapshot.state.completedRescues, { '10': { teamId: '90' } });
 });

@@ -85,6 +85,9 @@ export const DashboardRecipient = __t.object("DashboardRecipient", {
   householdId: __t.u64(),
   status: __t.string(),
   repliedAt: __t.option(__t.timestamp()),
+  riskLevel: __t.string(),
+  approvedMessage: __t.string(),
+  eventVersion: __t.string(),
 });
 export type DashboardRecipient = __Infer<typeof DashboardRecipient>;
 
@@ -163,6 +166,9 @@ export const DispatcherMembership = __t.object("DispatcherMembership", {
 });
 export type DispatcherMembership = __Infer<typeof DispatcherMembership>;
 
+export const DummyWeatherState = __t.object("DummyWeatherState", {});
+export type DummyWeatherState = __Infer<typeof DummyWeatherState>;
+
 export const Employee = __t.object("Employee", {
   identity: __t.identity(),
   admin: __t.bool(),
@@ -190,6 +196,22 @@ export type ExerciseReplies = __Infer<typeof ExerciseReplies>;
 
 export const Exercises = __t.object("Exercises", {});
 export type Exercises = __Infer<typeof Exercises>;
+
+export const HazardFeedState = __t.object("HazardFeedState", {
+  id: __t.u8(),
+  areaId: __t.u64(),
+  enabled: __t.bool(),
+  intervalSeconds: __t.u32(),
+  step: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type HazardFeedState = __Infer<typeof HazardFeedState>;
+
+export const HazardFeedTick = __t.object("HazardFeedTick", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type HazardFeedTick = __Infer<typeof HazardFeedTick>;
 
 export const HazardUpdateInput = __t.object("HazardUpdateInput", {
   areaId: __t.string(),

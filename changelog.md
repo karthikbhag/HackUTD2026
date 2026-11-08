@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.31**
+Current version: **1.33**
 
 ## Instructions for future updates
 
@@ -30,6 +30,44 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.33 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Restore shared dataset reset access for all enrolled employees and administrators in the `fixed-some-stuff` branch. Both reset reducers enforce employee membership and explicit confirmation; the dashboard reducer retains run/minute validation. Unenrolled and revoked identities remain blocked, and membership management and other administrator permissions remain restricted.
+- Return the reset capability to every enrolled employee, gate the scenario desk reset on that capability instead of administrator-only scenario management, and update the disabled-button explanation and reset documentation. Preserve the branch's database/local mode selection, risk-specific notices, automatic help assignment and rescue-completion workflow.
+- Add regression coverage for both employee and administrator resets, invalid/stale confirmations, outsider/revoked rejection, fixture restoration and preservation of memberships and history.
+
+### Verification
+
+- All 153 backend tests across 16 files and all 51 frontend tests passed. Backend/frontend TypeScript checks, the staged 10,000-household Demo module build and frontend Webpack production build passed. Lint passed with the two existing warnings.
+- A separate disposable local Demo database verified employee reset through the actual frontend action wrapper, restoration of 10,000 households and rejection of invalid confirmations, outsiders and revoked employees. The candidate/cloud schemas and schedules matched after normalizing unordered declarations.
+- Published the matching Demo bundle to shared `statewatch` with `--delete-data=never`. Before/after checks preserved the scenario run/start time, clock, 10,000 households, assignment count and notice count. A read-only live subscription verified client decoding and the map adapter loaded all 10,000 households. No shared dataset reset, commit or push was performed.
+
+## Version 1.32 — 2026-11-08
+
+**Author:** Aalvee Ahtav
+
+### Changes
+
+- Fixed the frontend build failures caused by missing dummy-weather binding exports and unsupported response-approval arguments. Added contract capability checks, then regenerated the client bindings after publishing the matching backend, enabling risk-specific notification messages on the connected main page.
+- Added explicit `DATA_SOURCE=local|database` selection for the main dashboard and outreach route. `/demo` and `/demo/local` always use bundled browser-local fixtures; database mode retains persisted shared records and response routing. Updated the example environment configuration and setup documentation.
+- Made the scenario clock determine the active preparation/response phase. The impact skip advances every area regardless of prior review or notification, and disables Disaster prep until reset.
+- Added automatic simulated response assignment for explicit need-help replies in both the local demo and shared backend. The backend records the reply and nearest compatible available unit assignment atomically, respecting capability, capacity, active assignments and routing reservations. Unmatched help requests remain queued; manual dashboard approval is reserved for unanswered follow-ups after their own 30-minute deadline.
+- Added **Skip 30 min → Complete rescues** to both dashboards. The shared action completes only current-run dashboard rescues active at the start of the skip, resolves linked requests and releases units. Matching freed units automatically serve queued help requests, while unanswered cases still require approval and unrelated assignments/routing visits remain active.
+- Updated shared-state projection to retain completed rescues as history, exclude completed households from the unresolved map queue and avoid keeping released teams marked busy. Added lifecycle, concurrency/clock, assignment-conflict, capacity/capability, queued-help and shared-dialog regression coverage.
+- Removed the separate **Shared operational map** and **Outreach & response** panels below the connected map while retaining area popups and separate outreach/response routes. Reset remains administrator-only.
+- Fixed the weather regression test to compare radii without relying on database row iteration order, and corrected a workflow import path so backend typechecking/builds can include the frontend action wrapper.
+- Published the matching 10,000-household Demo backend to `statewatch` on Maincloud with `--delete-data=never`, preserving scenario data. Updated the README workflow, demonstration steps, environment guidance and current verification results.
+
+### Verification
+
+- On Node 26.13.0 with SpacetimeDB CLI/SDK 2.14.1, all 152 backend tests and 51 frontend scenario, dialog, shared-adapter and AI tests passed. Backend/frontend TypeScript checks and the frontend Webpack production build passed.
+- Generated and validated the staged Demo fixture: 56 disasters, 112 zones, 10,000 households, 220 teams, 2,000 initial requests and 93 impact layers. The staged Demo module build passed, and Maincloud confirmed the backend update without a database reset.
+- Targeted ESLint checks on changed frontend files and `git diff --check` passed. Full-repository lint and interactive visual, responsive, keyboard and multi-browser acceptance of the latest shared flow remain pending. No real notifications or operational units are dispatched.
 
 ## Version 1.31 — 2026-11-08
 

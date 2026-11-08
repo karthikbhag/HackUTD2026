@@ -13,6 +13,7 @@ export interface DashboardScenario {
   minute: number;
   areas: Record<string, Partial<Record<Phase, DashboardRound>>>;
   assignments: Record<string, string>;
+  completedRescues?: Record<string, { teamId: string; completedAt?: number }>;
 }
 export const initialDashboardScenario: DashboardScenario = { minute: -120, areas: {}, assignments: {} };
 export type DashboardAction =
@@ -20,6 +21,7 @@ export type DashboardAction =
   | { type: "reply"; areaId?: string; id: string; reply: "safe" | "needs_help" }
   | { type: "impact" }
   | { type: "deadline" }
+  | { type: "complete_rescues" }
   | { type: "assign"; areaId?: string; id: string; teamId: string }
   | { type: "reset" };
 export const areaIdFor = (row: MapHousehold | MapTeam) => row.hotspotId ?? row.zoneId;
@@ -38,16 +40,22 @@ export function confirmedSafe(state: DashboardScenario, row: MapHousehold, phase
     || (phase === "after" && roundFor(state,row,"before",selectedAreaId)?.replies[row.id] === "safe");
 }
 export function needsAttention(state: DashboardScenario, row: MapHousehold, phase: Phase, areaId?: string) {
-  if (confirmedSafe(state, row, phase, areaId)) return false;
+  if (state.completedRescues?.[row.id] || confirmedSafe(state, row, phase, areaId)) return false;
   if (!row.isCustomer) return phase === "after" && (row.needs.length > 0 || row.checkIn === "needs_help" || row.checkIn === "urgent");
   return true;
 }
 export function responseEligible(state: DashboardScenario, row: MapHousehold, areaId?: string) {
-  if (state.minute < 0 || state.assignments[row.id] || confirmedSafe(state, row, "after",areaId)) return false;
+  if (state.minute < 0 || state.assignments[row.id] || state.completedRescues?.[row.id] || confirmedSafe(state, row, "after",areaId)) return false;
   if (row.needs.length > 0 || (!row.isCustomer && ["needs_help", "urgent"].includes(row.checkIn))) return true;
   const round = roundFor(state, row, "after",areaId);
   return !!round?.recipients.includes(row.id) && (round.replies[row.id] === "needs_help"
     || (!confirmedSafe(state, row, "after",areaId) && state.minute >= round.sentAt + 30));
+}
+/** Employee approval is reserved for unanswered follow-ups past their deadline. */
+export function responseApprovalEligible(state: DashboardScenario, row: MapHousehold, areaId?: string) {
+  const round = roundFor(state, row, "after", areaId);
+  return responseEligible(state, row, areaId) && !!round?.recipients.includes(row.id)
+    && !round.replies[row.id] && state.minute >= round.sentAt + 30;
 }
 export function matchingTeam(state: DashboardScenario, row: MapHousehold, teams: MapTeam[]) {
   const required = row.needs.length ? row.needs : ["Welfare check"];
@@ -59,13 +67,30 @@ export function dashboardScenarioReducer(state: DashboardScenario, action: Dashb
   const phase = state.minute < 0 ? "before" : "after";
   switch (action.type) {
     case "reset": return initialDashboardScenario;
-    case "impact": return state.minute < 0 && Object.values(state.areas).some(area => area.before)
+    case "impact": return state.minute < 0
       ? { ...state, minute: 0 } : state;
     case "deadline": return state.minute >= 0 && Object.values(state.areas).some(area => area.after && state.minute < area.after.sentAt + 30)
       ? { ...state, minute: state.minute + 30 } : state;
+    case "complete_rescues": {
+      if (state.minute < 0 || !Object.keys(state.assignments).length) return state;
+      const minute = state.minute + 30;
+      const completedRescues = { ...state.completedRescues };
+      for (const [householdId, teamId] of Object.entries(state.assignments)) {
+        completedRescues[householdId] = { teamId, completedAt: minute };
+      }
+      const updated: DashboardScenario = { ...state, minute, completedRescues, assignments: {} };
+      // Freed units serve queued help requests automatically; silence still needs approval.
+      for (const row of data.households) {
+        const helpRequested = Object.values(updated.areas).some(area => area.after?.replies[row.id] === "needs_help");
+        if (!helpRequested || !responseEligible(updated, row)) continue;
+        const team = matchingTeam(updated, row, data.teams);
+        if (team) updated.assignments[row.id] = team.id;
+      }
+      return updated;
+    }
     case "send": {
       if (!action.message.trim() || !data.zones.some(zone => zone.id === action.areaId) || state.areas[action.areaId]?.[phase]) return state;
-      const targets = data.households.filter(row => row.isCustomer && (row.riskByArea ? !!row.riskByArea[action.areaId] && row.riskByArea[action.areaId] !== 'None' : areaIdFor(row) === action.areaId && row.riskLevel !== 'None') && !confirmedSafe(state, row, phase,action.areaId));
+      const targets = data.households.filter(row => row.isCustomer && !state.completedRescues?.[row.id] && (row.riskByArea ? !!row.riskByArea[action.areaId] && row.riskByArea[action.areaId] !== 'None' : areaIdFor(row) === action.areaId && row.riskLevel !== 'None') && !confirmedSafe(state, row, phase,action.areaId));
       const recipients = targets.map(row=>row.id);
       let messages: Record<string,string> | undefined;
       try { const value=JSON.parse(action.message); if(value.format==='risk-messages-v1')messages=value.messages; } catch { /* Legacy plain text. */ }
@@ -76,15 +101,20 @@ export function dashboardScenarioReducer(state: DashboardScenario, action: Dashb
     }
     case "reply": {
       const row = data.households.find(row => row.id === action.id);
-      if (!row || state.assignments[row.id] || (phase === "before" && action.reply !== "safe")) return state;
+      if (!row || state.assignments[row.id] || state.completedRescues?.[row.id] || (phase === "before" && action.reply !== "safe")) return state;
       const areaId = action.areaId ?? areaIdFor(row);
       const round = state.areas[areaId]?.[phase];
       if (!round?.recipients.includes(row.id)) return state;
-      return { ...state, areas: { ...state.areas, [areaId]: { ...state.areas[areaId], [phase]: { ...round, replies: { ...round.replies, [row.id]: action.reply } } } } };
+      const updated = { ...state, areas: { ...state.areas, [areaId]: { ...state.areas[areaId], [phase]: { ...round, replies: { ...round.replies, [row.id]: action.reply } } } } };
+      if (phase === "after" && action.reply === "needs_help" && responseEligible(updated, row, areaId)) {
+        const team = matchingTeam(updated, row, data.teams);
+        if (team) return { ...updated, assignments: { ...updated.assignments, [row.id]: team.id } };
+      }
+      return updated;
     }
     case "assign": {
       const row = data.households.find(row => row.id === action.id);
-      if (!row || !responseEligible(state, row,action.areaId)) return state;
+      if (!row || !responseApprovalEligible(state, row,action.areaId)) return state;
       const team = matchingTeam(state, row, data.teams.filter(team => team.id === action.teamId));
       return team ? { ...state, assignments: { ...state.assignments, [row.id]: team.id } } : state;
     }
@@ -92,6 +122,7 @@ export function dashboardScenarioReducer(state: DashboardScenario, action: Dashb
 }
 
 export function dashboardHouseholdStatus(state: DashboardScenario, row: MapHousehold, phase: Phase, areaId?: string) {
+  if (state.completedRescues?.[row.id]) return "Assistance completed";
   if (state.assignments[row.id]) return "Unit assigned";
   if (!row.isCustomer) return row.checkIn.replaceAll("_", " ");
   const round = roundFor(state, row, phase,areaId);
@@ -104,7 +135,7 @@ export function dashboardHouseholdStatus(state: DashboardScenario, row: MapHouse
 /** Marker actions follow the same notification rounds and dispatch eligibility as the dialogs. */
 export interface MapAction { kind: "notification" | "response"; label: string }
 export function householdMapAction(state: DashboardScenario, row: MapHousehold, phase: Phase, enabled = true): MapAction | undefined {
-  if (enabled ? confirmedSafe(state, row, phase) || !!state.assignments[row.id] : row.checkIn === "safe") return;
+  if (enabled ? confirmedSafe(state, row, phase) || !!state.assignments[row.id] || !!state.completedRescues?.[row.id] : row.checkIn === "safe") return;
   if (phase === "after" && (enabled ? responseEligible(state, row) : row.needs.length > 0 || row.checkIn === "needs_help" || row.checkIn === "urgent")) {
     return { kind: "response", label: "Assistance or welfare check needed" };
   }

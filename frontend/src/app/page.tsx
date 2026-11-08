@@ -1,7 +1,9 @@
 import { MapDashboard } from "@/components/map/map-dashboard";
 import { ConnectedDashboard } from "@/components/map/connected-dashboard";
+import { demoMapData } from "@/lib/map/demo-data";
 
 export default function Home() {
+  if (process.env.DATA_SOURCE !== "database") return <MapDashboard data={demoMapData} status="demo" />;
   const uri = process.env.NEXT_PUBLIC_SPACETIMEDB_URI;
   const database = process.env.NEXT_PUBLIC_SPACETIMEDB_DATABASE;
   if (uri && database) return <ConnectedDashboard uri={uri} database={database} />;

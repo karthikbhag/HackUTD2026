@@ -3,7 +3,7 @@
 import { supportsRiskNotices } from "@/lib/map/backend-capabilities";
 import { encodeRiskMessages, parseRiskMessages, type RiskMessages } from "../../../../backend/src/risk-messages";
 import { useEffect, useRef, useState, type Dispatch } from "react";
-import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, matchingTeam, needsAttention, responseEligible, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
+import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, matchingTeam, needsAttention, responseApprovalEligible, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import { hazards, type MapData, type MapZone, type Phase } from "@/lib/map/types";
 
 export function NotificationDialog({ data, zone, phase, state, dispatch, onClose, shared = false, busy = false, error, assignmentStatuses }: {
@@ -16,7 +16,7 @@ export function NotificationDialog({ data, zone, phase, state, dispatch, onClose
   const round = state.areas[zone.id]?.[phase];
   const tiered = !shared || supportsRiskNotices;
   const households = data.households.filter(row => round?.recipients.includes(row.id) || ( row.riskByArea ? !!row.riskByArea[zone.id] && row.riskByArea[zone.id] !== "None" : areaIdFor(row) === zone.id));
-  const recipients = (tiered ? households : data.households.filter(row => areaIdFor(row) === zone.id)).filter(row => (!tiered || row.riskLevel !== "None") && row.isCustomer && !confirmedSafe(state, row, phase, zone.id));
+  const recipients = (tiered ? households : data.households.filter(row => areaIdFor(row) === zone.id)).filter(row => (!tiered || row.riskLevel !== "None") && row.isCustomer && !state.completedRescues?.[row.id] && !confirmedSafe(state, row, phase, zone.id));
   const rows = households.filter(row => needsAttention(state, row, phase, zone.id));
   const [message, setMessage] = useState(`State Farm · ${zone.name}. ${after ? "We are following up after the simulated disaster because we have not received your safety confirmation. Please reply SAFE or NEED HELP." : `${hazards[zone.hazard].label} scenario · ${zone.severity} severity. ${zone.preparation.join(" ")} Please confirm you are safe.`}`);
   const [riskMessages, setRiskMessages] = useState<RiskMessages>({
@@ -57,18 +57,21 @@ export function NotificationDialog({ data, zone, phase, state, dispatch, onClose
         </div>}
         <div className="notification-send"><span>{round ? `Sent to ${round.recipients.length} households · Simulated` : `${recipients.length} households will receive ${tiered ? "their respective risk message" : "this message"}`}</span><button className="primary-button" disabled={busy || riskChanged || !!round || historical || !recipients.length || (tiered ? Object.values(riskMessages).some(m => !m.trim()) : !message.trim())} onClick={() => dispatch({ type: "send", areaId: zone.id, message: tiered ? encodeRiskMessages(riskMessages, reviewedVersion) : message })}>{round ? "Notification sent ✓" : `Approve & send${after ? " follow-up" : " notifications"}`}</button></div>
         <div className="attention-heading"><div><h3>Still needs attention <span className="count">{rows.length}</span></h3><p className="muted small">{historical ? "Preparation history. Return to After to continue." : "Simulate replies below. Close this popup to advance time on the dashboard."}</p></div></div>
+        {after && <p className="muted small">Need help replies automatically assign an available matching unit. Approve response units for households that remain unanswered after 30 minutes.</p>}
         {!rows.length && <p className="empty-state">No households need follow-up. Confirmed-safe households are excluded from response-unit review.</p>}
         {rows.slice(currentPage * 5, currentPage * 5 + 5).map(row => {
           const assigned = state.assignments[row.id];
           const team = matchingTeam(state, row, data.teams);
-          const canRespond = after && responseEligible(state, row, zone.id);
+          const canRespond = after && responseApprovalEligible(state, row, zone.id);
+          const awaitingUnit = after && round?.replies[row.id] === "needs_help" && !assigned;
           const canReply = row.isCustomer && !!round?.recipients.includes(row.id) && !historical && !assigned;
           return <article className="customer-checkin" key={row.id}>
             <div className="panel-heading"><strong>{row.name}</strong><span className={`check-in ${assigned ? "safe" : round?.replies[row.id] === "needs_help" ? "needs_help" : "unknown"}`}>{assignmentStatuses?.[row.id] === "completed" ? "Assistance completed" : dashboardHouseholdStatus(state, row, phase, zone.id)}</span></div>
             <small className="muted">{row.isCustomer ? "Customer" : "Community member"} · Risk: {round?.recipientRisk?.[row.id] ?? row.riskByArea?.[zone.id] ?? row.riskLevel ?? "None"}{row.needs.length ? ` · Recorded need: ${row.needs.join(", ")}` : " · Safety confirmation requested"}</small>
             {round?.recipientMessages?.[row.id] && <details><summary>Approved notification</summary><p>{round.recipientMessages[row.id]}</p></details>}
             {canReply && <div className="reply-actions"><button disabled={busy} onClick={() => dispatch({ type: "reply", areaId: zone.id, id: row.id, reply: "safe" })}>Simulate: safe</button>{after && <button disabled={busy} onClick={() => dispatch({ type: "reply", areaId: zone.id, id: row.id, reply: "needs_help" })}>Simulate: need help</button>}</div>}
-            {assigned && <p className="assignment-confirmation">✓ {data.teams.find(team => team.id === assigned)?.name} {assignmentStatuses?.[row.id] === "completed" ? "completed assistance" : "assigned"} · Simulated</p>}
+            {assigned && <p className="assignment-confirmation">✓ {data.teams.find(team => team.id === assigned)?.name} {assignmentStatuses?.[row.id] === "completed" ? "completed assistance" : round?.replies[row.id] === "needs_help" ? "automatically assigned" : "assigned"} · Simulated</p>}
+            {awaitingUnit && <p className="dispatch-preview" role="status">Help requested · No matching available unit. This household remains in the help queue.</p>}
             {canRespond && <div className="dispatch-preview"><p><strong>{team ? `${team.name} · Available` : "No matching available unit"}</strong><br/>{team ? `${team.capabilities.join(" · ")} · Local area · Capacity ${team.capacity}` : "This case remains in the queue until a suitable unit is available."}</p><button className="outline-button" disabled={busy || !team} onClick={() => team && dispatch({ type: "assign", areaId: zone.id, id: row.id, teamId: team.id })}>Approve response unit</button></div>}
           </article>;
         })}
