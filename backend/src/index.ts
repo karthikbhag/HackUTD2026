@@ -14,7 +14,7 @@ import { operationalLayers, refreshDecisions, householdDecision, requestRecommen
 import { areaExercise, exerciseCheckIn } from './schema';
 import { advanceExercise, sendExerciseNotice, replyToExercise } from './exercise';
 import { dashboardNotice, dashboardRecipient, dashboardResponse } from './schema';
-import { clock, validateClock, sendNotice, recordReply, advanceClock, prepareResponse, saveResponse, resetDashboardState } from './dashboard';
+import { clock, validateClock, sendNotice, recordReply, advanceClock, prepareResponse, prepareAutomaticResponse, saveResponse, resetDashboardState } from './dashboard';
 export default db;
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
 function requireEmployee(ctx: Ctx, admin = false) {
@@ -117,7 +117,7 @@ export const resolveRequest = db.reducer({ requestId: t.u64() }, (ctx, { request
   refreshDecisions(ctx, row.householdId);
   event(ctx, 'request', requestId, 'resolved', 'Assistance recorded without dispatch');
 });
-export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (ctx, { requestId, teamId }) => {
+function assignTeamToRequest(ctx: Ctx, { requestId, teamId }: { requestId: bigint; teamId: bigint }, automatic = false) {
   requireEmployee(ctx);
   const request = ctx.db.helpRequest.id.find(requestId);
   const team = ctx.db.responseTeam.id.find(teamId);
@@ -135,8 +135,9 @@ export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (c
   ctx.db.helpRequest.id.update({ ...request, status: 'assigned' });
   ctx.db.responseTeam.id.update({ ...team, status: 'assigned' });
   refreshDecisions(ctx, request.householdId);
-  event(ctx, 'assignment', row.id, 'assigned', 'Human-selected dispatch; approximate straight-line km / 30 km/h ETA');
-});
+  event(ctx, 'assignment', row.id, 'assigned', `${automatic ? 'Automatic simulated response to explicit help reply' : 'Human-selected dispatch'}; approximate straight-line km / 30 km/h ETA`);
+}
+export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (ctx, args) => assignTeamToRequest(ctx, args));
 export const updateAssignment = db.reducer({ assignmentId: t.u64(), status: t.string() }, (ctx, { assignmentId, status }) => {
   requireEmployee(ctx);
   const row = ctx.db.assignment.id.find(assignmentId);
@@ -226,8 +227,41 @@ export const exerciseReplies = db.view({ public: true }, { disasterId: t.u64() }
   ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.exerciseCheckIn.disasterId.filter(disasterId)] : []);
 const DashboardArgs = { expectedRunId: t.u64(), expectedMinute: t.i32() };
 export const approveDashboardNotice = db.reducer({ ...DashboardArgs, areaId: t.u64(), message: t.string() }, (ctx, args) => { requireEmployee(ctx); sendNotice(ctx, args); });
-export const replyDashboardNotice = db.reducer({ ...DashboardArgs, householdId: t.u64(), reply: t.string(), areaId: t.option(t.u64()) }, (ctx, args) => { requireEmployee(ctx); recordReply(ctx, args); });
-export const advanceDashboardClock = db.reducer({ ...DashboardArgs, step: t.string() }, (ctx, args) => { requireEmployee(ctx); advanceClock(ctx, args); });
+export const replyDashboardNotice = db.reducer({ ...DashboardArgs, householdId: t.u64(), reply: t.string(), areaId: t.option(t.u64()) }, (ctx, args) => {
+  requireEmployee(ctx);
+  recordReply(ctx, args);
+  if (args.reply === 'needs_help') {
+    const prepared = prepareAutomaticResponse(ctx, args);
+    if (prepared) {
+      assignTeamToRequest(ctx, { requestId: prepared.requestId, teamId: prepared.teamId }, true);
+      saveResponse(ctx, prepared.state.runId, args.householdId, prepared.requestId);
+    }
+  }
+});
+export const advanceDashboardClock = db.reducer({ ...DashboardArgs, step: t.string() }, (ctx, args) => {
+  requireEmployee(ctx);
+  const state = validateClock(ctx, args);
+  const rescues = args.step === 'complete_rescues' ? [...ctx.db.dashboardResponse.iter()]
+    .filter(r => r.runId === state.runId)
+    .map(r => ctx.db.assignment.id.find(r.assignmentId))
+    .filter(r => r && active(r.status)) : [];
+  advanceClock(ctx, args);
+  if (args.step !== 'complete_rescues') return;
+  // Only assignments active before this skip complete; newly queued help starts a new rescue.
+  for (const rescue of rescues) if (rescue) updateAssignment(ctx, { assignmentId: rescue.id, status: 'completed' });
+  const current = clock(ctx);
+  const notices = [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === current.runId && n.phase === 'after')
+    .sort((a, b) => a.sentAt - b.sentAt || a.id.localeCompare(b.id));
+  for (const notice of notices) {
+    for (const recipient of ctx.db.dashboardRecipient.noticeId.filter(notice.id)) {
+      if (recipient.status !== 'needs_help') continue;
+      const prepared = prepareAutomaticResponse(ctx, { expectedRunId: current.runId, expectedMinute: current.minute, householdId: recipient.householdId, areaId: notice.areaId });
+      if (!prepared) continue;
+      assignTeamToRequest(ctx, { requestId: prepared.requestId, teamId: prepared.teamId }, true);
+      saveResponse(ctx, current.runId, recipient.householdId, prepared.requestId);
+    }
+  }
+});
 export const approveDashboardResponse = db.reducer({ ...DashboardArgs, householdId: t.u64(), teamId: t.u64(), areaId: t.option(t.u64()) }, (ctx, args) => {
   requireEmployee(ctx);
   const prepared = prepareResponse(ctx, args);

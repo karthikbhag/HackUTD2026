@@ -24,6 +24,40 @@ function load(relative, riskNotices) {
   return loaded.exports;
 }
 
+for (const shared of [false, true]) test(`${shared ? 'shared' : 'local'} help replies show automatic assignment; only overdue silence shows approval`, () => {
+  const { NotificationDialog } = load('../src/components/map/notification-dialog.tsx', true);
+  const { initialDashboardScenario, dashboardScenarioReducer } = load('../src/lib/map/dashboard-scenario.ts', true);
+  const data = { zones: [zone], households: [customer, { ...customer, id: 'silent' }], teams: [
+    { id: 'unit', name: 'Local response unit', zoneId: 'a', status: 'available', capacity: 2, capabilities: ['Welfare check'] },
+  ] };
+  const reduce = (state, action) => dashboardScenarioReducer(state, action, data);
+  const render = state => renderToStaticMarkup(React.createElement(NotificationDialog, {
+    data, zone, state, phase: 'after', shared, dispatch() {}, onClose() {},
+  }));
+  const impact = reduce(initialDashboardScenario, { type: 'impact' });
+  const sent = reduce(impact, { type: 'send', areaId: 'a', message: 'Confirm safety' });
+  assert.doesNotMatch(render(sent), />Approve response unit<\/button>/);
+  const help = reduce(sent, { type: 'reply', areaId: 'a', id: 'home', reply: 'needs_help' });
+  assert.match(render(help), /Local response unit automatically assigned/);
+  assert.doesNotMatch(render(help), />Approve response unit<\/button>/);
+  const overdue = reduce(help, { type: 'deadline' });
+  assert.equal((render(overdue).match(/>Approve response unit<\/button>/g) ?? []).length, 1);
+  assert.match(render(overdue), /No response · Overdue/);
+});
+
+for (const shared of [false, true]) test(`an unmatched ${shared ? 'shared' : 'local'} help request stays visible without a manual approval button`, () => {
+  const { NotificationDialog } = load('../src/components/map/notification-dialog.tsx', true);
+  const { initialDashboardScenario, dashboardScenarioReducer } = load('../src/lib/map/dashboard-scenario.ts', true);
+  const data = { zones: [zone], households: [customer], teams: [] };
+  const state = [
+    { type: 'impact' }, { type: 'send', areaId: 'a', message: 'Confirm safety' },
+    { type: 'reply', areaId: 'a', id: 'home', reply: 'needs_help' }, { type: 'deadline' },
+  ].reduce((state, action) => dashboardScenarioReducer(state, action, data), initialDashboardScenario);
+  const html = renderToStaticMarkup(React.createElement(NotificationDialog, { data, zone, state, phase: 'after', shared, dispatch() {}, onClose() {} }));
+  assert.match(html, /Help requested · No matching available unit/);
+  assert.doesNotMatch(html, />Approve response unit<\/button>/);
+});
+
 const zone = { id: 'a', name: 'Test area', hazard: 'tornado', severity: 'high', preparation: [] };
 const customer = { id: 'home', zoneId: 'a', isCustomer: true, checkIn: 'unknown', needs: [], riskLevel: 'High', riskByArea: { a: 'High' } };
 

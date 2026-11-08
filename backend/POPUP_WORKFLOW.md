@@ -71,15 +71,27 @@ There is no optimistic browser-only copy of shared notices, replies or assignmen
 - **Record simulated reply:** permits safe before impact, and safe/needs-help
   afterward, only for current recipients without an approved response unit.
   Contact and check-in fields update; existing assistance records remain intact.
-- **Advance to impact:** requires an initial notice and advances the one shared
-  clock from T−120 to T+0 across the synthetic scenario. Tabs only select a view;
-  changing a tab does not advance database time.
+  An explicit needs-help reply automatically reserves the nearest compatible
+  available unit and stores its assignment/dashboard link in the same transaction.
+  Routing-reserved or busy units are excluded. Without a matching unit, the reply
+  and open help request remain queued; no assignment is fabricated.
+- **Advance to impact:** advances the one shared clock from T−120 to T+0 across
+  all areas, including those without an initial notice. The clock determines the
+  active preparation/response phase.
 - **Advance response time:** each second notice has its own complete 30-minute
   response window, measured from that notice's send minute. The shared clock
   advances in 30-minute steps only while a deadline is pending. Due unanswered
   cases receive reviewable welfare requests; no unit is automatically assigned.
-- **Approve response unit:** validates reported needs or that area's overdue
-  reply, safety exclusion, current capabilities/people capacity, availability and
+- **Complete rescues:** advances the shared clock another 30 minutes, completes
+  dashboard rescues that were active at the start of the skip, resolves their
+  linked requests and releases their units. Freed matching units serve queued
+  explicit help replies automatically; new rescues remain active until a later
+  completion skip. Unanswered households still require manual approval. Completed
+  rescues persist as history and leave the unresolved map queue. Unrelated manual
+  assignments and routing visits are not completed by this action. Empty,
+  unauthorized and stale-clock completion attempts are rejected.
+- **Approve response unit:** requires an unanswered second notice past that area's
+  deadline and validates safety exclusion, current capabilities/people capacity, availability and
   assignment conflicts. It selects the highest-urgency open request, calls the
   existing transactional assignment reducer and stores a dashboard link. Other
   unresolved needs remain recorded. The UI's local-area candidate is a suggestion,

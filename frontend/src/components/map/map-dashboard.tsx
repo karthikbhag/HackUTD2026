@@ -11,7 +11,7 @@ import { ConnectedActionDialog } from "./connected-action-dialog";
 import { localRiskData } from "@/lib/map/local-risk-data";
 import { NotificationDialog } from "./notification-dialog";
 import { AiAssistant } from "./ai-assistant";
-import { notificationAreaIdFor, areaIdFor, householdMapAction, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
+import { notificationAreaIdFor, areaIdFor, householdMapAction, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseApprovalEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import type { SharedDashboard } from "@/lib/map/shared-dashboard";
 import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
 
@@ -46,9 +46,9 @@ export function MapDashboard({ data: suppliedData, status = "demo", errorMessage
     finally { setSharedBusy(false); }
   }
   const [notificationId, setNotificationId] = useState<string | null>(null);
-  // Tabs choose the view; the explicit dashboard controls advance the demo clock.
+  // The scenario clock moves every area into response, including unreviewed areas.
   const [phaseChoice, setPhase] = useState<Phase>("before");
-  const phase = scenarioEnabled && scenario.minute < 0 ? "before" : phaseChoice;
+  const phase: Phase = scenarioEnabled ? scenario.minute < 0 ? "before" : "after" : phaseChoice;
   const [selection, setSelection] = useState<Selection>(null);
   const [overviewVersion, setOverviewVersion] = useState(0);
   // Filter related markers with their zones so hidden hazards leave no orphan markers.
@@ -65,9 +65,10 @@ export function MapDashboard({ data: suppliedData, status = "demo", errorMessage
     return action ? [[row.id, action]] : [];
   })), [visible.households, scenario, phase, scenarioEnabled]);
   const safeCount = filtered.households.filter(row => row.isCustomer && confirmedSafe(scenario, row, phase)).length;
-  const readyCount = filtered.households.filter(row => responseEligible(scenario, row)).length;
-  const preparationSent = Object.values(scenario.areas).some(area => area.before);
+  const readyCount = filtered.households.filter(row => responseApprovalEligible(scenario, row)).length;
   const followupPending = Object.values(scenario.areas).some(area => area.after && scenario.minute < area.after.sentAt + 30);
+  const activeRescueCount = Object.keys(scenario.assignments).length;
+  const completedRescueCount = Object.keys(scenario.completedRescues ?? {}).length;
   const notificationZone = filtered.zones.find(zone => zone.id === notificationId);
   const counts = useMemo(() => householdCounts(data.households), [data.households]);
   const hotspotCounts = useMemo(() => {
@@ -113,14 +114,21 @@ export function MapDashboard({ data: suppliedData, status = "demo", errorMessage
       <Link className="brand" href="/" aria-label="StateWatch home"><span className="statefarm-wordmark">State Farm<span className="wordmark-dot">®</span></span><span className="product-name">StateWatch</span></Link>
       <div className="header-workspace-actions"><span className="employee-label"><DashboardIcon kind="teams" />Employee workspace</span><Link className="dispatcher-signin" href="/response">Sign in as Dispatcher</Link></div>
     </header>
-    <div className="workspace-heading"><p className="eyebrow">State Farm · Preparedness & response</p><h1>Disaster watch</h1><p className="alerts-needing-action" role="status">{alertsNeedingAction} {alertsNeedingAction === 1 ? "alert needs" : "alerts need"} action</p><div className="phase-toggle" aria-label="Disaster workflow"><button aria-pressed={phase === "before"} onClick={() => { setPhase("before"); setSelection(null); }}>Disaster prep</button><button disabled={scenarioEnabled && scenario.minute < 0} aria-pressed={phase === "after"} onClick={() => { setPhase("after"); setSelection(null); }}>After disaster respond</button></div></div>
+    <div className="workspace-heading"><p className="eyebrow">State Farm · Preparedness & response</p><h1>Disaster watch</h1><p className="alerts-needing-action" role="status">{alertsNeedingAction} {alertsNeedingAction === 1 ? "alert needs" : "alerts need"} action</p><div className="phase-toggle" aria-label="Disaster workflow"><button disabled={scenarioEnabled && scenario.minute >= 0} aria-pressed={phase === "before"} onClick={() => { setPhase("before"); setSelection(null); }}>Disaster prep</button><button disabled={scenarioEnabled && scenario.minute < 0} aria-pressed={phase === "after"} onClick={() => { setPhase("after"); setSelection(null); }}>After disaster respond</button></div></div>
     {status === "error" && <div className="error-banner" role="alert">{errorMessage || "Unable to connect to operational data. Check the shared connection."}</div>}
     {sharedError && <div className="error-banner" role="alert">{sharedError}</div>}
     {status === "loading" && <div className="demo-banner" role="status">Loading operational data…</div>}
     {scenarioEnabled ? <section className="dashboard-timeline" aria-label="Demo timeline">
       <div className="timeline-header"><div><span className="timeline-live-dot"/><strong>Scenario clock</strong><span className="scenario-clock">{scenario.minute < 0 ? "T − 2 hours" : `T + ${scenario.minute} min`}</span><span className="muted small">{demo ? "Browser-local rehearsal" : "Shared synthetic clock"} · All areas</span></div><button className="text-button" disabled={sharedBusy || (!!sharedDashboard && !sharedDashboard.canReset)} title={sharedDashboard && !sharedDashboard.canReset ? "An administrator must reset the shared dataset" : undefined} onClick={async () => { if (await dispatch({ type: "reset" })) { setPhase("before"); setSelection(null); setReviewId(null); setNotificationId(null); } }}>Reset {demo ? "demo" : "shared dataset"}</button></div>
       <ol className="dashboard-steps">{["Initial notification", "Disaster impact", "Second notification", "Response units"].map((step, i) => <li key={step} className={(i === 0 || (i === 1 && scenario.minute >= 0) || (i === 2 && Object.values(scenario.areas).some(area => area.after)) || (i === 3 && scenario.minute >= 30)) ? "reached" : ""}><span>{i + 1}</span>{step}</li>)}</ol>
-      <div className="timeline-footer"><div><strong>{scenario.minute < 0 ? "Start with an area alert." : phase === "before" ? "You’re viewing preparation history." : readyCount ? `${readyCount} households can be reviewed for a response unit.` : "Follow up with households still awaiting contact."}</strong><p>{scenario.minute < 0 ? "Review the area and send a notification. Safe confirmations leave the outreach queue." : "Confirmed-safe households leave the queue and cannot receive a response unit."}</p></div><div className="timeline-actions"><button className="outline-button" disabled={!reviewZone} onClick={() => reviewZone && openAreaReview(reviewZone.id)}>Review an area →</button><button className="primary-button" disabled={sharedBusy || (scenario.minute < 0 ? !preparationSent : !followupPending)} onClick={async () => { if (await dispatch({ type: scenario.minute < 0 ? "impact" : "deadline" })) { setPhase("after"); setSelection(null); setView("overview"); } }}>{scenario.minute < 0 ? "Skip 2 hours → After impact" : "Skip 30 min → Check responses"}</button></div></div>
+      <div className="timeline-footer"><div><strong>{scenario.minute < 0 ? "Start with an area alert." : readyCount ? `${readyCount} households can be reviewed for a response unit.` : "Follow up with households still awaiting contact."}</strong><p>{scenario.minute < 0 ? "Review the area and send a notification. Safe confirmations leave the outreach queue." : "Confirmed-safe households leave the queue and cannot receive a response unit."}</p></div><div className="timeline-actions"><button className="outline-button" disabled={!reviewZone} onClick={() => reviewZone && openAreaReview(reviewZone.id)}>Review an area →</button><button className="primary-button" disabled={sharedBusy || (scenario.minute >= 0 && !followupPending)} onClick={async () => { if (await dispatch({ type: scenario.minute < 0 ? "impact" : "deadline" })) { setPhase("after"); setSelection(null); setReviewId(null); setNotificationId(null); setBrowsePage(0); setView("overview"); } }}>{scenario.minute < 0 ? "Skip 2 hours → After impact" : "Skip 30 min → Check responses"}</button>
+        {scenario.minute >= 0 && <button className="outline-button" disabled={sharedBusy || !activeRescueCount || (!!sharedDashboard && !sharedDashboard.ready)} onClick={async () => {
+          if (await dispatch({ type: "complete_rescues" })) {
+            setSelection(null); setReviewId(null); setNotificationId(null); setBrowsePage(0); setView("overview");
+          }
+        }}>Skip 30 min → Complete rescues</button>}
+      </div></div>
+      {scenario.minute >= 0 && <p className="muted small" role="status">{activeRescueCount} active rescues · {completedRescueCount} completed. Completing rescues releases units; waiting help requests receive matching units automatically.</p>}
     </section> : <div className="scenario-intro"><span><strong>One area. Every step.</strong> Review a hazard and inspect household needs.</span><button className="text-button" disabled={!reviewZone} onClick={() => reviewZone && openAreaReview(reviewZone.id)}>Review an area <span aria-hidden="true">→</span></button></div>}
     <section className="summary-metrics" aria-label="Visible scenario summary">
       <div className="metric"><DashboardIcon kind="home" /><strong>{visible.households.length.toLocaleString()}</strong><div><span>{demo ? "Households still in view" : "Households in visible hotspots"}</span><button onClick={() => openView("households")}>View households <span aria-hidden="true">→</span></button></div></div>

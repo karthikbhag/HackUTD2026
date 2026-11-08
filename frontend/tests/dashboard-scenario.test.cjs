@@ -18,6 +18,49 @@ const assign = (id, teamId = 'unit') => ({ type: 'assign', id, teamId });
 const apply = (...actions) => actions.reduce(reduce, initial);
 const impact = { type: 'impact' };
 const deadline = { type: 'deadline' };
+const completeRescues = { type: 'complete_rescues' };
+
+test('rescue completion frees a unit for another overdue household and retires the completed case', () => {
+  const assigned = apply(impact, send(), deadline, assign('silent'));
+  const completed = reduce(assigned, completeRescues);
+  assert.equal(completed.minute, 60);
+  assert.deepEqual(completed.assignments, {});
+  assert.deepEqual(completed.completedRescues.silent, { teamId: 'unit', completedAt: 60 });
+  assert.equal(needsAttention(completed, data.households[1], 'after'), false);
+  assert.equal(responseEligible(completed, data.households[1]), false);
+  assert.equal(loaded.exports.dashboardHouseholdStatus(completed, data.households[1], 'after'), 'Assistance completed');
+  assert.equal(loaded.exports.householdMapAction(completed, data.households[1], 'after'), undefined);
+  assert.equal(reduce(completed, assign('silent')), completed);
+  assert.equal(reduce(completed, reply('silent', 'needs_help')), completed);
+  assert.equal(matchingTeam(completed, data.households[2], data.teams).id, 'unit');
+  const reused = reduce(completed, assign('help'));
+  assert.equal(reused.assignments.help, 'unit');
+  assert.equal(completed.completedRescues.help, undefined);
+  assert.equal(assigned.assignments.silent, 'unit', 'completion does not mutate previous state');
+  assert.equal(data.teams[0].status, 'available', 'fixture data stays unchanged');
+});
+
+test('released units automatically serve waiting help requests without approving silent households', () => {
+  const busy = apply(impact, send(), reply('help', 'needs_help'), reply('silent', 'needs_help'));
+  const completed = reduce(busy, completeRescues);
+  assert.equal(completed.minute, 30);
+  assert.deepEqual(completed.assignments, { silent: 'unit' });
+  assert.deepEqual(completed.completedRescues, { help: { teamId: 'unit', completedAt: 30 } });
+  assert.equal(completed.assignments.existing, undefined, 'unanswered cases still need approval');
+  const again = reduce(completed, completeRescues);
+  assert.equal(again.minute, 60);
+  assert.deepEqual(again.assignments, {});
+  assert.deepEqual(again.completedRescues.silent, { teamId: 'unit', completedAt: 60 });
+  assert.equal(completed.completedRescues.silent, undefined, 'completion history is immutable');
+  assert.equal(reduce(again, completeRescues), again, 'no active rescue means no completion skip');
+  assert.deepEqual(reduce(again, { type: 'reset' }), initial);
+});
+
+test('completion cannot skip before impact or without an assigned rescue', () => {
+  assert.equal(reduce(initial, completeRescues), initial);
+  const impacted = reduce(initial, impact);
+  assert.equal(reduce(impacted, completeRescues), impacted);
+});
 
 test('safe preparation replies leave the queue and second notification; silence carries forward', () => {
   const state = apply(send(), reply('safe', 'safe'), impact, send());
@@ -27,19 +70,53 @@ test('safe preparation replies leave the queue and second notification; silence 
   assert.equal(state.areas.a.after.recipients.includes('silent'), true);
   assert.equal(state.areas.a.before.replies.safe, 'safe');
 });
-test('only recipients can reply; pre-impact help is rejected and initial clock requires a notice', () => {
-  assert.equal(reduce(initial, impact), initial);
+test('only recipients can reply and pre-impact help is rejected', () => {
   const state = apply(send());
   assert.equal(reduce(state, reply('help', 'needs_help')), state);
   assert.equal(reduce(state, reply('other', 'safe')), state);
   assert.equal(reduce(state, send()), state);
 });
-test('help is actionable immediately; silence requires that area’s second-notification deadline', () => {
+test('impact advances all areas even without preparation outreach', () => {
+  const state = reduce(initial, impact);
+  assert.equal(state.minute, 0);
+  assert.deepEqual(state.areas, {});
+  assert.equal(reduce(state, impact), state);
+  const { householdMapAction } = loaded.exports;
+  for (const row of data.households.filter(row => row.isCustomer)) {
+    assert.equal(needsAttention(state, row, 'after'), true);
+    assert.equal(householdMapAction(state, row, 'after').label,
+      row.needs.length ? 'Assistance or welfare check needed' : 'Follow-up notification needed');
+  }
+  const sent = reduce(state, send('b'));
+  assert.equal(sent.areas.b.before, undefined);
+  assert.ok(sent.areas.b.after.recipients.includes('other'));
+});
+test('help automatically reserves a unit; silent households require approval after the deadline', () => {
   const state = apply(send(), impact, send(), reply('help', 'needs_help'));
-  assert.equal(responseEligible(state, data.households[2]), true);
+  assert.equal(state.assignments.help, 'unit');
+  assert.equal(responseEligible(state, data.households[2]), false);
+  assert.equal(reduce(state, reply('help', 'needs_help')), state);
   assert.equal(responseEligible(state, data.households[1]), false);
   assert.equal(responseEligible(reduce(state, deadline), data.households[1]), true);
   assert.equal(responseEligible(reduce(state, deadline), data.households[3]), false);
+});
+test('automatic help dispatch does not reuse a busy unit or drop an unmatched help request', () => {
+  const state = apply(impact, send(), reply('help', 'needs_help'), reply('silent', 'needs_help'));
+  assert.deepEqual(state.assignments, { help: 'unit' });
+  assert.equal(state.areas.a.after.replies.silent, 'needs_help');
+  assert.equal(householdMapAction(state, data.households[1], 'after').kind, 'response');
+  const overdue = reduce(state, deadline);
+  assert.equal(reduce(overdue, assign('silent')), overdue);
+  const unavailable = { ...data, teams: [{ ...data.teams[0], capacity: 0 }, data.teams[1]] };
+  const requested = dashboardScenarioReducer(apply(impact, send()), reply('help', 'needs_help'), unavailable);
+  assert.deepEqual(requested.assignments, {});
+  assert.equal(requested.areas.a.after.replies.help, 'needs_help');
+});
+test('manual approval requires an unanswered follow-up deadline even with a recorded need', () => {
+  const pending = apply(impact, send());
+  assert.equal(reduce(pending, assign('existing')), pending);
+  const overdue = reduce(pending, deadline);
+  assert.equal(reduce(overdue, assign('existing')).assignments.existing, 'unit');
 });
 test('later area notifications receive their own complete response window', () => {
   const state = apply(send(), impact, send(), deadline, send('b'));
@@ -105,8 +182,8 @@ test('map badges follow notification rounds, responses, and assignment', () => {
   const contacted = reduce(impacted, send());
   assert.equal(householdMapAction(contacted, row, 'after'), undefined);
   const help = reduce(contacted, reply('help', 'needs_help'));
-  assert.equal(householdMapAction(help, row, 'after').kind, 'response');
-  assert.equal(householdMapAction(reduce(help, assign('help')), row, 'after'), undefined);
+  assert.equal(help.assignments.help, 'unit');
+  assert.equal(householdMapAction(help, row, 'after'), undefined);
   assert.equal(householdMapAction(reduce(contacted, reply('help', 'safe')), row, 'after'), undefined);
   assert.equal(householdMapAction(reduce(contacted, deadline), row, 'after').kind, 'response');
 });

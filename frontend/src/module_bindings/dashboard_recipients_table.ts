@@ -16,4 +16,7 @@ export default __t.row({
   householdId: __t.u64().name("household_id"),
   status: __t.string(),
   repliedAt: __t.option(__t.timestamp()).name("replied_at"),
+  riskLevel: __t.string().name("risk_level"),
+  approvedMessage: __t.string().name("approved_message"),
+  eventVersion: __t.string().name("event_version"),
 });

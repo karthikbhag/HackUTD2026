@@ -34,7 +34,10 @@ export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, noti
   for (const response of responses) {
     const assignment = byId.get(response.assignmentId);
     if (response.runId !== info?.runId || !assignment || assignment.status === "cancelled") continue;
-    state.assignments[String(response.householdId)] = String(assignment.teamId);
+    if (assignment.status === "completed") {
+      state.completedRescues ??= {};
+      state.completedRescues[String(response.householdId)] = { teamId: String(assignment.teamId) };
+    } else state.assignments[String(response.householdId)] = String(assignment.teamId);
     assignmentStatuses[String(response.householdId)] = assignment.status;
   }
   return { state, runId: info?.runId ?? 0n, ready: !!info, canReset: info?.canReset ?? false, assignmentStatuses };

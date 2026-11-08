@@ -25,6 +25,120 @@ function fixture() {
   return { test, run, areas, args, homes, send, impact };
 }
 describe('shared popup dashboard', () => {
+  it('completes shared rescues, releases units, and reuses them for queued help before silent cases', () => {
+    const { test, run, areas, homes, send, impact, args } = fixture();
+    const targets = homes(areas[0].id).filter(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length);
+    const team = [...test.db.responseTeam.iter()][0];
+    run(admin, ctx => {
+      for (const row of [...ctx.db.responseTeam.iter()]) ctx.db.responseTeam.id.update({ ...row, status: 'unavailable' });
+      ctx.db.responseTeam.id.update({ ...team, status: 'available', capabilities: ['welfare_check'], capacity: 1 });
+    });
+    send(); impact(); send();
+    for (const home of targets.slice(0, 2)) run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: home.id, reply: 'needs_help' }));
+    const first = api.dashboardResponses(test.viewContext(employee))[0];
+    run(employee, ctx => api.updateAssignment(ctx, { assignmentId: first.assignmentId, status: 'in_progress' }));
+    const old = args();
+    const skip = () => run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'complete_rescues' }));
+    skip();
+    expect(args().expectedMinute).toBe(30);
+    expect(test.db.assignment.id.find(first.assignmentId)?.status).toBe('completed');
+    expect(test.db.helpRequest.id.find(first.requestId)?.status).toBe('resolved');
+    const second = api.dashboardResponses(test.viewContext(employee)).find(r => r.householdId === targets[1].id)!;
+    expect(test.db.assignment.id.find(second.assignmentId)?.teamId).toBe(team.id);
+    expect(test.db.assignment.id.find(second.assignmentId)?.status).toBe('assigned');
+    expect(test.db.responseTeam.id.find(team.id)?.status).toBe('assigned');
+    expect(api.dashboardResponses(test.viewContext(employee))).toHaveLength(2);
+    expect(() => run(employee, ctx => api.advanceDashboardClock(ctx, { ...old, step: 'complete_rescues' }))).toThrow(/changed/);
+    skip();
+    expect(args().expectedMinute).toBe(60);
+    expect(test.db.assignment.id.find(second.assignmentId)?.status).toBe('completed');
+    expect(test.db.responseTeam.id.find(team.id)?.status).toBe('available');
+    expect(() => skip()).toThrow(/No active/);
+    expect(args().expectedMinute).toBe(60);
+    expect(() => run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: targets[0].id, reply: 'needs_help' }))).toThrow(/already/);
+    const waiting = targets[2];
+    run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: waiting.id, teamId: team.id }));
+    expect(api.dashboardResponses(test.viewContext(employee)).find(r => r.householdId === waiting.id)).toBeTruthy();
+  });
+  it('rejects unauthorized or empty rescue skips and leaves unrelated assignments active', () => {
+    const { test, run, areas, homes, send, impact, args } = fixture();
+    const skip = (auth = employee) => run(auth, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'complete_rescues' }));
+    expect(() => skip(outsider)).toThrow(/authorization/);
+    expect(() => skip()).toThrow(/No active/);
+    send(); impact(); send();
+    expect(() => skip()).toThrow(/No active/);
+    const home = homes(areas[0].id).find(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length)!;
+    run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: home.id, reply: 'needs_help' }));
+    const response = api.dashboardResponses(test.viewContext(employee))[0];
+    const unrelated = [...test.db.helpRequest.iter()].find(r => r.householdId !== home.id)!;
+    const otherTeam = [...test.db.responseTeam.iter()].find(t => t.status === 'available')!;
+    let unrelatedId = 0n;
+    run(admin, ctx => {
+      unrelatedId = ctx.db.assignment.insert({ id: 0n, requestId: unrelated.id, teamId: otherTeam.id, status: 'assigned', estimatedDistance: 0, estimatedEta: 0, createdAt: ctx.timestamp, completedAt: undefined }).id;
+      ctx.db.responseTeam.id.update({ ...otherTeam, status: 'assigned' });
+    });
+    skip();
+    expect(test.db.assignment.id.find(response.assignmentId)?.status).toBe('completed');
+    expect(test.db.assignment.id.find(unrelatedId)?.status).toBe('assigned');
+    expect(test.db.responseTeam.id.find(otherTeam.id)?.status).toBe('assigned');
+    expect(args().expectedMinute).toBe(30);
+  });
+  it('atomically assigns an available unit for an explicit help reply without reusing it', () => {
+    const { test, run, areas, homes, send, impact } = fixture();
+    const targets = homes(areas[0].id).filter(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length);
+    const team = [...test.db.responseTeam.iter()][0];
+    run(admin, ctx => {
+      for (const row of [...ctx.db.responseTeam.iter()]) ctx.db.responseTeam.id.update({ ...row, status: 'unavailable' });
+      ctx.db.responseTeam.id.update({ ...team, status: 'available', capabilities: ['welfare_check'], capacity: 1 });
+    });
+    send(); impact(); send();
+    const reply = (householdId: bigint) => run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, areaId: areas[0].id, householdId, reply: 'needs_help' }));
+    reply(targets[0].id);
+    const response = api.dashboardResponses(test.viewContext(employee))[0];
+    expect(response.householdId).toBe(targets[0].id);
+    expect(test.db.assignment.id.find(response.assignmentId)?.teamId).toBe(team.id);
+    expect(test.db.responseTeam.id.find(team.id)?.status).toBe('assigned');
+    expect(test.db.helpRequest.id.find(response.requestId)?.status).toBe('assigned');
+    expect([...test.db.activityEvent.iter()].some(e => e.summary.includes('Automatic simulated response'))).toBe(true);
+    expect(() => reply(targets[0].id)).toThrow(/already/);
+    expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: targets[0].id, teamId: team.id }))).toThrow(/already/);
+    reply(targets[1].id);
+    expect(api.dashboardResponses(test.viewContext(employee))).toHaveLength(1);
+    expect(api.dashboardRecipients(test.viewContext(employee)).find(r => r.householdId === targets[1].id && r.status === 'needs_help')).toBeTruthy();
+    run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'deadline' }));
+    expect(api.dashboardResponses(test.viewContext(employee)), 'silent households are never automatically dispatched').toHaveLength(1);
+    expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: targets[1].id, teamId: team.id }))).toThrow(/No overdue unanswered/);
+  });
+  it.each(['capability', 'capacity', 'routing', 'active_assignment'] as const)('preserves a help reply when the only unit is blocked by %s', reason => {
+    const { test, run, areas, homes, send, impact } = fixture();
+    const home = homes(areas[0].id).find(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length)!;
+    const team = [...test.db.responseTeam.iter()][0];
+    run(admin, ctx => {
+      for (const row of [...ctx.db.responseTeam.iter()]) ctx.db.responseTeam.id.update({ ...row, status: 'unavailable' });
+      ctx.db.responseTeam.id.update({ ...team, status: 'available', capabilities: reason === 'capability' ? [] : ['welfare_check'], capacity: reason === 'capacity' ? 0 : 1 });
+      if (reason === 'routing') ctx.db.responseTeamState.insert({ teamId: team.id, runId: 1n, positionVersion: 0n, updatedAt: ctx.timestamp, mode: 'holding', currentVisitId: undefined, available: true, tickSequence: 0n });
+      if (reason === 'active_assignment') {
+        const request = [...ctx.db.helpRequest.iter()][0];
+        ctx.db.assignment.insert({ id: 0n, requestId: request.id, teamId: team.id, status: 'assigned', estimatedDistance: 0, estimatedEta: 0, createdAt: ctx.timestamp, completedAt: undefined });
+      }
+    });
+    send(); impact(); send();
+    const before = test.db.assignment.count();
+    run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: home.id, reply: 'needs_help' }));
+    expect(api.dashboardRecipients(test.viewContext(employee)).some(r => r.householdId === home.id && r.status === 'needs_help')).toBe(true);
+    expect([...test.db.helpRequest.householdId.filter(home.id)].some(r => r.needType === 'welfare_check' && r.status === 'open')).toBe(true);
+    expect(test.db.assignment.count()).toBe(before);
+    expect(api.dashboardResponses(test.viewContext(employee))).toEqual([]);
+  });
+  it('advances all areas to impact without requiring preparation notices', () => {
+    const { test, areas, args, impact, send } = fixture();
+    impact();
+    expect(args().expectedMinute).toBe(0);
+    expect(api.dashboardNotices(test.viewContext(employee))).toEqual([]);
+    expect(() => impact()).toThrow(/already/);
+    send(areas[1].id);
+    expect(api.dashboardNotices(test.viewContext(employee))[0].phase).toBe('after');
+  });
   it('keeps synthetic deadline concerns independent of recent contact and supports critical exposure in the connected queue', () => {
     const { test } = fixture();
     const rows = { households: api.households(test.viewContext(employee)), requests: api.requests(test.viewContext(employee)),
@@ -79,7 +193,7 @@ describe('shared popup dashboard', () => {
     send(areas[1].id);
     const late = [...test.db.dashboardNotice.areaId.filter(areas[1].id)][0]; expect(late.deadline).toBe(60);
     expect([...test.db.helpRequest.householdId.filter(lateHome.id)]).toHaveLength(0);
-    expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: lateHome.id, teamId: 1n }))).toThrow(/No reported need/);
+    expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: lateHome.id, teamId: 1n }))).toThrow(/No overdue unanswered/);
     run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'deadline' }));
     expect([...test.db.helpRequest.householdId.filter(lateHome.id)].some(r => r.needType === 'welfare_check')).toBe(true);
   });
@@ -87,7 +201,8 @@ describe('shared popup dashboard', () => {
     const { test, run, areas, args, homes, send, impact } = fixture();
     const home = homes(areas[0].id).find(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length)!;
     send(); impact(); send();
-    run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: home.id, reply: 'needs_help' }));
+    expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: home.id, teamId: 1n }))).toThrow(/No overdue unanswered/);
+    run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'deadline' }));
     const team = [...test.db.responseTeam.iter()].find(t => t.status === 'available')!;
     run(admin, (ctx, current) => ctx.db.responseTeam.id.update({ ...team, capabilities: [], capacity: 1 }));
     const action = () => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: home.id, teamId: team.id }));

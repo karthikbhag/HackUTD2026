@@ -14,9 +14,11 @@ This is a hackathon prototype using synthetic households and simulated response 
 
 ## Before and after a disaster
 
-The main `/` and `/demo` dashboards now use shared SpacetimeDB records: area alerts open reviews, **Take action** opens the notification popup, and dashboard controls advance the shared synthetic clock through impact and each area's follow-up deadline. Safe confirmations are excluded from repeat outreach and dashboard response approval while original assistance records remain intact. Notices, recipient snapshots, replies and assignments survive reloads and synchronize between enrolled employees. `/demo/local` preserves the isolated browser rehearsal. Area reviews support on-demand Gemini generation, with follow-up questions about the generated review; actual notification delivery remains pending. The older `/outreach` route retains its independent fresh-check-in behavior. See [connected popup setup and policy](backend/POPUP_WORKFLOW.md).
+The main `/` dashboard uses shared SpacetimeDB records when `DATA_SOURCE=database`. `/demo` and `/demo/local` always use bundled dummy data with browser-local state. Both flows support reviewed risk-specific notifications, simulated safe/need-help replies, impact and follow-up time skips, automatic response-unit assignment for explicit help replies, and rescue completion.
 
-The additional shared scenario desk and `/response` routing workspace are also retained from main. See [scenario desk setup](backend/SHARED_WORKFLOW.md).
+On the connected main page, notices, recipient snapshots, replies, assignments and completion history persist across reloads and synchronize between enrolled employees. The separate **Shared operational map** and **Outreach & response** panels below the map have been removed; area alerts and **Take action** still open the notification workflow. The older `/outreach` route and the `/response` routing workspace remain available separately. See [shared popup policy](backend/POPUP_WORKFLOW.md) and [backend setup](backend/README.md).
+
+Area reviews and follow-up questions use Gemini only when requested. All scenario records and unit movements are simulated; actual notification delivery and real-world dispatch are not implemented.
 
 ### Before: identify risk, explain it, and check on customers
 
@@ -29,21 +31,21 @@ The additional shared scenario desk and `/response` routing workspace are also r
 
 ### Simulated time: advance the scenario deliberately
 
-Use a fixed fictional scenario clock rather than waiting for a real disaster date. An explicit employee-controlled time skip advances from preparation to post-disaster conditions. A second, shorter time skip advances past a configurable response deadline to demonstrate follow-up. Display the simulated time, elapsed interval, and deadline; record phase changes and contact attempts so the demonstration can be reset and replayed. Changing the existing before/after presentation toggle alone does not advance time or mutate the scenario.
+Use the explicit scenario controls to advance time. **Skip 2 hours → After impact** moves every area into response, even if it was never reviewed or notified; Disaster prep stays disabled until reset. **Skip 30 min → Check responses** advances pending follow-up deadlines. **Skip 30 min → Complete rescues** finishes active dashboard rescues and releases units. The shared clock applies to every area, while each second notification starts its own 30-minute reply window. Changing a view or hazard filter does not advance time.
 
 ### After: check again, follow up, and dispatch help
 
-1. **Follow up with unconfirmed households.** After the first time skip, open an area's alert and approve a second notification in a popup. Offer **safe** and **need help** responses. In the dashboard preview, earlier safe confirmations leave the repeat-outreach queue; preserve those replies in the preparation round. This exclusion is a demo policy, not a new observation of post-impact safety.
-2. **Update the dashboard.** Show confirmed-safe counts and keep unconfirmed households and assistance requests on the map and in the queue. Keep the original assistance records, but exclude confirmed-safe households from the demo queue and response-unit approval. The configured main/demo state is now shared and persisted; only `/demo/local` keeps browser-local rehearsal state.
-3. **Advance past the follow-up deadline.** After the shorter time skip, flag customers who have not answered the post-disaster check-in and customers who explicitly requested help. No response indicates unknown safety, not confirmed injury. Urgent help requests can be reviewed immediately without waiting for the deadline.
-4. **Recommend and approve a response unit.** Create or review a help request or welfare-check request, recommend an available team with matching capabilities and capacity, and let an employee approve dispatch. Explain priority and show approximate distance/ETA; prevent duplicate active assignments.
-5. **Track assistance through completion.** Synchronize team status, assignment progress, household updates, and activity history across employee dashboards. Record the outcome and release the team when its assignment is completed or cancelled.
+1. **Follow up with unconfirmed households.** After impact, approve an area's second notification. Review separate High/Medium/Low messages and their recipient counts before sending. Earlier explicit safe confirmations remain in history and exclude those households from repeat outreach and response-unit approval; this is a simulation policy rather than a new post-impact safety observation.
+2. **Automatically assign help replies.** **Simulate: need help** records the reply and automatically reserves an available compatible unit. The shared backend chooses the nearest compatible free unit using approximate straight-line distance, checks capacity and capabilities, and excludes units busy with another assignment or reserved for routing. A missing match leaves the help reply and request queued rather than fabricating an assignment.
+3. **Review unanswered follow-ups.** After **Skip 30 min → Check responses**, households with an unanswered second notice become eligible for **Approve response unit**. Each area's deadline runs from its own send time. Silence means unknown safety, not confirmed injury; explicit help replies use automatic assignment instead of this approval step.
+4. **Complete rescues and reuse units.** **Skip 30 min → Complete rescues** completes dashboard rescues active at the start of the skip, resolves their linked requests, releases units, and removes completed households from the unresolved map queue. Freed matching units automatically serve queued explicit help replies; these new rescues remain active until a later completion skip. Unanswered households still require approval. The shared action leaves unrelated manual assignments and routing visits active.
+5. **Keep shared history or replay locally.** The main database-backed page persists completion and assignment history. `/demo` and `/demo/local` reset on reload. **Reset shared dataset** remains administrator-only and restores the fixture bundled in the published backend; **Reset demo** only clears browser-local state.
 
 Non-customers can also request or receive assistance. Rank response needs by urgency and need; State Farm customer status determines proactive outreach context rather than emergency assistance priority.
 
 ### Response routing — Person 2 handoff
 
-**Status: implementation in progress — Josh Sebastian.** The approved design is documented in [the response routing implementation plan](RESPONSE_ROUTING_PLAN.md). This extends the post-disaster welfare-check workflow with automatic multi-stop routing; the existing employee-approved assistance-request workflow remains available. Automatic routing is an explicit demo exception to the manual dispatch guidance elsewhere in this README.
+**Status: implementation in progress — Josh Sebastian.** The approved design is documented in [the response routing implementation plan](RESPONSE_ROUTING_PLAN.md). This extends the post-disaster welfare-check workflow with automatic multi-stop routing; the existing employee-approved assistance-request workflow remains available. This routing workflow is separate from the dashboard’s automatic assignment for explicit help replies and employee-approved dispatch for overdue silence.
 
 - **Demo scope:** two simulated welfare-check teams and 20 fictional households in one compact Dallas-area neighborhood. Teams start at a local staging point, perform checks without transporting people, and return within a two-hour simulated shift. Each visit initially takes five simulated minutes; playback initially runs at 10x speed.
 - **Adjustable rules:** central validated configuration plus a per-run settings snapshot/version. Expose visit duration, shift length, playback speed, urgent response target and replan delay as settings; keep fixture size and neighborhood selectable through configuration. Changes must invalidate affected plans rather than leave stale assignments.
@@ -63,7 +65,7 @@ We will estimate potential exposure from available forecasts, hazard data, or cl
 
 The supported disaster types are **tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods**. These hazards need different data, impact layers, preparedness actions, and response workflows. Earthquake features should use hazard scenarios or post-detection information rather than claim reliable advance prediction. For the MVP, use a **nationwide U.S. multi-hazard scenario** with a national overview and seeded high-risk neighborhoods/areas for all six hazard types. The full preparation-to-response workflow can be demonstrated end-to-end on one selected hotspot while the other hazards remain visible as supported scenario layers.
 
-Every impact layer should show whether it is a forecast, a report, or a simulation. Recommendations support employee decisions and require human review before dispatch or outreach.
+Every impact layer should show whether it is a forecast, a report, or a simulation. Outreach messages and unanswered-household dispatch require employee approval. An explicit simulated help reply automatically assigns a compatible available unit; AI reviews do not initiate actions.
 
 ## Hackathon scope
 
@@ -155,10 +157,10 @@ Aalvee Ahtav owns Person 1's frontend work, Josh Sebastian owns Person 2's backe
 
 | Owner | Workstream | Delivered work | Remaining work and handoff |
 | --- | --- | --- | --- |
-| Person 1 — Aalvee Ahtav | Map, interface, and frontend demo | StateWatch branding, Noto Sans, Disaster watch heading and red area-alert count; nationwide Leaflet map, six hazard filters, footprints and clustering; household/team details; panel-level Overview/Households/Teams/Preparedness navigation; area-review and notification popups; dashboard demo clock, two-stage outreach, safe-reply exclusion, and employee-approved simulated response units | Verify final popup fit, keyboard behavior, and responsive layout; pair with Person 4 to connect UI controls to authoritative operations. Keep fixture-only state separate from subscribed records. |
-| Person 2 — Josh Sebastian | Spacetime backend | Tables/indexes and generated bindings; authorized employee views; seed/reset and escalation reducers; check-ins, requests, atomic assignment lifecycle and activity events; live SDK and large-dataset integration checks recorded in prior changelog entries | Extend the contract for per-notification rounds and a shared scenario clock; integrate Person 3's decision helpers; pair with Person 4 on validated mutations and browser acceptance. |
+| Person 1 — Aalvee Ahtav | Map, interface, and frontend demo | StateWatch branding, Noto Sans, Disaster watch heading and red area-alert count; nationwide Leaflet map, six hazard filters, footprints and clustering; household/team details; panel-level Overview/Households/Teams/Preparedness navigation; area-review and notification popups; dashboard clock, two-stage outreach, safe-reply exclusion, automatic simulated help assignment and rescue-completion controls on shared and local dashboards | Verify final popup fit, keyboard behavior, responsive layout and the latest shared workflow in browser sessions. Keep fixture-only state separate from subscribed records. |
+| Person 2 — Josh Sebastian | Spacetime backend | Tables/indexes and generated bindings; authorized employee views; seed/reset and escalation reducers; check-ins, requests, atomic assignment lifecycle and activity events; live SDK and large-dataset integration checks recorded in prior changelog entries | Verify deployed shared notification/assignment lifecycles, authorization, fixture-preserving migrations and browser acceptance with Person 4. |
 | Person 3 — Karthik Bhagavatula | Disaster data and decision logic | Small/Demo/Stress fixtures for six hazards; synthetic impact geometry and sourced guidance templates; tested exposure, priority, overdue-contact, and capability/capacity recommendation helpers with approximate distance/ETA and offline reports | Integrate helpers into authoritative shared operations and the UI; reconcile preparedness-helper availability and escalation behavior. Local popup matching is a separate demo implementation, not the full recommendation engine. |
-| Person 4 — Tien Phan | Shared workflow, integration, and delivery | Typed reducer wrappers and shared feedback on the existing connection; Mark contacted action; live priority queue using Person 3’s exposure, ranking, and follow-up helpers, with score reasons, overlooked/hazard filters, paging and map selection | Wire notification rounds, clock/deadlines, help requests and assignment approval to SpacetimeDB; show synchronized assignment progress/activity; complete interactive and two-browser verification, final demo and submission materials. Person 1’s popup rehearsal remains browser-local. |
+| Person 4 — Tien Phan | Shared workflow, integration, and delivery | Typed reducer wrappers and shared feedback on the existing connection; Mark contacted action; live priority queue using Person 3’s exposure, ranking, and follow-up helpers, with score reasons, overlooked/hazard filters, paging and map selection | Complete interactive and two-browser verification of the persisted notification rounds, clock/deadlines, automatic help assignment and completion flow; prepare final demo and submission materials. `/demo` remains browser-local. |
 
 Each owner resolves issues in their own workstream and helps with integration. Person 1 maintains the map, details, and demo popup/queue presentation. Person 4 coordinates shared operational state and actions with Person 2, using Person 3's decision logic and Person 1's UI. Coordinate edits to shared components before integration.
 
@@ -178,7 +180,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.27 (2026-11-08).** Combined shared dashboard popups and clock with the response-routing workspace, authoritative scenario desk and on-demand Gemini area reviews. `/` and `/demo` use the configured database; `/demo/local` is the isolated rehearsal. See [popup workflow](backend/POPUP_WORKFLOW.md) and [scenario desk setup](backend/SHARED_WORKFLOW.md). Merge verification is recorded in the changelog. Since v1.28 employees can ask follow-up questions about an AI area review ([changelog v1.28](changelog.md#version-128--2026-11-08)); since v1.29 an **Ask AI** assistant answers questions across all areas on the map, and `GEMINI_MOCK=1` allows testing without Gemini ([changelog v1.29](changelog.md#version-129--2026-11-08)).
+**Current checkpoint: v1.32 (2026-11-08).** `/` follows `DATA_SOURCE`; `/demo` and `/demo/local` always use dummy data. The connected main page now supports risk-specific notification messages, automatic simulated assignment for explicit help replies, approval for overdue unanswered follow-ups and a shared rescue-completion skip. The backend is deployed to `statewatch` on Maincloud. Gemini area reviews, follow-up chat, the map-wide **Ask AI** assistant and development-only `GEMINI_MOCK=1` remain available. See [changelog v1.32](changelog.md#version-132--2026-11-08) for verification and remaining acceptance checks.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -202,7 +204,7 @@ Browser verification covers the fixture-backed UI. Integrated browser connection
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
 - [x] Verify browser rendering of the fixture-backed dashboard. (verified by user)
 - [x] Verify the production build with Webpack, including the Noto Sans integration. (passed; the Google Fonts download required network access)
-- [x] Reverify the default Turbopack production build. (all main/demo/local/outreach routes pass on Node 24.22.1)
+- [x] Reverify the historical Turbopack production build. (passed on Node 24.22.1; the current build script uses Webpack)
 - [x] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends. (verified by user)
 - [x] Allow employees to filter visible hazards and inspect overlapping disaster zones. (verified by user)
 - [x] Render selectable household and response-team markers. (verified by user)
@@ -211,7 +213,7 @@ Browser verification covers the fixture-backed UI. Integrated browser connection
 - [x] Handle loading, connection errors, empty states, and narrower screens. (verified by user)
 - [x] Apply StateWatch branding, Noto Sans, Disaster watch, the red visible-area alert count, and updated phase labels. (TypeScript and Webpack build passed)
 - [x] Move Overview/Households/Teams/Preparedness navigation above the household panel. (TypeScript passed; final responsive/browser acceptance pending)
-- [x] Implement same-dashboard notification popups, dashboard time skips, per-area reply rounds, and response-unit approval in fixture mode. (nine dashboard state tests pass)
+- [x] Implement same-dashboard notification popups, dashboard time skips, per-area reply rounds, and response-unit approval in fixture mode. (covered by the current scenario regression suite)
 - [x] Exclude confirmed-safe households from the queue and dispatch even with an older need; prevent duplicate assignments and unavailable/incompatible team approval. (regression tests pass)
 - [ ] Verify the final popup flow, keyboard focus, phase controls, and panel navigation in desktop and narrow browser layouts.
 
@@ -249,7 +251,8 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Build preparedness/outreach action controls, including employee-approved simulated notifications and separate pre/post-disaster safety check-ins. (implemented; automated checks pass; browser acceptance pending)
 - [x] Connect AI-generated reviews grounded in scenario evidence. (Tien Phan: on-demand **Generate AI Review** in the area popup via `POST /api/area-review` and the server-only Gemini client; snapshot/response validation tests and a live route request passed; interactive browser verification pending. Follow-up questions about a review added in v1.28 with offline tests and live route requests; browser verification pending. Map-wide **Ask StateWatch AI** assistant and development-only `GEMINI_MOCK` mode added in v1.29 with offline tests and a production build; browser verification and a live assistant request pending. AI-drafted notifications remain later work)
 - [x] Integrate a persisted/shared simulated scenario clock, impact time skip, follow-up deadline, and shorter follow-up time skip. (connected main desk; two-client SDK verified; `/demo` remains separate)
-- [x] Route explicit help requests and overdue unanswered check-ins into persisted employee-reviewed assistance/welfare-check dispatch. (reviewable requests and explicit, revalidated assignment; no automatic dispatch)
+- [x] Automatically assign compatible available units for explicit simulated help replies; retain employee approval for overdue unanswered follow-ups. (shared backend and local demo; regression tests pass)
+- [x] Complete active dashboard rescues with a shared 30-minute time skip, preserve completion history, release units and automatically serve queued help requests. (backend lifecycle and shared-state adapter tests pass)
 - [x] Build help-request and assignment controls. (implemented; automated checks pass; browser acceptance pending)
 - [x] Show synchronized assignment progress and activity history. (implemented; automated checks pass; browser acceptance pending)
 - [ ] Run the acceptance checks below and record outcomes.
@@ -270,40 +273,37 @@ The full browser acceptance checks below remain pending interactive verification
 7. **No one overlooked:** A seeded overdue household appears in the follow-up queue. Recording contact or resolving the relevant need changes the flag appropriately.
 8. **Community assistance:** A non-customer request follows the same assistance workflow and is ranked by need.
 9. **Repeatable demo:** Reset and replay the multi-hazard scenario successfully, including the simulated clock, check-ins, and deadlines. Simulated data, approximate travel times, and source timestamps remain clearly labeled.
-10. **Area review:** Click a red information icon. The centered popup shows the selected area map, severity, scenario guidance, and a **Generate AI Review** button (with `GEMINI_API_KEY` or `GEMINI_MOCK=1` set, a labeled AI-generated review appears, followed by an **Ask a follow-up** box; without it, an unavailable message appears and the area details remain); evidence opens in a separate paged view. Verify the compact layout fits the viewport and action buttons remain visible without scrolling. **Take action** opens a notification popup on the same dashboard in demo mode; the connected read-only flow retains the older outreach route. Verify Escape/close and focus restoration.
+10. **Area review:** Click a red information icon. The centered popup shows the selected area map, severity, scenario guidance, and a **Generate AI Review** button (with `GEMINI_API_KEY` or `GEMINI_MOCK=1` set, a labeled AI-generated review appears, followed by an **Ask a follow-up** box; without it, an unavailable message appears and the area details remain); evidence opens in a separate paged view. Verify the compact layout fits the viewport and action buttons remain visible without scrolling. **Take action** opens the notification popup on both the connected main page and local demo, including separate risk-message editors when supported by the deployed contract. Verify Escape/close and focus restoration.
 11. **Two-stage check-in:** In Disaster prep, approve the initial notification and verify only safe replies are offered. Confirm one household safe and leave another unanswered. Use the dashboard skip to reach After disaster respond; the earlier safe responder is excluded from repeat outreach and dispatch, while the unanswered household remains. Send the second notification and verify safe/need-help replies and an independent 30-minute area deadline. State-transition tests pass; full browser/shared-state acceptance remains pending.
-12. **Follow-up and dispatch:** Seed safe, needs-help, and unanswered post-disaster check-ins. Skip past the deadline; safe responders are excluded from all response-unit approval even with older recorded needs, while help requests and overdue unanswered cases are available for employee-reviewed dispatch. An urgent request is actionable before the skip.
+12. **Follow-up and dispatch:** Simulate a need-help reply and verify immediate automatic assignment, or a queued help message if no compatible unit is free. Before the deadline, unanswered households have no approval button; after their own 30-minute window, verify manual response-unit approval. Safe responders remain excluded.
+13. **Rescue completion:** Use **Skip 30 min → Complete rescues**. Verify active rescues complete, their linked requests resolve, units are released, completed households leave the map queue, and queued help receives matching freed units. Verify newly assigned rescues stay active until another completion skip and unrelated assignments are preserved.
 
 ## Judge demonstration — target 2–3 minutes
 
-The current fixture rehearsal is local to one browser. Shared notification/assignment updates, assignment completion, and community dispatch below remain integration targets; the connected workflow separately supplies live priority ranking and Mark contacted; do not present them as implemented by `/demo`.
+Use `/demo` for a deterministic browser-local rehearsal; `/demo/local` is an alias. Use `/` with `DATA_SOURCE=database` to demonstrate the same core workflow with persisted shared records. Browser acceptance of the latest shared flow remains pending.
 
-1. Open `/demo` in **Disaster prep**. Show the fictional map, red area-alert count, and household-panel tabs. Open a red information icon, review the local map and evidence, and choose **Take action**.
-2. Review/edit and approve the initial simulated notification in the popup. Confirm a customer safe and leave another unanswered. Show the safe household leaving the queue, then close the popup.
-3. Use **Skip 2 hours → After impact** on the dashboard. In **After disaster respond**, reopen the area alert and approve the second notification. Earlier safe responders are excluded; unanswered households carry forward.
-4. Simulate **need help** for a recipient, or close the popup and use **Skip 30 min → Check responses** to make unanswered second notices overdue. Each area's deadline starts when its own second notice is sent.
-5. Open an eligible household's popup, review a matching local unit, and approve the simulated assignment. Safe households cannot receive units; assigned teams cannot be reused. Cases with no available capability match remain visible.
-6. Show that switching areas or tabs preserves the browser-local rehearsal, then use **Reset demo**. Explain that actual delivery, shared notification/assignment progress and completion remain integration targets. The connected workflow separately supports a live priority queue and Mark contacted.
+1. Open `/demo` in **Disaster prep**, select an area alert, review its evidence and choose **Take action**.
+2. Review the High/Medium/Low messages and approve the initial notification. Simulate one safe confirmation and leave another household unanswered.
+3. Use **Skip 2 hours → After impact**. All areas move to **After disaster respond**. Open the area again and approve its follow-up notification.
+4. Simulate **need help** and show the automatically assigned matching response unit. If no unit is available, the request stays queued.
+5. Use **Skip 30 min → Check responses** and approve a response unit for an unanswered household once its area deadline has passed.
+6. Use **Skip 30 min → Complete rescues**. Show completed households leaving the unresolved queue and units becoming available or serving queued help requests. Repeat for another rescue, then use **Reset demo**. Explain that shared persistence is available on the connected main page, while no real messages or units are sent.
 
 Pitch: **StateWatch helps State Farm employees prepare before disasters, coordinate assistance afterward, and track unresolved needs so no one is overlooked.**
 
 ## Development and change tracking
 
-### Current checkpoint — v1.18
+### Current checkpoint — v1.32
 
-The State Farm themed readiness overview retains the large-dataset map pipeline, geographic membership semantics, and paged record browsing. Summary metrics derive from visible records; the connected desk supplies authoritative priority scores, operational mutations and shared activity history.
+The connected main dashboard and local demo now share the preparation, follow-up, automatic help assignment and rescue-completion flow. The main map retains area popups and shared actions without the separate operational panels below it. Matching backend changes and regenerated bindings are deployed to `statewatch` on Maincloud, including risk-specific notification recipients and messages. Existing scenario data was preserved; the database was not reset during this update.
 
-Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
-seed, verify and switch between separate Small/Demo/Stress databases. The default
-build uses modern schema-v3 Small with ten impact layers. The local main page uses
-the staged Demo fixture (10,000 households). Exposure and decision summaries now
-power the connected operational desk.
+The deployed backend uses the staged Demo fixture: 10,000 households, 56 disaster areas and 220 teams. Normal source builds use the Small fixture. Rebuild and publish the matching Demo bundle before changing the cloud module so a later administrator reset preserves the intended scenario size; see [fixture publication guidance](backend/POPUP_WORKFLOW.md) and [scenario runbook](backend/SCENARIOS.md).
 
-Person 3's [exposure](backend/EXPOSURE.md), [priority scoring](backend/PRIORITY.md) and [follow-up detection](backend/FOLLOW_UP.md) helpers remain available as pure calculations and offline reports. Score/flag persistence, scheduled recomputation and connected queue rendering are implemented.
+Verified on Node 26.13.0 with SpacetimeDB CLI/SDK 2.14.1: 152 backend tests, 51 frontend scenario/adapter/AI tests, TypeScript checks, the staged Demo build and the Webpack production build pass. Targeted ESLint checks on changed frontend files pass. The weather test now checks returned radii independently of database iteration order. Interactive browser acceptance of the latest shared flow remains pending. See [changelog v1.32](changelog.md#version-132--2026-11-08).
 
 ### Local setup
 
-Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. The latest exposure checkpoint additionally records 28 passing backend tests, backend typecheck/build, and nine passing Python tests on SDK-supported Node.js 24.22.1. Lint retains one existing generated-bindings warning. The current frontend production build passes on Node 24.22.1; the earlier CSS worker-port failure did not recur. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
+Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node 24 line. The latest checks passed on Node 26.13.0 with SpacetimeDB CLI/SDK 2.14.1. This app uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4 and ESLint. `npm run build` explicitly uses Webpack; see the changelog for historical build results.
 
 ```sh
 # Optional, if you use nvm:
@@ -317,25 +317,41 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the connected StateWatch main dashboard; `/demo` is the browser-local rehearsal. If SpacetimeDB later runs locally on port 3000, use `npm run dev -- --port 3001` for Next.js.
+Open [http://localhost:3000](http://localhost:3000). Choose the route and data source for your workflow:
 
-With no connection configuration, `/` reports setup instructions; `/demo` retains fictional UI fixtures. For the connected main workflow, follow [SHARED_WORKFLOW.md](backend/SHARED_WORKFLOW.md), set both `NEXT_PUBLIC_SPACETIMEDB_URI` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE` in `frontend/.env.local`, restart Next.js, and enroll the displayed browser identity using the [backend setup instructions](backend/README.md). Partial configuration shows an error. Internet access is needed for OpenStreetMap tiles; tile failure displays a warning while scenario overlays remain available. Copy `frontend/.env.example` to `frontend/.env.local` for the variable names. The AI area review reads `GEMINI_API_KEY` (and optional `GEMINI_MODEL`, default `gemini-3.6-flash`) on the server only; never give either a `NEXT_PUBLIC_` prefix. Restart `npm run dev` after changing either. Without a key the app still runs and **Generate AI Review** reports that AI review is not configured. Optional budget variables (`GEMINI_REVIEW_MAX_PER_MINUTE`, `GEMINI_REVIEW_MAX_PER_DAY`, `GEMINI_REVIEW_MAX_TOKENS_PER_DAY`, `GEMINI_REVIEW_MAX_OUTPUT_TOKENS`, `GEMINI_REVIEW_CACHE_MINUTES`, `GEMINI_THINKING_LEVEL`, and for follow-ups `GEMINI_CHAT_MAX_TURNS`, `GEMINI_CHAT_MAX_OUTPUT_TOKENS`) are listed in `frontend/.env.example`. For testing error states in development only, set `GEMINI_REVIEW_SIMULATE_ERROR` to `rate_limit`, `api_error`, `timeout`, or `invalid_response` (ignored in production builds). To test the review, follow-ups and **Ask AI** assistant without Gemini (for example after the free-tier quota runs out), set `GEMINI_MOCK=1`: answers are canned text built from the snapshot, labeled "mock (no Gemini call)", with no API key, Gemini call or budget use (development only; ignored in production builds). Free-tier Gemini prompts may be used by Google to improve its products, so send only synthetic scenario data. Never commit tokens, API keys, or real customer information.
+| Route | Data and state |
+| --- | --- |
+| `/` | Uses the configured database when `DATA_SOURCE=database`; otherwise uses browser-local dummy data. |
+| `/demo`, `/demo/local` | Always use bundled dummy data; scenario actions reset on reload. No database is required. |
+| `/outreach` | Uses the configured data source for the separate outreach view; `?mode=demo` explicitly selects fixtures. |
+| `/response` | Requires database mode and connection settings for the separate routing workspace. |
 
-The homepage `/` attempts a backend connection whenever both SpacetimeDB variables are configured. If the local server is stopped, start it with `spacetime start --listen-addr 127.0.0.1:3100` and follow the backend runbook for publishing, seeding, and employee enrollment. A connection failure leaves empty records; zero counts in that state do not establish that no alerts exist. Use `/demo/local` for frontend work without a backend. Browser extensions that inject attributes such as `data-sharkid` can cause hydration warnings; retry with extensions disabled for localhost.
+For the shared Maincloud dashboard, configure `frontend/.env.local` and restart Next.js:
+
+```dotenv
+DATA_SOURCE=database
+NEXT_PUBLIC_SPACETIMEDB_URI=https://maincloud.spacetimedb.com/
+NEXT_PUBLIC_SPACETIMEDB_DATABASE=statewatch
+```
+
+Set `DATA_SOURCE=local` to use fixtures on the main page even when database settings are present. `/demo` stays local in either mode. Copy `frontend/.env.example` for other settings; follow [backend setup](backend/README.md) for a separate local database and employee enrollment. A new CLI login or browser identity does not automatically receive application administrator access: **Reset shared dataset** is enabled only for the registered administrator. Internet access is needed for database connections, map tiles and configured AI requests.
+
+The AI area review reads `GEMINI_API_KEY` (and optional `GEMINI_MODEL`, default `gemini-3.6-flash`) on the server only; never give either a `NEXT_PUBLIC_` prefix. Restart `npm run dev` after changing either. Without a key the app still runs and **Generate AI Review** reports that AI review is not configured. Optional budget variables (`GEMINI_REVIEW_MAX_PER_MINUTE`, `GEMINI_REVIEW_MAX_PER_DAY`, `GEMINI_REVIEW_MAX_TOKENS_PER_DAY`, `GEMINI_REVIEW_MAX_OUTPUT_TOKENS`, `GEMINI_REVIEW_CACHE_MINUTES`, `GEMINI_THINKING_LEVEL`, and for follow-ups `GEMINI_CHAT_MAX_TURNS`, `GEMINI_CHAT_MAX_OUTPUT_TOKENS`) are listed in `frontend/.env.example`. For testing error states in development only, set `GEMINI_REVIEW_SIMULATE_ERROR` to `rate_limit`, `api_error`, `timeout`, or `invalid_response` (ignored in production builds). To test the review, follow-ups and **Ask AI** assistant without Gemini (for example after the free-tier quota runs out), set `GEMINI_MOCK=1`: answers are canned text built from the snapshot, labeled "mock (no Gemini call)", with no API key, Gemini call or budget use (development only; ignored in production builds). Free-tier Gemini prompts may be used by Google to improve its products, so send only synthetic scenario data. Never commit tokens, API keys, or real customer information.
 
 Noto Sans is fetched at build time by `next/font/google` and served with the app; the first uncached build needs access to Google Fonts. No browser-time Google Fonts request is required.
 
 ### Try the current UI
 
-1. Open [http://localhost:3000/demo](http://localhost:3000/demo) for the connected popup workflow, or [the local rehearsal](http://localhost:3000/demo/local) for isolated fixtures.
+1. Open [the local demo](http://localhost:3000/demo) for bundled dummy data, or [the main page](http://localhost:3000) for the configured data source. With `DATA_SOURCE=database`, the main page requires an enrolled employee identity.
 2. Click a red information icon for a centered area popup containing the local map, severity, summary preview, and evidence. Use **Take action** to open the notification popup on the same dashboard.
 3. Review/edit and approve the initial notification. Simulate a **safe** reply for a household with no recorded assistance need; it disappears from the map and queue. Leave another household unanswered, then close the popup.
 4. Use **Skip 2 hours → After impact** on the dashboard. The After tab opens with unanswered households retained. Open the area alert again and choose **Take action** to send the second notification; earlier safe responders are excluded.
-5. Simulate **need help**, or close the popup and use **Skip 30 min → Check responses** to reveal overdue silence. Reopen the popup from the alert or a household queue row to approve a matching response unit. Assigned teams become unavailable to other cases; cases without a matching unit remain visible.
+5. Simulate **need help** to automatically assign an available matching simulated response unit on either dashboard. To review unanswered households, close the popup and use **Skip 30 min → Check responses**, then reopen the area and approve a response unit for overdue silence. Assigned teams become unavailable to other cases; help requests without a matching unit remain visible in the help queue.
+6. On the main database-backed dashboard or the local demo, use **Skip 30 min → Complete rescues** to finish active dashboard rescues and release their units. Completed households leave the unresolved queue. Freed units automatically serve waiting matching help requests; otherwise they become available for another assignment. Unanswered cases still require approval after their reply deadline. Repeat the completion skip for later rescues.
 
-The dashboard demo clock applies to all six fictional areas; each second notification starts its own 30-minute reply deadline. Changing tabs or areas preserves state. Before becomes a history view after impact. In `/demo/local`, reloading or leaving clears the rehearsal. Connected notices, replies and assignments survive reloads; an administrator can explicitly reset the shared dataset. Recorded needs and community assistance remain visible for households without a safe confirmation. Safe confirmations remove households from the queue and block response-unit approval without deleting older needs. The older map-free `/outreach` route remains available separately. Connected mode uses authorized subscriptions. Its notification popups persist shared approvals and replies; the additional scenario desk provides authoritative decisions, outreach, requests and employee-reviewed dispatch. AI reviews are generated only on request and are suggestions for employee review; the demo sends no messages and performs no operational dispatch.
+The local fixtures contain six fictional areas; the shared Demo fixture contains 56 disaster areas. The clock advances all areas together, and each follow-up notification has its own 30-minute deadline. Local scenarios reset on reload; shared notices, replies, assignments and completion history persist. Safe confirmations and completed rescues leave the unresolved queue, while recorded assistance history is retained. Reset is local in the demo and administrator-only in shared mode. AI reviews remain on-demand suggestions; neither mode delivers real messages or dispatches real units.
 
-The combined frontend passes TypeScript and all 27 scenario, subscription-adapter and AI contract/budget tests. Interactive visual, responsive, and keyboard acceptance of the combined layout remains pending.
+The latest frontend passes TypeScript, the production build and all 51 scenario, subscription-adapter and AI contract/budget tests. Interactive visual, responsive and keyboard acceptance of the latest shared flow remains pending.
 
 ### Available commands
 
@@ -344,11 +360,10 @@ Run these commands from `frontend/`. From the repository root, use `npm --prefix
 | Command | Purpose | Current verification |
 | --- | --- | --- |
 | `npm run dev` | Start local development | Dashboard browser smoke check passed (user-reported) |
-| `npm run lint` | Run ESLint | Passed with one existing generated-bindings warning |
+| `npm run lint` | Run ESLint | Targeted checks on changed frontend files pass; full lint was not rerun for v1.32 |
 | `npm run typecheck` | Generate route types and check TypeScript | Passed |
-| `npm run build` | Create a production build with default Turbopack | Passed on the combined merge; includes shared, local, outreach, response and AI routes |
-| `npm run build -- --webpack` | Build with Webpack | Passed at v1.20 after the popup workflow, safe-dispatch fix, branding/navigation, and Noto Sans changes |
-| `npm run test:scenario` | Verify browser-local scenario transitions | All 27 scenario, adapter and AI tests passed |
+| `npm run build` | Create a production build with Webpack | Passed; includes main, demo, local demo, outreach, response and AI routes |
+| `npm run test:scenario` | Verify local transitions, shared-state adapters, dialogs and AI contracts | All 51 tests pass |
 | `npm start` | Serve a successful production build | Runtime smoke check pending |
 
 ### Repository structure

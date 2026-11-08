@@ -3,19 +3,22 @@
 import { useState } from 'react';
 import type { DbConnection } from '@/module_bindings';
 import type { MapZone, Selection } from '@/lib/map/types';
-import type { HazardFeedState } from '@/module_bindings/types';
+import { supportsDummyWeather, type DummyWeatherFeed } from '@/lib/map/backend-capabilities';
 
-export function DummyWeatherControls({connection,zones,selection,feed,runId}:{connection:DbConnection|null;zones:MapZone[];selection:Selection;feed?:HazardFeedState;runId?:bigint}) {
+export function DummyWeatherControls({connection,zones,selection,feed,runId}:{connection:DbConnection|null;zones:MapZone[];selection:Selection;feed?:DummyWeatherFeed;runId?:bigint}) {
   const [chosen,setChosen]=useState(''),[interval,setInterval]=useState(30),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const selected = selection?.kind === 'zone' ? selection.id : undefined;
   const areaId = chosen || selected || (feed ? String(feed.areaId) : '') || zones.find(z=>z.simulated)?.id || '';
   const zone = zones.find(z=>z.id===areaId);
+  const available = !!connection?.isActive && supportsDummyWeather(connection.reducers);
   async function act(action:'next'|'play'|'pause') {
     if(!connection?.isActive || runId === undefined || !zone)return;
+    const reducers = connection.reducers;
+    if(!supportsDummyWeather(reducers))return;
     setBusy(true);setError('');
     try {
-      if(action==='next')await connection.reducers.advanceDummyWeather({areaId:BigInt(areaId),expectedRunId:runId});
-      else await connection.reducers.setDummyWeatherFeed({areaId:action==='pause' && feed ? feed.areaId:BigInt(areaId),expectedRunId:runId,enabled:action==='play',intervalSeconds:interval});
+      if(action==='next')await reducers.advanceDummyWeather({areaId:BigInt(areaId),expectedRunId:runId});
+      else await reducers.setDummyWeatherFeed({areaId:action==='pause' && feed ? feed.areaId:BigInt(areaId),expectedRunId:runId,enabled:action==='play',intervalSeconds:interval});
     } catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
   }
   return <section className="guidance dummy-weather-controls" aria-label="Dummy weather stream">
@@ -25,7 +28,8 @@ export function DummyWeatherControls({connection,zones,selection,feed,runId}:{co
     <label>Update interval <select value={interval} disabled={busy || !!feed?.enabled} onChange={e=>setInterval(Number(e.target.value))}>{[15,30,60].map(value=><option key={value} value={value}>{value} seconds</option>)}</select></label>
     <p className="muted small" role="status">{feed?.enabled ? `Playing · ${zones.find(z=>z.id===String(feed.areaId))?.name ?? 'selected area'} · every ${feed.intervalSeconds}s` : 'Paused'} · {feed?.step ?? 0} updates</p>
     {zone?.eventCenter && <p className="small">{zone.hazard} · {zone.severity} severity · {zone.eventCenter.map(n=>n.toFixed(4)).join(', ')}<br/>High / Medium / Low: {zone.radiiMeters?.map(r=>`${(r/1000).toFixed(1)} km`).join(' / ')}</p>}
-    <div className="reply-actions"><button disabled={busy || !zone || runId === undefined} onClick={()=>void act(feed?.enabled?'pause':'play')}>{feed?.enabled?'Pause updates':'Play updates'}</button><button disabled={busy || !!feed?.enabled || !zone || runId === undefined} onClick={()=>void act('next')}>Next weather update</button></div>
+    {!available && <p className="muted small">Weather updates are unavailable on the current connection.</p>}
+    <div className="reply-actions"><button disabled={!available || busy || !zone || runId === undefined} onClick={()=>void act(feed?.enabled?'pause':'play')}>{feed?.enabled?'Pause updates':'Play updates'}</button><button disabled={!available || busy || !!feed?.enabled || !zone || runId === undefined} onClick={()=>void act('next')}>Next weather update</button></div>
     {error && <p role="alert" className="error-banner">{error}</p>}
   </section>;
 }

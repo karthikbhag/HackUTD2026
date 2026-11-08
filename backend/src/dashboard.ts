@@ -5,6 +5,7 @@ import { SenderError, type InferSchema, type ReducerCtx, type ViewCtx } from 'sp
 import type db from './schema';
 import { calculateExposure } from './exposure';
 import { operationalLayers, refreshDecisions } from './decisions';
+import { straightLineKm } from './team-recommendations';
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
 type ReadCtx = Pick<Ctx, 'db'> | Pick<ViewCtx<InferSchema<typeof db>>, 'db'>;
 export function clock(ctx: ReadCtx) {
@@ -56,7 +57,7 @@ export function sendNotice(ctx: Ctx, args: { expectedRunId: bigint; expectedMinu
   const exposed = calculateExposure([...ctx.db.household.iter()].map(h => ({ id: String(h.id), latitude: h.latitude, longitude: h.longitude })), layers);
   const affected = new Set(exposed.households.filter(h => h.affected).map(h => h.householdId));
   const homes = [...ctx.db.household.iter()].filter(h => affected.has(String(h.id)))
-    .filter(h => h.isCustomer && !safe(ctx, state.runId, zone.id, h, phase));
+    .filter(h => h.isCustomer && !safe(ctx, state.runId, zone.id, h, phase) && currentResponse(ctx, state.runId, h.id)?.status !== 'completed');
   if (!homes.length) throw new SenderError('No unconfirmed customer recipients remain');
   saveClock(ctx, state);
   ctx.db.dashboardNotice.insert({ id, runId: state.runId, areaId: zone.id, phase, sentAt: state.minute, deadline: state.minute + 30, message });
@@ -83,12 +84,16 @@ export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMin
 export function advanceClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; step: string }) {
   const state = validateClock(ctx, args), notices = [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === state.runId);
   if (args.step === 'impact') {
-    if (state.minute >= 0 || !notices.some(n => n.phase === 'before')) throw new SenderError('Approve an initial notice before advancing to impact');
+    if (state.minute >= 0) throw new SenderError('Disaster impact has already occurred');
     saveClock(ctx, { ...state, minute: 0 });
     for (const d of [...ctx.db.disaster.iter()]) if (d.isSimulated) ctx.db.disaster.id.update({ ...d, phase: 'response', updatedAt: ctx.timestamp });
     event(ctx, 1n, 'dashboard_impact', 'Shared synthetic clock advanced two hours; earlier safe replies are carried forward by the dashboard policy');
-  } else if (args.step === 'deadline') {
-    if (state.minute < 0 || !notices.some(n => n.phase === 'after' && n.deadline > state.minute)) throw new SenderError('No pending second-notification deadline');
+  } else if (args.step === 'deadline' || args.step === 'complete_rescues') {
+    if (args.step === 'complete_rescues') {
+      const active = [...ctx.db.dashboardResponse.iter()].some(r => r.runId === state.runId
+        && ['assigned', 'in_progress'].includes(ctx.db.assignment.id.find(r.assignmentId)?.status ?? ''));
+      if (state.minute < 0 || !active) throw new SenderError('No active dashboard rescues to complete');
+    } else if (state.minute < 0 || !notices.some(n => n.phase === 'after' && n.deadline > state.minute)) throw new SenderError('No pending second-notification deadline');
     const minute = state.minute + 30;
     saveClock(ctx, { ...state, minute });
     for (const notice of notices.filter(n => n.phase === 'after' && n.deadline <= minute)) {
@@ -97,7 +102,7 @@ export function advanceClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMi
         if (h && r.status === 'unknown' && !safe(ctx, state.runId, notice.areaId, h, 'after') && !currentResponse(ctx, state.runId, h.id)) welfare(ctx, h.id);
       }
     }
-    event(ctx, 1n, 'dashboard_deadline', `Shared clock advanced to T+${minute}; due unanswered cases have welfare-review requests, not automatic dispatch`);
+    event(ctx, 1n, args.step === 'complete_rescues' ? 'dashboard_rescues_completed' : 'dashboard_deadline', `Shared clock advanced to T+${minute}${args.step === 'complete_rescues' ? '; active dashboard rescues completed and units released' : ''}; due unanswered cases have welfare-review requests, not automatic dispatch`);
   } else throw new SenderError('Unknown clock step');
   refreshDecisions(ctx);
 }
@@ -106,21 +111,40 @@ function currentResponse(ctx: ReadCtx, run: bigint, householdId: bigint) {
   const assignment = response && ctx.db.assignment.id.find(response.assignmentId);
   return assignment && assignment.status !== 'cancelled' ? assignment : undefined;
 }
-export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint; areaId?: bigint }) {
+export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint; areaId?: bigint }, automatic = false) {
   const state = validateClock(ctx,args), original = homeArea(ctx,args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId);
   if (state.minute < 0 || safe(ctx, state.runId, hotspot.id, home, 'after')) throw new SenderError('Confirmed-safe or pre-impact households cannot receive dashboard response units');
   if (currentResponse(ctx, state.runId, home.id)) throw new SenderError('Response unit already approved');
   let requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');
   const notice = ctx.db.dashboardNotice.id.find(noticeId(state.runId, hotspot.id, 'after'));
   const recipient = notice && ctx.db.dashboardRecipient.id.find(`${notice.id}:${home.id}`);
-  const checkInNeed = !home.isCustomer && ['needs_help', 'urgent'].includes(home.checkInStatus);
-  if (!requests.length && !checkInNeed && !(recipient && (recipient.status === 'needs_help' || state.minute >= notice!.deadline))) throw new SenderError('No reported need or overdue second-notification reply');
+  if (automatic ? recipient?.status !== 'needs_help' : !recipient || recipient.status !== 'unknown' || state.minute < notice!.deadline) {
+    throw new SenderError(automatic ? 'No explicit help reply' : 'No overdue unanswered second-notification reply');
+  }
   if (!requests.length) requests = [welfare(ctx, home.id)];
   if (requests.some(r => r.status !== 'open')) throw new SenderError('Household already has assigned assistance');
   const team = ctx.db.responseTeam.id.find(args.teamId);
   if (!team || team.status !== 'available' || requests.some(r => !team.capabilities.includes(r.needType) || team.capacity < r.people)) throw new SenderError('Team capability, capacity or availability no longer matches');
   requests.sort((a, b) => b.urgency - a.urgency || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   return { state, requestId: requests[0].id };
+}
+/** Choose a compatible free unit; a missing unit must not discard the help reply. */
+export function prepareAutomaticResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; areaId?: bigint }) {
+  const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId);
+  const selectedArea = args.areaId ?? hotspot.id;
+  const recipient = ctx.db.dashboardRecipient.id.find(`${noticeId(state.runId, selectedArea, 'after')}:${home.id}`);
+  if (state.minute < 0 || recipient?.status !== 'needs_help' || safe(ctx, state.runId, selectedArea, home, 'after') || currentResponse(ctx, state.runId, home.id)) return;
+  const requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');
+  if (!requests.length || requests.some(r => r.status !== 'open' || [...ctx.db.assignment.requestId.filter(r.id)].some(a => ['assigned', 'in_progress'].includes(a.status)))) return;
+  const candidates = [...ctx.db.responseTeam.iter()].filter(team => team.status === 'available'
+    && !ctx.db.responseTeamState.teamId.find(team.id)
+    && ![...ctx.db.assignment.teamId.filter(team.id)].some(a => ['assigned', 'in_progress'].includes(a.status))
+    && requests.every(r => team.capabilities.includes(r.needType) && team.capacity >= r.people));
+  const ranked = candidates.map(team => ({ team, distance: straightLineKm(home, team) }))
+    .sort((a, b) => a.distance - b.distance || (a.team.id < b.team.id ? -1 : a.team.id > b.team.id ? 1 : 0));
+  const team = ranked[0]?.team;
+  if (!team) return;
+  return { ...prepareResponse(ctx, { ...args, teamId: team.id }, true), teamId: team.id };
 }
 export function saveResponse(ctx: Ctx, run: bigint, householdId: bigint, requestId: bigint) {
   const assignment = [...ctx.db.assignment.requestId.filter(requestId)].find(a => ['assigned', 'in_progress'].includes(a.status));

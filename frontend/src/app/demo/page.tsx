@@ -1,2 +1,2 @@
-/** The new demo uses the same configured shared backend as the main page. */
-export { default } from "../page";
+/** Always use bundled dummy data, independent of the main page's database settings. */
+export { default } from "./local/page";

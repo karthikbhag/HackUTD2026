@@ -15,4 +15,5 @@ export default {
   expectedMinute: __t.i32(),
   householdId: __t.u64(),
   teamId: __t.u64(),
+  areaId: __t.option(__t.u64()),
 };
