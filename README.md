@@ -238,6 +238,9 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
+### Current checkpoint — v1.5
+
+The frontend includes the Person 1 map dashboard with temporary fictional UI data. Person 3's portable fixtures, configurable seeded generator, synthetic hazard layers, preparedness catalog, validation, and handoff are available in [data/scenarios](data/scenarios/README.md). Backend code, generated bindings, live subscriptions, fixture/impact rendering integration, exposure/decision logic, and operational controls remain pending. See [changelog v1.5](changelog.md#version-15--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
 ### Current checkpoint — v1.8
 
 The dashboard supports fixture mode and an optional employee-authorized SpacetimeDB subscription connection. The adapter converts IDs, GeoJSON coordinates, timestamps, risk levels, requests, tasks, and assignment-aware team display grouping. Backend workflows exist; operational UI controls, final decision rules, and integrated browser acceptance checks remain pending. See [changelog v1.8](changelog.md#version-18--2026-11-07).

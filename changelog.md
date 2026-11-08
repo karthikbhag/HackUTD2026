@@ -1,5 +1,6 @@
 # Changelog
 
+Current version: **1.5**
 Current version: **1.8**
 
 ## Instructions for future updates
@@ -31,6 +32,24 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
+## Version 1.5 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 2 with synthetic hazard-specific impact layers: tornado damage corridors; nested earthquake shaking footprints; separate hurricane wind/surge areas; wildfire fire/smoke areas; blizzard snow/wind and isolation areas; and irregular flood inundation corridors.
+- Introduced fixture schema/generator v3 for all generated presets. Small contains 10 impact layers; Demo and Stress each contain 93. Geographic context rectangles are now explicitly distinguished from impact footprints, preserving existing household coordinates, record IDs, memberships, teams, and requests.
+- Added 12 reusable employee-review preparedness recommendation templates linked to layers, informed by current NWS, OSHA, and AirNow public guidance. Recorded source URLs and review date; agencies are not presented as sources of the synthetic geometry.
+- Added per-layer qualitative severity/basis, simulation kind/label, authored source, timestamp, contextual links, and modeling limitations. The geometry is not fitted to terrain, coastlines, real wind, hydrology, or seismic conditions.
+- Added simple-polygon QA and expanded metadata/reference validation and regression tests. Updated the dataset handoff, schema compatibility notes, and Person 3 checklist. Kept the original tracked v1 fixture unchanged and retained v1/v2 validation support.
+
+### Verification
+
+- Generated and validated Small (60 households), Demo (10,000), and Stress (100,000) via CLI, including all impact layers and 12 linked recommendation templates per preset.
+- Nine regression tests passed, including legacy v1/v2 compatibility, unchanged base records, seeded repeatability, full Stress validation, component coverage, nested shaking zones, and invalid polygon rejection. Fifteen damaged-fixture mutation cases were rejected, including false live-source labels, missing components, cross-hazard recommendation links, missing human review, and open polygons.
+- Geometry QA checks coordinate ranges, closure, unique vertices, nonzero area, self-intersections, regional bounds, and inner/outer earthquake containment. Tested a valid concave polygon and boundary-inclusive point checks for fixture QA.
+- This is offline data/geometry verification. Household exposure calculation, map rendering of new impact layers, Spacetime persistence, household-specific action suggestions, prioritization, team matching, escalation, and reset remain pending. No live hazard integration or real-world prediction is claimed.
 ## Version 1.8 — 2026-11-07
 
 **Author:** Josh Sebastian
