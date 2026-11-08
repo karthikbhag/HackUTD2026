@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.17**
+Current version: **1.18**
 
 ## Instructions for future updates
 
@@ -30,6 +30,29 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.18 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Started Person 4's operational workflow in `frontend/src/components/workflow/`. This entry replaces the earlier Person 4 v1.15 entry, which was overwritten when main's v1.15 (team recommendations) merged.
+- `actions.ts` adds typed wrappers for every operational reducer (check-in, outreach, tasks, requests, assignments, escalation, reset) and converts string view-model IDs to u64. A `ConnectionLink` reuses the single connection owned by `ConnectedDashboard`, so no second connection or identity is opened.
+- `action-feedback.tsx` shows one shared pending/success/error message after every action. Backend rejections show the reducer's own `SenderError` text, for example "Team is unavailable".
+- `operational-workflow.tsx` is mounted through `MapDashboard`'s `workflowPanel` slot. It includes a household picker with last-contact time and a "Mark contacted" button that calls `recordOutreach`; results return through the existing subscription, so other sessions see them live.
+- Added the live priority queue. `frontend/src/lib/workflow/priority-queue.ts` builds it from subscribed rows by importing Person 3's `rankHouseholds` and `detectFollowUp` from `backend/src` (not copied, so there is one source of truth). Exposure is computed in the browser from subscribed impact layers with `calculateExposure`. With no layers, every household gets empty exposure and the queue says so; unsupported layers are skipped and counted. The clock never runs behind the latest recorded contact, which tolerates browser/database clock skew.
+- `priority-queue.tsx` shows ranked rows with score out of 175, hazard/zone/check-in tags, an Overlooked flag, follow-up concerns, and a "Why this score" breakdown of all six reasons. Views: Needs follow-up (default), Overlooked, and All households, plus a hazard filter, with counts and paging of 25. "Show on map" selects the household; "Mark contacted" records outreach. Labeled "Demo scoring — employee review required", with the assumption label, exposure source, and overlooked rule shown. Time-based rules recompute every 30 seconds.
+- `MapDashboard`'s `workflowPanel` can now be a function that receives the map selection and its setter. This is backward compatible and documented in `frontend/src/components/map/README.md`. `ConnectedDashboard` also passes raw subscribed rows, since the queue needs request urgency and microsecond timestamps.
+- `next.config.ts` sets `turbopack.root` and `outputFileTracingRoot` to the repository root, because Turbopack does not resolve files outside its root. `tsconfig.json` targets ES2020 for BigInt literals in the shared helpers.
+- Reconciled with Aalvee Ahtav's v1.17 redesign: kept the redesigned dashboard and stylesheet unchanged apart from the `workflowPanel` hook, and restyled the workflow/queue CSS with the redesign's brand, border, and status tokens (red pill buttons, shared check-in colors). Restored the workflow styles that the earlier merge had dropped. Updated the README Person 4 checklist and Person 3 integration notes.
+
+### Verification
+
+- After reconciliation: frontend `tsc --noEmit` passed and ESLint on `src` passed with the existing generated-bindings warning. Installing the redesign's new `leaflet.markercluster` dependencies (already in the lockfile) was required for typechecking. Full `npm run lint` still reports six `require()` errors in the redesign's `tests/scenario-demo.test.cjs`, unrelated to this work.
+- Offline smoke test on the Small fixture: 60 households, 24 need follow-up, 12 overlooked, all six hazards mapped. Recording contact on the top household cleared its overlooked flag while it still needed follow-up (score 105 to 90). A synthetic high-severity layer added 30 exposure points, and an unsupported layer was skipped.
+- Before the redesign merge, the dev server rendered the queue after the Turbopack root change; before that change, the backend import failed with "Module not found". After reconciliation, the running dev server reported a cached "Can't resolve leaflet.markercluster CSS" error because it was started before the dependency install; a restart is needed to re-verify rendering.
+- Pending: interactive browser checks, two-session verification of Mark contacted and queue updates, and `npm run build` with the new root on a machine that permits worker ports.
 
 ## Version 1.17 — 2026-11-07
 
