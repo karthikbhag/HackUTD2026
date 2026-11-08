@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.9**
+Current version: **2.0**
 
 ## Instructions for future updates
 
@@ -30,6 +30,26 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 2.0 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 4 with a deterministic SDK-independent priority helper in `backend/src/priority.ts`. Scores use configurable demo weights for strongest unresolved request urgency, capped distinct need types, check-in status, maximum impact severity, capped vulnerability contributions, and explicit-clock contact age.
+- Added six readable reason contributions per household, retained full overlapping exposure evidence, and returned a copy of the configuration used. Customer status has no effect; safe check-ins do not remove unresolved needs. Resolved requests stop contributing urgency/needs, while assigned/in-progress requests remain active.
+- Added deterministic tie-breaking by score, active urgency, oldest/missing contact, and ID; supports string or bigint IDs. Validates clock/contact values, required exposure coverage, duplicate IDs, request references/statuses/urgency, and scoring configuration.
+- Added a pure schema-v3 fixture adapter and an offline priority report command. Full reports include all households; `--summary-only` scores all records but writes the top 25 with configuration and total count. Documented exact weights, caps, time thresholds, ID/time conventions, queue-filter responsibilities, and integration limits in `backend/PRIORITY.md`.
+- Updated README progress and data/backend handoffs. Existing schema, production seed/reset, reducers, generated bindings, and frontend behavior are unchanged; persisted scores and live queue integration remain pending.
+
+### Verification
+
+- All 42 backend tests passed, including 14 new priority cases and the existing 28 workflow, conversion, map, and exposure regressions. All nine Python generator/geometry tests passed. Backend TypeScript checking and Spacetime module build passed on Node 24.22.1.
+- Verified score/reason arithmetic, customer neutrality, safe-but-unresolved cases, urgency/severity escalation, resolution and assignment independence, need/flag deduplication and caps, contact-tier boundaries, exact microsecond parsing, custom weights, deterministic secondary ties, bigint IDs, and invalid inputs. Scored every household in Small (60), Demo (10,000), and Stress (100,000).
+- Ran the offline Stress summary report: all 100,000 households ranked; the top 25 were written to an ignored report. The highest observed score was 150 under default demo weights; this is an exercise result, not an operational urgency threshold or performance guarantee.
+- Before implementation, fast-forwarded the clean local main checkout to the user's already-merged remote main so the exposure helper was available. No new commit, push, database publish, or database mutation was made.
+- Scoring is a derived helper/report, not persisted or subscribed functionality. Overdue/overlooked flags, household-specific suggestions, team recommendations, and live priority queue verification remain pending.
 
 ## Version 1.9 — 2026-11-07
 

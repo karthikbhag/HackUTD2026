@@ -92,7 +92,7 @@ do not imply advance prediction. Coordinates are not residents or safe routes.
 
 Use hotspot summaries or clusters nationally, and load individual households for the selected area or viewport. Scope Spacetime subscriptions to needed data and index the relevant zone/location fields. Seed in controlled batches appropriate to the eventual module. These are integration plans: map clustering, scoped subscriptions, and batched seeding are not implemented here.
 
-The presets verify fixture integrity and the TypeScript exposure helper is tested against all three sizes. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration. Persisted exposure integration, priority rules, household-specific preparedness suggestions, and team recommendations remain subsequent work. Existing legacy Small seed/reset and escalation reducers do not yet use v3 impact layers.
+The presets verify fixture integrity; the TypeScript exposure and [priority scoring helpers](../../backend/PRIORITY.md) are tested against all three sizes. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration. Persisted exposure/score integration, overdue flags, household-specific preparedness suggestions, and team recommendations remain subsequent work. Existing legacy Small seed/reset and escalation reducers do not yet use v3 impact layers.
 
 ## Backend integration
 

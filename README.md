@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.9 — 2026-11-07.** Person 3's pure TypeScript exposure helper calculates coordinate-based matches against all supplied impact layers, retains overlapping hazard evidence, and deduplicates household totals. Small/Demo/Stress calculations and the existing backend suite pass. The map's optional authorized subscriptions and legacy Small seed/reset remain intact; persisted exposure/layer integration and new impact rendering are still pending.
+**Current checkpoint: v2.0 — 2026-11-07.** Person 3's pure TypeScript priority helper ranks households with configurable demo weights and six readable score contributions, using unresolved requests, check-in status, exposure, vulnerabilities, and contact age. Small/Demo/Stress verification, all 42 backend tests, type checking, and module build pass. Existing map subscriptions and legacy Small seed/reset remain intact; persisted exposure/score integration and priority queue rendering remain pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -192,7 +192,7 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading, aggregation, scoped subscriptions, and performance measurements remain pending.
 - [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Rendering and persisted layer integration remain pending.
 - [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); persistence and live UI integration remain pending.
-- [ ] Implement priority scores and readable reasons.
+- [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted/live scores and queue rendering remain pending integration.
 - [ ] Implement overdue-contact/overlooked-case detection.
 - [ ] Implement preparedness action suggestions.
 - [ ] Implement capability/capacity-aware team recommendations and approximate distance/ETA.
@@ -238,9 +238,9 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.9
+### Current checkpoint — v2.0
 
-The dashboard supports fixture mode and optional employee-authorized SpacetimeDB subscriptions. Existing operational reducers and legacy Small seed/reset remain available. Person 3's schema v3 generator provides synthetic hazard layers and preparedness templates; the new [exposure helper and report](backend/EXPOSURE.md) calculate household matches without changing the existing schema or seed source. Persisted impact/exposure relations, priority scores, operational UI controls, and integrated browser acceptance checks remain pending. See [changelog v1.9](changelog.md#version-19--2026-11-07).
+The dashboard supports fixture mode and optional employee-authorized SpacetimeDB subscriptions. Existing operational reducers and legacy Small seed/reset remain available. Person 3 provides synthetic hazard layers, preparedness templates, an [exposure helper](backend/EXPOSURE.md), and [priority scores with explanations](backend/PRIORITY.md). Persisted impact/exposure/score integration, overdue flags, operational UI controls, and integrated browser acceptance checks remain pending. See [changelog v2.0](changelog.md#version-20--2026-11-07).
 
 ### Local setup
 
