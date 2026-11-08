@@ -3,7 +3,7 @@
 import { supportsRiskNotices } from "@/lib/map/backend-capabilities";
 import { encodeRiskMessages, parseRiskMessages, type RiskMessages } from "../../../../backend/src/risk-messages";
 import { useEffect, useRef, useState, type Dispatch } from "react";
-import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, matchingTeam, needsAttention, responseApprovalEligible, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
+import { areaPhase, areaIdFor, confirmedSafe, dashboardHouseholdStatus, matchingTeam, needsAttention, responseApprovalEligible, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import { hazards, type MapData, type MapZone, type Phase } from "@/lib/map/types";
 
 export function NotificationDialog({ data, zone, phase, state, dispatch, onClose, shared = false, busy = false, error, assignmentStatuses }: {
@@ -12,9 +12,9 @@ export function NotificationDialog({ data, zone, phase, state, dispatch, onClose
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const after = phase === "after";
-  const historical = !after && state.minute >= 0;
+  const historical = phase !== areaPhase(state, zone.id);
   const round = state.areas[zone.id]?.[phase];
-  const tiered = !shared || supportsRiskNotices;
+  const tiered = (!shared || supportsRiskNotices) && (!round || !!parseRiskMessages(round.message));
   const households = data.households.filter(row => round?.recipients.includes(row.id) || ( row.riskByArea ? !!row.riskByArea[zone.id] && row.riskByArea[zone.id] !== "None" : areaIdFor(row) === zone.id));
   const recipients = (tiered ? households : data.households.filter(row => areaIdFor(row) === zone.id)).filter(row => (!tiered || row.riskLevel !== "None") && row.isCustomer && !state.completedRescues?.[row.id] && !confirmedSafe(state, row, phase, zone.id));
   const rows = households.filter(row => needsAttention(state, row, phase, zone.id));

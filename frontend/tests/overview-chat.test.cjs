@@ -56,3 +56,14 @@ test('answers keep only known area IDs and cannot add numbers', () => {
   const many = overview.parseOverviewChatAnswer({ answer: 'See these.', relatedAreaIds: snapshot.areas.map(area => area.id) }, snapshot);
   assert.ok(many.answer.relatedAreaIds.length <= overview.OVERVIEW_LIMITS.relatedAreas);
 });
+
+test('combined overview preserves independent phases for the AI assistant', () => {
+  const data = {...demoMapData,zones:demoMapData.zones.map((z,i)=>({...z,workflowPhase:i===0?'after':'before'}))};
+  const mixed = overview.buildOverviewSnapshot(data,'mixed','2026-11-08T12:00:00.000Z');
+  assert.equal(mixed.phase,'mixed');
+  assert.equal(mixed.areas.find(a=>a.id===data.zones[0].id).phase,'after');
+  assert.equal(mixed.areas.find(a=>a.id===data.zones[1].id).phase,'before');
+  assert.ok(overview.parseOverviewChatRequest({snapshot:mixed,history:[],question:'Which areas need preparation?'}).request);
+  mixed.areas[0].phase='invalid';
+  assert.ok(overview.parseOverviewChatRequest({snapshot:mixed,history:[],question:'Which areas need preparation?'}).error);
+});

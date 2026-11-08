@@ -62,6 +62,7 @@ export const DashboardInfoRow = __t.object("DashboardInfoRow", {
   runId: __t.u64(),
   minute: __t.i32(),
   canReset: __t.bool(),
+  scheduledImpacts: __t.bool(),
 });
 export type DashboardInfoRow = __Infer<typeof DashboardInfoRow>;
 

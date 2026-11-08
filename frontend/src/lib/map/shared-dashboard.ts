@@ -40,5 +40,5 @@ export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, noti
     } else state.assignments[String(response.householdId)] = String(assignment.teamId);
     assignmentStatuses[String(response.householdId)] = assignment.status;
   }
-  return { state, runId: info?.runId ?? 0n, ready: !!info, canReset: info?.canReset ?? false, assignmentStatuses };
+  return { state, runId: info?.runId ?? 0n, ready: !!info?.scheduledImpacts, canReset: info?.canReset ?? false, assignmentStatuses };
 }

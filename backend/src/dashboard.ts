@@ -1,3 +1,4 @@
+import { scheduledImpactMinute } from "./event-schedule";
 import { eventRevision, riskLevel } from './risk-bands';
 import { parseRiskMessages, expectedEventVersion } from './risk-messages';
 /** Authoritative adapter for the new dashboard policy. No delivery/network I/O. */
@@ -35,6 +36,16 @@ function homeArea(ctx: ReadCtx, householdId: bigint) {
   if (!hotspot) throw new SenderError('Household area not found');
   return { home, hotspot };
 }
+function areaPhase(ctx: ReadCtx, areaId: bigint, minute: number) {
+  const disaster = ctx.db.disaster.id.find(area(ctx, areaId).disasterId)!;
+  return minute < scheduledImpactMinute(disaster.name, disaster.type) ? 'before' : 'after';
+}
+function updatePhases(ctx: Ctx, minute: number) {
+  for (const d of [...ctx.db.disaster.iter()]) if (d.isSimulated) {
+    const phase = minute >= scheduledImpactMinute(d.name, d.type) ? 'response' : 'preparedness';
+    if (d.phase !== phase) ctx.db.disaster.id.update({ ...d, phase, updatedAt: ctx.timestamp });
+  }
+}
 const noticeId = (run: bigint, areaId: bigint, phase: string) => `${run}:${areaId}:${phase}`;
 function safe(ctx: ReadCtx, run: bigint, areaId: bigint, home: { id: bigint; isCustomer: boolean; checkInStatus: string }, phase: string) {
   if (!home.isCustomer) return home.checkInStatus === 'safe';
@@ -46,7 +57,7 @@ function welfare(ctx: Ctx, householdId: bigint) {
     ?? ctx.db.helpRequest.insert({ id: 0n, householdId, needType: 'welfare_check', urgency: 3, people: 1, status: 'open', createdAt: ctx.timestamp, resolvedAt: undefined });
 }
 export function sendNotice(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; areaId: bigint; message: string }) {
-  const state = validateClock(ctx, args), zone = area(ctx, args.areaId), phase = state.minute < 0 ? 'before' : 'after';
+  const state = validateClock(ctx, args), zone = area(ctx, args.areaId), phase = areaPhase(ctx, zone.id, state.minute);
   const id = noticeId(state.runId, zone.id, phase), message = args.message.trim();
   const messages = parseRiskMessages(message);
   if (!message || message.length > (messages ? 76000 : 4000)) throw new SenderError('Review a message of 1–4000 characters');
@@ -70,7 +81,7 @@ export function sendNotice(ctx: Ctx, args: { expectedRunId: bigint; expectedMinu
   event(ctx, zone.id, 'notification_approved', `${phase} simulated notice approved for ${homes.length} recipients; no messages delivered`);
 }
 export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; reply: string; areaId?: bigint }) {
-  const state = validateClock(ctx, args), original = homeArea(ctx, args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId), phase = state.minute < 0 ? 'before' : 'after';
+  const state = validateClock(ctx, args), original = homeArea(ctx, args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId), phase = areaPhase(ctx, hotspot.id, state.minute);
   if (!['safe', 'needs_help'].includes(args.reply) || (phase === 'before' && args.reply !== 'safe')) throw new SenderError('Invalid reply for this notification phase');
   const recipient = ctx.db.dashboardRecipient.id.find(`${noticeId(state.runId, hotspot.id, phase)}:${home.id}`);
   if (!recipient || safe(ctx, state.runId, hotspot.id, home, phase)) throw new SenderError('Household is not awaiting a reply in this round');
@@ -84,10 +95,11 @@ export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMin
 export function advanceClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; step: string }) {
   const state = validateClock(ctx, args), notices = [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === state.runId);
   if (args.step === 'impact') {
-    if (state.minute >= 0) throw new SenderError('Disaster impact has already occurred');
-    saveClock(ctx, { ...state, minute: 0 });
-    for (const d of [...ctx.db.disaster.iter()]) if (d.isSimulated) ctx.db.disaster.id.update({ ...d, phase: 'response', updatedAt: ctx.timestamp });
-    event(ctx, 1n, 'dashboard_impact', 'Shared synthetic clock advanced two hours; earlier safe replies are carried forward by the dashboard policy');
+    const next = Math.min(...[...ctx.db.disaster.iter()].filter(d => d.isSimulated).map(d => scheduledImpactMinute(d.name, d.type)).filter(t => t > state.minute));
+    if (!Number.isFinite(next)) throw new SenderError('No pending scheduled impacts');
+    saveClock(ctx, { ...state, minute: next });
+    updatePhases(ctx, next);
+    event(ctx, 1n, 'dashboard_impact', `Shared clock advanced to T+${next}; only due disasters enter response`);
   } else if (args.step === 'deadline' || args.step === 'complete_rescues') {
     if (args.step === 'complete_rescues') {
       const active = [...ctx.db.dashboardResponse.iter()].some(r => r.runId === state.runId
@@ -96,14 +108,15 @@ export function advanceClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMi
     } else if (state.minute < 0 || !notices.some(n => n.phase === 'after' && n.deadline > state.minute)) throw new SenderError('No pending second-notification deadline');
     const minute = state.minute + 30;
     saveClock(ctx, { ...state, minute });
-    for (const notice of notices.filter(n => n.phase === 'after' && n.deadline <= minute)) {
+    updatePhases(ctx, minute);
+    event(ctx, 1n, args.step === 'complete_rescues' ? 'dashboard_rescues_completed' : 'dashboard_deadline', `Shared clock advanced to T+${minute}${args.step === 'complete_rescues' ? '; active dashboard rescues completed and units released' : ''}; due unanswered cases have welfare-review requests, not automatic dispatch`);
+  } else throw new SenderError('Unknown clock step');
+  for (const notice of notices.filter(n => n.phase === 'after' && n.deadline <= clock(ctx).minute)) {
       for (const r of [...ctx.db.dashboardRecipient.noticeId.filter(notice.id)]) {
         const h = ctx.db.household.id.find(r.householdId);
         if (h && r.status === 'unknown' && !safe(ctx, state.runId, notice.areaId, h, 'after') && !currentResponse(ctx, state.runId, h.id)) welfare(ctx, h.id);
       }
     }
-    event(ctx, 1n, args.step === 'complete_rescues' ? 'dashboard_rescues_completed' : 'dashboard_deadline', `Shared clock advanced to T+${minute}${args.step === 'complete_rescues' ? '; active dashboard rescues completed and units released' : ''}; due unanswered cases have welfare-review requests, not automatic dispatch`);
-  } else throw new SenderError('Unknown clock step');
   refreshDecisions(ctx);
 }
 function currentResponse(ctx: ReadCtx, run: bigint, householdId: bigint) {
@@ -113,7 +126,7 @@ function currentResponse(ctx: ReadCtx, run: bigint, householdId: bigint) {
 }
 export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint; areaId?: bigint }, automatic = false) {
   const state = validateClock(ctx,args), original = homeArea(ctx,args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId);
-  if (state.minute < 0 || safe(ctx, state.runId, hotspot.id, home, 'after')) throw new SenderError('Confirmed-safe or pre-impact households cannot receive dashboard response units');
+  if (areaPhase(ctx, hotspot.id, state.minute) !== 'after' || safe(ctx, state.runId, hotspot.id, home, 'after')) throw new SenderError('Confirmed-safe or pre-impact households cannot receive dashboard response units');
   if (currentResponse(ctx, state.runId, home.id)) throw new SenderError('Response unit already approved');
   let requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');
   const notice = ctx.db.dashboardNotice.id.find(noticeId(state.runId, hotspot.id, 'after'));
@@ -133,7 +146,7 @@ export function prepareAutomaticResponse(ctx: Ctx, args: { expectedRunId: bigint
   const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId);
   const selectedArea = args.areaId ?? hotspot.id;
   const recipient = ctx.db.dashboardRecipient.id.find(`${noticeId(state.runId, selectedArea, 'after')}:${home.id}`);
-  if (state.minute < 0 || recipient?.status !== 'needs_help' || safe(ctx, state.runId, selectedArea, home, 'after') || currentResponse(ctx, state.runId, home.id)) return;
+  if (areaPhase(ctx, selectedArea, state.minute) !== 'after' || recipient?.status !== 'needs_help' || safe(ctx, state.runId, selectedArea, home, 'after') || currentResponse(ctx, state.runId, home.id)) return;
   const requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');
   if (!requests.length || requests.some(r => r.status !== 'open' || [...ctx.db.assignment.requestId.filter(r.id)].some(a => ['assigned', 'in_progress'].includes(a.status)))) return;
   const candidates = [...ctx.db.responseTeam.iter()].filter(team => team.status === 'available'

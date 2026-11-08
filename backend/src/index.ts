@@ -158,8 +158,16 @@ function escalateSynthetic(ctx: Ctx, disasterId: bigint) {
   if (!row || !row.isSimulated) throw new SenderError('Synthetic scenario not found');
   ctx.db.disaster.id.update({ ...row, phase: 'response', updatedAt: ctx.timestamp });
   for (const area of ctx.db.zone.disasterId.filter(row.id)) ctx.db.zone.id.update({ ...area, riskLevel: Math.min(5, area.riskLevel + 1), updatedAt: ctx.timestamp });
-  for (const layer of ctx.db.impactLayer.disasterId.filter(row.id)) ctx.db.impactLayer.id.update({ ...layer,
-    severity: layer.severity === 'moderate' ? 'high' : 'critical', updatedAt: ctx.timestamp });
+  const layers = operationalLayers(ctx).filter(l=>l.disaster_id===String(row.id));
+  const circle = layers[0]?.geometry.riskCircle;
+  const neighborhood = [...ctx.db.zone.disasterId.filter(row.id)].find(z=>z.level==='neighborhood');
+  if(circle && neighborhood) {
+    const prefix = `event:${row.id}:v`;
+    const version = Math.max(0,...[...ctx.db.impactLayer.disasterId.filter(row.id)].filter(l=>l.id.startsWith(prefix)).map(l=>Number(l.id.slice(prefix.length).split(':')[0])))+1;
+    ingestHazard(ctx,{areaId:String(neighborhood.id),version,hazard:row.type,severity:circle.eventSeverity==='moderate'?'high':'critical',
+      longitude:circle.center[0],latitude:circle.center[1],observedAt:ctx.timestamp.toDate().toISOString(),
+      expiresAt:new Date(Number(ctx.timestamp.microsSinceUnixEpoch/1000n)+86400000).toISOString(),source:row.source,dataKind:'simulation',status:'active'});
+  }
   refreshDecisions(ctx);
   event(ctx, 'disaster', row.id, 'escalated', 'Selected simulated hazard severity increased');
 }
@@ -271,9 +279,9 @@ export const approveDashboardResponse = db.reducer({ ...DashboardArgs, household
 export const resetDashboard = db.reducer({ ...DashboardArgs, confirmation: t.string() }, (ctx, args) => {
   requireEmployee(ctx); validateClock(ctx, args); resetDemo(ctx, { confirmation: args.confirmation });
 });
-const DashboardInfo = t.object('DashboardInfoRow', { id: t.u8(), runId: t.u64(), minute: t.i32(), canReset: t.bool() });
+const DashboardInfo = t.object('DashboardInfoRow', { id: t.u8(), runId: t.u64(), minute: t.i32(), canReset: t.bool(), scheduledImpacts: t.bool() });
 export const dashboardState = db.view({ public: true }, t.array(DashboardInfo), ctx => {
-  const user = ctx.db.employee.identity.find(ctx.sender); return user ? [{ ...clock(ctx), canReset: true }] : [];
+  const user = ctx.db.employee.identity.find(ctx.sender); return user ? [{ ...clock(ctx), canReset: true, scheduledImpacts: true }] : [];
 });
 export const dashboardNotices = db.view({ public: true }, t.array(dashboardNotice.rowType), ctx =>
   ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === clock(ctx).runId) : []);

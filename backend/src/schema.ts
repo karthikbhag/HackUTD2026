@@ -81,7 +81,7 @@ export const dashboardNotice = table({ name: 'dashboard_notice' }, {
 export const dashboardRecipient = table({ name: 'dashboard_recipient' }, {
   id: t.string().primaryKey(), noticeId: t.string().index('btree'), householdId: t.u64().index('btree'),
   status: t.string(), repliedAt: t.option(t.timestamp()),
-  riskLevel: t.string().default('None'), approvedMessage: t.string().default(''), eventVersion: t.string().default(''),
+  riskLevel: t.string().default(''), approvedMessage: t.string().default(''), eventVersion: t.string().default(''),
 });
 export const dashboardResponse = table({ name: 'dashboard_response' }, {
   id: t.string().primaryKey(), runId: t.u64(), householdId: t.u64().index('btree'), requestId: t.u64(), assignmentId: t.u64(),

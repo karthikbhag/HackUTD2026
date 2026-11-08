@@ -1,3 +1,4 @@
+import { scheduledImpactMinute } from "./event-schedule";
 import { describe, expect, it } from 'vitest';
 import type { ReducerCtx, InferSchema } from 'spacetimedb/server';
 import { ConnectionId, Timestamp } from 'spacetimedb';
@@ -10,7 +11,7 @@ const outsider = TestAuth.fromJwtPayload(JSON.stringify({ iss: 'test', sub: 'das
 function fixture() {
   const test = createModuleTestHarness(db, api); test.clock.set(new Timestamp(1900000000000000n));
   test.withReducerTx(admin, ctx => { api.init(ctx, {}); api.seedDemo(ctx, {}); api.setEmployee(ctx, { identity: test.viewContext(employee).sender, enabled: true }); });
-  const areas = [...test.db.zone.iter()].filter(z => z.level === 'neighborhood');
+  const areas = [...test.db.zone.iter()].filter(z => z.level === 'neighborhood').sort((a,b) => scheduledImpactMinute(test.db.disaster.id.find(a.disasterId)!.name, test.db.disaster.id.find(a.disasterId)!.type) - scheduledImpactMinute(test.db.disaster.id.find(b.disasterId)!.name, test.db.disaster.id.find(b.disasterId)!.type));
   const args = () => { const s = api.dashboardState(test.viewContext(employee))[0]; return { expectedRunId: s.runId, expectedMinute: s.minute }; };
   const run = (auth: typeof employee, body: (ctx: ReducerCtx<InferSchema<typeof db>>, current: ReturnType<typeof args>) => unknown) => {
     const current = args(); test.withReducerTx(auth, ctx => { body(ctx, current); });
@@ -130,14 +131,23 @@ describe('shared popup dashboard', () => {
     expect(test.db.assignment.count()).toBe(before);
     expect(api.dashboardResponses(test.viewContext(employee))).toEqual([]);
   });
-  it('advances all areas to impact without requiring preparation notices', () => {
-    const { test, areas, args, impact, send } = fixture();
+  it('advances only scheduled events and allows preparation outreach after the first impact', () => {
+    const { test, areas, args, impact, send, homes, run } = fixture();
     impact();
     expect(args().expectedMinute).toBe(0);
     expect(api.dashboardNotices(test.viewContext(employee))).toEqual([]);
-    expect(() => impact()).toThrow(/already/);
     send(areas[1].id);
-    expect(api.dashboardNotices(test.viewContext(employee))[0].phase).toBe('after');
+    expect(api.dashboardNotices(test.viewContext(employee))[0].phase).toBe('before');
+    expect(test.db.disaster.id.find(areas[0].disasterId)?.phase).toBe('response');
+    expect(test.db.disaster.id.find(areas[1].disasterId)?.phase).toBe('preparedness');
+    const pendingHome = homes(areas[1].id).find(h => h.isCustomer)!;
+    expect(() => run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, areaId: areas[1].id, householdId: pendingHome.id, reply: 'needs_help' }))).toThrow(/Invalid reply/);
+    run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, areaId: areas[1].id, householdId: pendingHome.id, reply: 'safe' }));
+
+    impact();
+    expect(args().expectedMinute).toBe(90);
+    send(areas[1].id);
+    expect([...test.db.dashboardNotice.areaId.filter(areas[1].id)].map(n => n.phase).sort()).toEqual(['after','before']);
   });
   it('keeps synthetic deadline concerns independent of recent contact and supports critical exposure in the connected queue', () => {
     const { test } = fixture();
@@ -190,8 +200,9 @@ describe('shared popup dashboard', () => {
     const lateHome = homes(areas[1].id).find(h => h.isCustomer && ![...test.db.helpRequest.householdId.filter(h.id)].length)!;
     send(); impact(); send();
     run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'deadline' }));
+    impact();
     send(areas[1].id);
-    const late = [...test.db.dashboardNotice.areaId.filter(areas[1].id)][0]; expect(late.deadline).toBe(60);
+    const late = [...test.db.dashboardNotice.areaId.filter(areas[1].id)][0]; expect(late.deadline).toBe(120);
     expect([...test.db.helpRequest.householdId.filter(lateHome.id)]).toHaveLength(0);
     expect(() => run(employee, (ctx, current) => api.approveDashboardResponse(ctx, { ...current, householdId: lateHome.id, teamId: 1n }))).toThrow(/No overdue unanswered/);
     run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...current, step: 'deadline' }));

@@ -26,3 +26,14 @@ describe('risk bands',()=>{
     expect(parseRiskMessages('Legacy reviewed text')).toBeUndefined();
   });
 });
+
+it('uses geodesic distance between rendered vertices and excludes points just outside the radius',()=>{
+  const center=[-97,33] as const, radius=1000, angular=radius/6371008.8, bearing=0.31,lat=center[1]*Math.PI/180,lon=center[0]*Math.PI/180;
+  const locate=(r:number)=>{
+    const a=r/6371008.8,y=Math.asin(Math.sin(lat)*Math.cos(a)+Math.cos(lat)*Math.sin(a)*Math.cos(bearing));
+    return {latitude:y*180/Math.PI,longitude:(lon+Math.atan2(Math.sin(bearing)*Math.sin(a)*Math.cos(lat),Math.cos(a)-Math.sin(lat)*Math.sin(y)))*180/Math.PI};
+  };
+  const layer={id:'circle',disaster_id:'event',hazard_type:'tornado' as const,severity:'critical' as const,geometry:circlePolygon(center,radius),component:'risk',data_kind:'simulation' as const,is_simulated:true,source:'fixture',updated_at:'2026-01-01T00:00:00Z',label:'High'};
+  const results=calculateExposure([{id:'edge',...locate(radius)},{id:'outside',...locate(radius+0.1)}],[layer]);
+  expect(results.households.map(h=>riskLevel(h.highestSeverity))).toEqual(['High','None']);
+});

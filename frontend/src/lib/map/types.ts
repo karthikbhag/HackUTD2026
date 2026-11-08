@@ -13,6 +13,9 @@ export type Phase = "before" | "after";
 // Leaflet uses [latitude, longitude]; reverse GeoJSON [longitude, latitude] in the adapter.
 export type Coordinate = [latitude: number, longitude: number];
 export interface MapZone {
+  impactMinute?: number;
+  impactRegion?: string;
+  workflowPhase?: Phase;
   eventVersion?: string;
   eventCenter?: Coordinate;
   radiiMeters?: [number, number, number];

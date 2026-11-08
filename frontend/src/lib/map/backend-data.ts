@@ -1,3 +1,4 @@
+import { impactRegion, scheduledImpactMinute } from "../../../../backend/src/event-schedule";
 import { eventRevision, riskCircles, riskLevel } from '../../../../backend/src/risk-bands';
 import { calculateExposure, type ImpactLayer as ExposureLayer } from '../../../../backend/src/exposure';
 import type { ResponseTeamState, WelfareVisit, Assignment, Disaster, HelpRequest, Household, ImpactLayer, PreparednessTask, ResponseTeam, Zone } from "../../module_bindings/types";
@@ -47,7 +48,7 @@ export function toMapData(rows: OperationalRows): MapData {
     if (!disaster || !Object.prototype.hasOwnProperty.call(hazards, disaster.type)) throw new Error("Unknown disaster for map zone.");
     const parent = row.parentZoneId !== undefined ? sourceZones.get(row.parentZoneId) : undefined;
     return {
-      id: String(row.id), name: row.name, hazard: disaster.type as Hazard,
+      impactRegion: impactRegion(disaster.name), impactMinute: scheduledImpactMinute(disaster.name, disaster.type), id: String(row.id), name: row.name, hazard: disaster.type as Hazard,
       severity: row.riskLevel >= 5 ? "critical" as const : row.riskLevel >= 3 ? "high" as const : "moderate" as const,
       boundary: boundary(row.boundary), contextBoundary: parent ? boundary(parent.boundary) : undefined,
       source: disaster.source, updatedAt: row.updatedAt.toDate().toISOString(), simulated: disaster.isSimulated,

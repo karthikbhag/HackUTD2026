@@ -12,13 +12,13 @@ export function outreachHref(zoneId: string, demo: boolean) {
   return `/outreach?${new URLSearchParams({ area: zoneId, mode: demo ? "demo" : "connected" })}`;
 }
 
-export function AreaReviewDialog({ data, zone, phase, demo, onClose, onTakeAction }: { data: MapData; zone: MapZone; phase: Phase; demo: boolean; onClose: () => void; onTakeAction?: () => void }) {
+export function AreaReviewDialog({ data, zone, phase, demo, onClose, onTakeAction, scenarioMinute }: { data: MapData; zone: MapZone; phase: Phase; scenarioMinute?: number; demo: boolean; onClose: () => void; onTakeAction?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mapReady, setMapReady] = useState(false);
   const [selection, setSelection] = useState<Selection>({ kind: "zone", id: zone.id });
   const areaData = useMemo<MapData>(() => ({
     zones: data.zones.filter(row => row.id === zone.id),
-    households: data.households.filter(row => (row.hotspotId ?? row.zoneId) === zone.id),
+    households: data.households.filter(row => (row.hotspotId ?? row.zoneId) === zone.id || !!row.riskByArea?.[zone.id]),
     teams: data.teams.filter(row => (row.hotspotId ?? row.zoneId) === zone.id),
     impactLayers: data.impactLayers?.filter(row => row.hotspotId === zone.id),
   }), [data, zone.id]);
@@ -39,7 +39,7 @@ export function AreaReviewDialog({ data, zone, phase, demo, onClose, onTakeActio
   }, []);
   return <dialog ref={dialog} className="area-review-dialog" aria-labelledby="area-review-title" onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="area-review-content">
-      <header className="dialog-heading"><div><p className="eyebrow">Area intelligence</p><h2 id="area-review-title">Disaster area review</h2></div><button className="dialog-close" aria-label="Close area review" onClick={onClose} autoFocus>×</button></header>
+      <header className="dialog-heading"><div><p className="eyebrow">Area intelligence</p><h2 id="area-review-title">Disaster area review</h2>{zone.impactMinute !== undefined && <div className="area-impact-time"><strong>Scheduled impact: T+{zone.impactMinute} min</strong><span>{scenarioMinute === undefined ? (phase === "before" ? "Pending" : "Impacted") : zone.impactMinute > scenarioMinute ? `In ${zone.impactMinute - scenarioMinute} minutes` : zone.impactMinute === scenarioMinute ? "Impact time reached" : `${scenarioMinute - zone.impactMinute} minutes since impact`} · Simulated time</span></div>}</div><button className="dialog-close" aria-label="Close area review" onClick={onClose} autoFocus>×</button></header>
       <div className="dialog-review-body">
       <section className="dialog-area-map map-panel" aria-label={`${zone.name} area map`}>
         {mapReady ? <DisasterMap data={areaData} selection={selection} onSelect={setSelection} overviewVersion={0}/> : <div className="map-loading" role="status">Loading area map…</div>}

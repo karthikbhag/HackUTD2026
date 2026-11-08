@@ -13,7 +13,7 @@ type Message = { question: string; fingerprint: string; answer?: string; related
  * areas currently shown on the map (counts only; no household names or locations).
  * Text only: it never sends notifications, dispatches teams, changes records, or sets priorities.
  */
-export function AiAssistant({ data, phase, onOpenArea }: { data: MapData; phase: Phase; onOpenArea: (areaId: string) => void }) {
+export function AiAssistant({ data, phase, onOpenArea }: { data: MapData; phase: Phase | "mixed"; onOpenArea: (areaId: string) => void }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
