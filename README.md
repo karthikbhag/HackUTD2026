@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.14 — 2026-11-07.** Isolated Small/Demo/Stress builds and v3 footprint persistence feed the authorized subscription/map pipeline. Regional households, distinct dataset/filter/drawn counts, national summaries, viewport markers and paged lists are implemented. Person 3's priority and follow-up helpers are also available as pure calculations/offline reports. Persisted exposure/score/flag integration and queue rendering remain pending; browser/build limitations are recorded in the [scenario runbook](backend/SCENARIOS.md).
+**Current checkpoint: v1.14 — 2026-11-07.** Isolated Small/Demo/Stress builds and v3 footprint persistence feed the authorized subscription/map pipeline. Regional households, distinct dataset/filter counts, hazard-colored household clustering, padded region/point navigation, responsive US view limits and paged lists are implemented. Map DOM regression checks pass; final browser acceptance remains pending. Person 3's priority and follow-up helpers are also available as pure calculations/offline reports. Persisted exposure/score/flag integration and queue rendering remain pending; browser/build limitations are recorded in the [scenario runbook](backend/SCENARIOS.md).
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
