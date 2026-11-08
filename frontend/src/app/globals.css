@@ -1,19 +1,107 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-}
+/* Base palette, typography, and shared keyboard focus styles. */
+:root { --background: #f4f5f2; --foreground: #24352f; }
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --font-sans: Arial, Helvetica, sans-serif; --font-mono: "Courier New", monospace; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 14px; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #3978bf; outline-offset: 3px; }
+button { transition: background .15s; }
+button:hover { background-color: #edf1ec; }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "Courier New", monospace;
-}
+/* Application header, branding, and connection indicator. */
+.app-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; background: #fff; border-bottom: 1px solid #dce2da; padding: 20px 32px; }
+.brand { display: flex; align-items: center; gap: 10px; color: #24352f; text-decoration: none; font-size: 23px; font-weight: 750; letter-spacing: -.8px; }
+.brand-symbol { background: #b64239; color: #fff; font-size: 20px; padding: 4px 10px; border-radius: 9px 9px 9px 0; }
+.brand-subtitle { margin-left: 18px; padding-left: 20px; border-left: 1px solid #dce2da; font-size: 12px; font-weight: 400; letter-spacing: .2px; color: #6a756e; }
+.connection { display: flex; align-items: center; gap: 7px; color: #78652f; font-size: 12px; }
+.connection > span { width: 7px; height: 7px; border-radius: 50%; background: #b08b3e; }
+.connection.live > span { background: #35816f; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
+/* Page heading and before/after presentation toggle. */
+.workspace-heading { padding: 30px 32px 22px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.eyebrow { font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; color: #69776e; margin: 0 0 12px; }
+h1 { font-size: clamp(26px, 3vw, 36px); letter-spacing: -1.2px; margin: 0 0 10px; font-weight: 600; }
+h2 { font-size: 21px; font-weight: 600; line-height: 1.3; margin: 0 0 10px; letter-spacing: -.4px; }
+h3 { font-size: 12px; font-weight: 700; margin: 0 0 12px; }
+p { line-height: 1.6; }
+.muted { color: #6a756e; margin: 0; line-height: 1.65; }
+.small { font-size: 12px; }
+.phase-toggle { display: flex; padding: 4px; background: #e7ebe4; border-radius: 7px; flex-shrink: 0; }
+.phase-toggle button { border: 0; background: transparent; padding: 10px 14px; border-radius: 5px; color: #657168; font-size: 12px; }
+.phase-toggle button[aria-pressed="true"] { color: #fff; background: #2c4a3e; box-shadow: 0 2px 4px #24352f16; }
+.demo-banner, .error-banner { margin: 0 32px 20px; padding: 11px 15px; background: #f4eddb; border: 1px solid #e5d9b5; color: #78612f; display: flex; gap: 14px; font-size: 12px; border-radius: 5px; }
+.error-banner { background: #fae7e4; color: #9b332d; }
+
+/* Desktop layout: hazard sidebar, flexible map, and selection details. */
+.workspace-grid { display: grid; grid-template-columns: 220px minmax(300px, 1fr) 305px; margin: 0 32px; border: 1px solid #dce2da; border-radius: 9px; background: #fff; overflow: hidden; min-height: 650px; }
+.layers-panel { padding: 24px 18px; border-right: 1px solid #e2e7df; }
+.hazard-filters { margin: 20px 0 24px; display: grid; gap: 3px; }
+.hazard-filters label { display: flex; gap: 8px; align-items: center; padding: 9px 0; font-size: 12px; cursor: pointer; }
+.hazard-filters input { accent-color: #2c4a3e; }
+.hazard-filters small { margin-left: auto; color: #869087; }
+.hazard-dot { width: 7px; height: 7px; border-radius: 50%; }
+.section-title { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid #e2e7df; padding-top: 20px; }
+.count { background: #eff2ed; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #657168; }
+.hotspot-list { display: grid; gap: 7px; max-height: 400px; overflow: auto; }
+.hotspot-list button { border: 1px solid #e2e7df; border-radius: 5px; background: #fff; text-align: left; padding: 12px; display: grid; justify-items: start; gap: 6px; }
+.hotspot-list button:hover, .hotspot-list button[aria-pressed="true"] { border-color: #758f7e; background: #f3f6f0; }
+.hotspot-list strong { font-size: 12px; font-weight: 600; }
+.hotspot-type { font-size: 10px; font-weight: 700; }
+
+/* Text badges supplement map outlines so severity is readable beyond color alone. */
+.severity, .tag { display: inline-block; font-size: 10px; font-weight: 600; text-transform: capitalize; padding: 3px 7px; border-radius: 4px; background: #eef1eb; color: #56695a; }
+.severity.critical { color: #a23730; background: #fae6e3; }
+.severity.high { color: #966320; background: #f6ebd8; }
+.severity.moderate { color: #536c4e; background: #eaf0e4; }
+
+/* Map toolbar and canvas. The wrapper supplies height for the absolute Leaflet container. */
+.map-panel { display: flex; flex-direction: column; min-width: 0; }
+.map-toolbar { padding: 17px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e7df; gap: 10px; }
+.map-toolbar strong { display: block; font-size: 12px; margin-bottom: 5px; }
+.map-toolbar span { color: #6a756e; font-size: 11px; }
+.map-toolbar button { background: #fff; border: 1px solid #dce2da; border-radius: 4px; padding: 8px 10px; white-space: nowrap; font-size: 11px; }
+.map-wrapper { position: relative; flex: 1; min-height: 490px; }
+/* Keep Leaflet panes inside the canvas stacking context and below page-level content. */
+.map-canvas { position: absolute; inset: 0; background: #e5e9df; z-index: 0; }
+.map-loading { min-height: 490px; flex: 1; display: grid; place-items: center; background: #e5e9df; color: #56695a; }
+/* Matches the divIcon class generated by disaster-map.tsx. */
+.team-marker { text-align: center; background: #2e5b72; color: #fff; font: bold 20px/22px Arial; border: 2px solid #fff; border-radius: 5px; box-shadow: 0 1px 5px #24352f40; }
+.tile-warning { position: absolute; bottom: 35px; left: 12px; right: 12px; z-index: 500; padding: 10px; border-radius: 5px; background: #fff5dc; color: #78612f; font-size: 12px; }
+.tile-warning button { text-decoration: underline; }
+.map-legend { padding: 13px 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 10px; border-top: 1px solid #e2e7df; }
+.map-legend span { display: flex; align-items: center; gap: 5px; }
+.household-key { width: 9px; height: 9px; border-radius: 50%; background: #b74943; }
+.team-key { background: #2e5b72; color: white; width: 13px; height: 13px; line-height: 13px; text-align: center; border-radius: 3px; font-style: normal; }
+.map-hint { padding: 0 15px 12px; font-size: 10px; color: #6a756e; margin: 0; }
+
+/* Read-only zone context, selected records, and source information. */
+.detail-panel { border-left: 1px solid #e2e7df; padding: 24px 20px; overflow-wrap: anywhere; }
+.panel-heading { display: flex; justify-content: space-between; align-items: baseline; }
+.text-button { border: 0; background: transparent; color: #6a756e; font-size: 11px; }
+.tag-row { display: flex; gap: 7px; margin: 5px 0 14px; }
+.guidance { margin: 22px 0; background: #f1f4ed; border-left: 3px solid #7b9174; padding: 14px; }
+.guidance h3 { margin-bottom: 7px; }
+.guidance p { font-size: 12px; margin: 0 0 8px; }
+.guidance small { font-size: 10px; color: #657168; line-height: 1.5; display: block; }
+.detail-panel section { margin-top: 23px; }
+.record-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid #e2e7df; padding: 12px 2px; }
+.record-row[aria-pressed="true"] { background: #f1f4ed; }
+.record-row strong { font-size: 11px; font-weight: 600; display: block; }
+.record-row small { font-size: 10px; color: #6a756e; display: block; margin-top: 4px; }
+.status-label { font-size: 10px; color: #966320; text-transform: capitalize; text-align: right; }
+.selected-record { border: 1px solid #dce2da; padding: 14px; border-radius: 5px; }
+dl { font-size: 11px; margin-bottom: 0; } dt { color: #6a756e; margin-top: 12px; } dd { margin: 3px 0 0; text-transform: capitalize; line-height: 1.5; }
+.source-note { font-size: 10px; color: #6a756e; line-height: 1.8; margin-top: 24px; border-top: 1px solid #e2e7df; padding-top: 16px; }
+.app-footer { padding: 18px 32px; display: flex; gap: 15px; justify-content: space-between; color: #788379; font-size: 10px; }
+.workflow-panel { margin: 20px 32px; }
+
+/* Wide screens give sidebars more room while the map absorbs remaining space. */
+@media (min-width: 1600px) { .workspace-grid { grid-template-columns: 250px minmax(300px, 1fr) 340px; } }
+/* Move details below the map before the three-column layout becomes cramped. */
+@media (max-width: 1150px) { .workspace-grid { grid-template-columns: 200px minmax(300px, 1fr); } .detail-panel { grid-column: 1 / -1; border-left: 0; border-top: 1px solid #e2e7df; } .detail-panel section { max-width: 650px; } .brand-subtitle { display: none; } }
+/* Phones stack panels and scroll hotspot cards horizontally to preserve map space. */
+@media (max-width: 700px) { .app-header { padding: 16px; flex-wrap: wrap; gap: 12px; } .brand { font-size: 21px; } .workspace-heading { padding: 22px 16px 18px; align-items: start; flex-direction: column; } .workspace-grid { margin: 0 12px; grid-template-columns: minmax(0, 1fr); } .demo-banner, .error-banner { margin: 0 12px 16px; flex-direction: column; gap: 3px; } .layers-panel { border-right: 0; border-bottom: 1px solid #e2e7df; padding: 18px; } .hazard-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 18px; margin: 12px 0; } .hotspot-list { display: flex; overflow-x: auto; max-height: none; } .hotspot-list button { min-width: 165px; } .map-wrapper, .map-loading { min-height: 420px; } .detail-panel { grid-column: auto; } .app-footer { padding: 18px 16px; flex-direction: column; gap: 7px; } }
