@@ -5,12 +5,13 @@ import { DbConnection, tables } from "@/module_bindings";
 import { toMapData, type OperationalRows } from "@/lib/map/backend-data";
 import type { DataStatus, MapData } from "@/lib/map/types";
 import { MapDashboard } from "./map-dashboard";
+import { OutreachDashboard } from "./outreach-dashboard";
 import { OperationalWorkflow } from "@/components/workflow/operational-workflow";
 import { ConnectionLink } from "@/components/workflow/actions";
 
 const empty: MapData = { zones: [], households: [], teams: [] };
 
-export function ConnectedDashboard({ uri, database }: { uri: string; database: string }) {
+export function ConnectedDashboard({ uri, database, areaId }: { uri: string; database: string; areaId?: string }) {
   const [state, setState] = useState<{ data: MapData; rows?: OperationalRows; status: DataStatus; errorMessage?: string; identity?: string }>({ data: empty, status: "loading" });
   // Person 4: reducer calls reuse this single connection; no second identity is opened.
   const [link] = useState(() => new ConnectionLink());
@@ -83,6 +84,7 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
     return () => { disposed = true; };
   }, [uri, database, link]);
 
+  if (areaId !== undefined) return <OutreachDashboard {...state} areaId={areaId}/>;
   const { rows, ...dashboard } = state;
   return <MapDashboard {...dashboard} workflowPanel={({ selection, onSelect }) => <OperationalWorkflow data={state.data} rows={rows} status={state.status} identity={state.identity} actions={link.actions} database={database} uri={uri} selection={selection} onSelect={onSelect} />} />;
 }
