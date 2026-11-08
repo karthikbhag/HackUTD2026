@@ -9,6 +9,7 @@ import { DashboardIcon } from "./dashboard-icon";
 import { AreaReviewDialog } from "./area-review-dialog";
 import { ConnectedActionDialog } from "./connected-action-dialog";
 import { NotificationDialog } from "./notification-dialog";
+import { AiAssistant } from "./ai-assistant";
 import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import type { SharedDashboard } from "@/lib/map/shared-dashboard";
 import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
@@ -151,6 +152,7 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
     {!scenarioEnabled && notificationZone && renderWorkspace && <ConnectedActionDialog key={notificationZone.id} name={notificationZone.name} onClose={() => setNotificationId(null)}>{renderWorkspace(data, notificationZone, effectiveSelection, setSelection)}</ConnectedActionDialog>}
     {scenarioEnabled && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}-${sharedDashboard?.runId ?? "local"}`} data={filtered} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} shared={!!sharedDashboard} busy={sharedBusy} error={sharedError} assignmentStatuses={sharedDashboard?.assignmentStatuses} onClose={() => setNotificationId(null)}/>}
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{typeof workflowPanel === "function" ? workflowPanel({ selection: effectiveSelection, onSelect: setSelection }) : workflowPanel}</section>}
+    {visible.zones.length > 0 && <AiAssistant data={visible} phase={phase} onOpenArea={openAreaReview}/>}
     <footer className="app-footer"><span>StateWatch · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>
   </main>;
 }

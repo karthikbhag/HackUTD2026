@@ -429,4 +429,52 @@ dl { font-size: 12px; margin-bottom: 0; } dt { color: var(--muted); margin-top: 
 .ai-review-error { border: 1px solid #e3b5ad; background: #fdf1ef; color: #8b2a1d; border-radius: 4px; padding: 8px 10px; font-size: 12px; line-height: 1.5; margin-top: 8px; }
 .ai-review-stale { background: #fff6dc; border-radius: 4px; padding: 6px 8px; font-size: 11px; }
 
+/* Person 4 AI follow-up questions (Gemini) */
+.ai-chat { border-top: 1px solid #eadfd7; margin-top: 10px; padding-top: 8px; }
+.ai-chat-thread { max-height: 240px; overflow-y: auto; padding-right: 4px; margin-bottom: 8px; }
+.ai-chat-turn { margin-bottom: 10px; }
+.ai-review p.ai-chat-question { font-size: 12px; margin: 0 0 4px; }
+.ai-chat-answer { background: #fff; border: 1px solid #f0e4dc; border-radius: 4px; padding: 6px 8px; }
+.ai-review .ai-chat-answer p { font-size: 12px; line-height: 1.5; margin: 4px 0; white-space: pre-line; }
+.ai-chat-starters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ai-chat-starters button, .ai-chat-retry { font-size: 11px; padding: 4px 8px; border: 1px solid #e7ded8; background: #fff; border-radius: 999px; cursor: pointer; }
+.ai-chat-starters button:disabled, .ai-chat-retry:disabled { opacity: .6; cursor: default; }
+.ai-chat-form { display: flex; gap: 6px; margin-bottom: 6px; }
+.ai-chat-form input { flex: 1; min-width: 0; font-size: 12px; padding: 6px 8px; border: 1px solid #e7ded8; border-radius: 4px; }
+.ai-chat-form button { font-size: 12px; padding: 6px 12px; }
+.ai-chat-form button:disabled, .ai-chat-form input:disabled { opacity: .6; }
+
+/* Area popup: the middle scrolls so the review and follow-ups stay reachable above the fixed actions. */
+.dialog-review-body { overflow: hidden; grid-template-rows: minmax(0, 1fr); }
+.dialog-review-body > .compact-area-brief { overflow-y: auto; min-height: 0; padding-right: 6px; overscroll-behavior: contain; }
+@media (max-width: 700px) {
+  /* Stacked layout: scroll the map and details together rather than a short inner box. */
+  .dialog-review-body { overflow-y: auto; grid-template-rows: auto; overscroll-behavior: contain; }
+  .dialog-review-body > .compact-area-brief { overflow: visible; padding-right: 0; }
+}
+
 .connected-action-dialog { overflow-y: auto; }
+
+/* Person 4 dataset-wide AI assistant (Gemini). Floats bottom-right above the page; modal popups (top layer) still cover it. */
+.ai-assistant-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 1000; border: 0; border-radius: 999px; padding: 12px 20px; background: var(--brand); color: white; font-weight: 700; font-size: 13px; box-shadow: 0 8px 24px #0003; cursor: pointer; }
+.ai-assistant-launcher:hover { background: var(--brand-dark); }
+.ai-assistant-launcher:focus-visible { outline: 3px solid #f5b5ad; outline-offset: 2px; }
+.ai-assistant { position: fixed; right: 20px; bottom: 20px; z-index: 1000; width: min(400px, calc(100vw - 32px)); max-height: min(600px, calc(100dvh - 40px)); display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #e7ded8; border-top: 3px solid var(--brand); border-radius: 10px; background: #fffbf8; box-shadow: 0 18px 60px #0004; }
+.ai-assistant-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ai-assistant-header > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ai-assistant-header strong { font-size: 14px; }
+.ai-assistant-header .dialog-close { width: 28px; height: 28px; font-size: 20px; }
+.ai-assistant .ai-tag { background: #fbe9df; color: #8a3b12; text-transform: none; }
+.ai-assistant-scope { font-size: 11px; line-height: 1.5; color: #6b625c; margin: 0; }
+.ai-assistant-thread { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.ai-assistant .ai-chat-question { font-size: 12px; margin: 0 0 4px; }
+.ai-assistant .ai-chat-answer p { font-size: 12px; line-height: 1.5; margin: 4px 0; white-space: pre-line; }
+.ai-assistant .ai-chat-answer small, .ai-assistant-note { color: #6b625c; font-size: 10px; line-height: 1.5; display: block; }
+.ai-assistant-areas { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.ai-assistant-areas button { font-size: 11px; padding: 4px 8px; border: 1px solid var(--brand); color: var(--brand); background: white; border-radius: 999px; cursor: pointer; }
+.ai-assistant .ai-chat-form { margin: 0; }
+.ai-assistant .ai-review-stale { background: #fff6dc; border-radius: 4px; padding: 6px 8px; font-size: 11px; margin: 4px 0; }
+@media (max-width: 600px) {
+  .ai-assistant-launcher { right: 16px; bottom: 16px; }
+  .ai-assistant { right: 16px; left: 16px; bottom: 16px; width: auto; max-height: calc(100dvh - 32px); }
+}

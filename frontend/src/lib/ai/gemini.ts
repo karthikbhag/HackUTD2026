@@ -11,6 +11,7 @@
  */
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
+import { geminiMockEnabled, MOCK_MODEL } from "./mock-mode";
 
 /** Stable Flash model with a free API tier (checked against ai.google.dev, 2026-11-08). */
 export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
@@ -24,11 +25,13 @@ export class GeminiNotConfiguredError extends Error {
 
 /** Model to use: GEMINI_MODEL when set, otherwise the default. */
 export function geminiModel(): string {
+  if (geminiMockEnabled()) return MOCK_MODEL;
   return process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
 }
 
-/** Whether a key is present. Never exposes the key itself. */
+/** Whether a key is present (or mock mode is on). Never exposes the key itself. */
 export function isGeminiConfigured(): boolean {
+  if (geminiMockEnabled()) return true;
   return Boolean(process.env.GEMINI_API_KEY?.trim());
 }
 

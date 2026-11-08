@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { displayTime, type MapData, type MapZone, type Phase } from "@/lib/map/types";
-import { buildAreaSnapshot, snapshotFingerprint, type AreaReviewError, type AreaReviewResult } from "@/lib/ai/area-review";
+import { buildAreaSnapshot, snapshotFingerprint, type AreaReviewError, type AreaReviewResult, type AreaSnapshot } from "@/lib/ai/area-review";
+import { AiAreaChat } from "./ai-area-chat";
 
 type State =
   | { status: "idle" }
   | { status: "loading"; key: string }
-  | { status: "success"; key: string; result: AreaReviewResult; fingerprint: string }
+  | { status: "success"; key: string; result: AreaReviewResult; fingerprint: string; snapshot: AreaSnapshot }
   | { status: "error"; key: string; code: string; message: string };
 
 /**
@@ -41,7 +42,7 @@ export function AiAreaReview({ data, zone, phase }: { data: MapData; zone: MapZo
     try {
       const response = await fetch("/api/area-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snapshot), signal: abort.signal });
       const body = await response.json().catch(() => null) as AreaReviewResult | AreaReviewError | null;
-      if (response.ok && body && "review" in body && body.areaId === snapshot.areaId && body.phase === snapshot.phase) next = { status: "success", key: requestKey, result: body, fingerprint: requestFingerprint };
+      if (response.ok && body && "review" in body && body.areaId === snapshot.areaId && body.phase === snapshot.phase) next = { status: "success", key: requestKey, result: body, fingerprint: requestFingerprint, snapshot };
       else if (body && "error" in body) next = { status: "error", key: requestKey, code: body.error.code, message: body.error.message };
       else next = { status: "error", key: requestKey, code: "upstream_error", message: `AI review failed (HTTP ${response.status}).` };
     } catch (error) {
@@ -73,6 +74,7 @@ export function AiAreaReview({ data, zone, phase }: { data: MapData; zone: MapZo
       </button>
       {loading && <span className="muted small" role="status">Asking Gemini using this area&apos;s evidence…</span>}
     </div>
+    {current.status === "success" && <AiAreaChat key={`${current.key}:${current.result.generatedAt}`} snapshot={current.snapshot} review={current.result.review} stale={!upToDate}/>}
     <small>{current.status === "success" ? "AI-generated suggestions for employee review. It does not send notifications, dispatch teams, change records, or affect priority scores." : "Generates a summary from this area's counts and sources only (no names or locations). Synthetic data only; free-tier prompts may be used by Google."}</small>
   </div>;
 }
