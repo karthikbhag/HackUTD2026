@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.24**
+Current version: **1.27**
 
 ## Instructions for future updates
 
@@ -30,6 +30,58 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.27 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Resolved PR #15 against main while preserving shared dashboard notices, replies, safe-confirmation carryover, clock validation and assignment approvals alongside the scenario desk, response-routing backend/worker and on-demand Gemini reviews.
+- Unified the connected map and operational queue on the response connection hook, retained both backend table/reducer contracts, and regenerated the combined TypeScript bindings. Preserved the compile-first scenario builder and combined all scenario/AI test scripts. Fixed the retained routing worker build command to invoke esbuild through Node on Windows.
+- Reconciled documentation and retained both branches' changelog entries; the PR's two entries are now 1.25 and 1.26 after main's 1.24.
+
+### Verification
+
+- All 134 backend tests across 13 files, 27 frontend scenario/adapter/AI tests and nine Python dataset tests passed on Node 24.22.1 and Python 3.12. Backend/frontend typechecks, the standard and staged Small module builds, routing-worker bundle and default Turbopack production build passed. Frontend lint passed with one existing generated-bindings warning.
+- No conflict markers or whitespace errors remain. Interactive acceptance of the combined layout and live multi-client verification of this merge remain pending. No commit, push, real Gemini API call or live database deployment/mutation was made.
+
+## Version 1.26 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Fixed `backend/package.json`'s `build:scenario` command to compile the TypeScript runner with the existing esbuild dependency before running the resulting ignored `.mjs` file. This removes the direct `.ts` execution that raised `ERR_UNKNOWN_FILE_EXTENSION` in the user's Node 22.13.1 terminal; no new dependency was added.
+- Documented the separate SDK-supported Node requirement and a PowerShell session command selecting the existing workspace's portable Node 24.22.1 runtime and Python 3.12. Kept all earlier application changes and changelog history intact.
+
+### Verification
+
+- The repaired command built and validated the Demo preset successfully on Node 24.22.1: 10,000 households, 56 disasters, 112 zones, 220 teams, 2,000 requests and 93 impact layers. The staged SpacetimeDB module build and backend TypeScript check passed.
+- Node 22.13.1 remains below the SDK's declared supported engine range; this change does not claim SDK compatibility with that version. No database was published, reset or mutated. No commit or push was made.
+
+## Version 1.25 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Connected Aalvee's merged notification-popup design to SpacetimeDB using Tien's existing shared connection/action wrappers. Main `/` and `/demo` now use shared operational data; retained the unchanged local rehearsal at `/demo/local` and the standalone `/outreach` route. Preserved StateWatch styling, area reviews, notification editing, tab behavior, pagination and simulated-action labels.
+- Added private global clock/run, per-area notice, recipient/reply and assignment-link tables with employee-authorized views. Approved text and recipient snapshots persist across popup closure, area/tab changes, reloads and clients. Notice approval does not count as confirmed contact and sends no external message.
+- Preserved the new demo policy: safe preparation replies carry forward into After, confirmed-safe households leave repeat outreach and dashboard response review, and older assistance records remain intact. Before permits safe confirmation; After also permits needs-help. Each second notice has its own complete 30-minute deadline, including notices approved after earlier areas' deadlines. Due unanswered/needs-help cases receive reviewable welfare requests; dispatch is never automatic.
+- Added server-validated response approval that rechecks safety/phase, all recorded active need capabilities, people capacity, availability and assignment conflicts, then calls the existing atomic assignment reducer and records its link. Completion/cancellation reuse the original lifecycle. Other unresolved requests are retained; cancellation permits renewed approval, while completed assistance remains represented in the current dashboard run.
+- Replaced browser-local mutations in connected mode with subscribed snapshots and awaited reducer calls. Added pending/error feedback and run/minute validation from the rendered snapshot, preventing a stale preparation popup from silently submitting into a newer phase. The connected queue follows safe exclusions, separately labels simulated notification-deadline concerns, and supports restored critical-exposure scoring (default maximum 190).
+- Restored earlier decision/preparedness/exercise source and schema contracts already present in the running local database but absent from the newly merged checkout. This retained existing tables/columns during migration instead of deleting data. Restored 17 preparedness tests, modern schema-v3 Small, generator-v4 Small team regions/reproducibility, and Windows junction staging. Regenerated bindings for restored and new views/reducers.
+- Updated the existing persistent local `riskreach-person3-demo` with `--delete-data=never`. The migration only added four private dashboard tables and four views. Before/after counts stayed at 10,000 households, 2,000 requests, zero assignments and two memberships, including the user's previously enrolled browser. No reseed/reset was performed on the main dataset.
+- Added backend lifecycle/queue tests, frontend snapshot-join regressions and a disposable live verifier using the actual frontend wrappers, subscription adapter and map model. Added a scoped CommonJS test lint override and portable shared-module imports. Updated README progress/handoffs and added `backend/POPUP_WORKFLOW.md` with current route, policy, permissions, upgrade and verification commands.
+
+### Verification
+
+- All 104 backend tests across nine files passed on supported Node 24.22.1 with Python 3.12. This includes seven new shared-popup/queue cases and 17 restored preparedness cases, plus existing exposure, priority, follow-up, dispatch and large-fixture regressions. All 18 frontend scenario/adapter tests and all nine Python tests passed, including exact bundled Small reproducibility.
+- Backend/frontend typechecks, module generation/build, staged Demo build, frontend lint and the default Turbopack production build passed. Build output includes `/`, `/demo`, `/demo/local` and `/outreach`. Lint retains one existing generated-bindings warning.
+- Real two-client verification passed in a separate disposable Small database (`riskreach-popup-live-check`): shared notices/replies/clock, carried-safe exclusion without erased needs, duplicate/stale rejection, real competing assignment with exactly one winner, completion/team release, reconnect using the same identity, reset/replay and live access revocation. Temporary memberships are revoked in cleanup. The verifier did not mutate or reset the main Demo database.
+- Desktop Brave smoke verification passed using the user's already enrolled browser: `/demo` displayed Connected, 10,000 dataset households, shared clock, live priority queue, area review and the Shared simulation notification popup with an enabled approval button. No notice or assignment was submitted in the main dataset during this check. Some basemap tiles failed to load; overlays, clustering and popup navigation remained usable. Full two-browser mutation, keyboard and narrow-layout acceptance remain pending. All actions remain synthetic; actual AI generation/delivery are unconnected and full-table subscriptions remain in use.
+- No commit, push or cloud deployment was made. Existing local data and browser enrollment were preserved.
 
 ## Version 1.24 — 2026-11-08
 

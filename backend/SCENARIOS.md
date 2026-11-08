@@ -1,10 +1,30 @@
 # Local scenario inspection
 
+> Current v1.21 integration: [shared popup workflow](POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Use the real SpacetimeDB → authorized subscriptions → map path. Small, Demo, and
 Stress use separate local databases; generating/building never changes the tracked
 Small fixture or an existing database. Run commands from the repository root.
 
 ## Requirements
+
+`build:scenario` now compiles its TypeScript runner with the existing esbuild
+dependency before executing JavaScript; it no longer requires Node to load `.ts`
+files directly. Node 22.13.1 is still below the installed SDK's supported range.
+Use supported Node 24.22.1+ in the Node 24 line (or another declared engine range).
+In this existing checkout, the downloaded portable runtime can be selected for
+the current PowerShell session without restarting VS Code:
+
+```powershell
+$env:PATH = (Resolve-Path '.tmp/node-v24.22.1-win-x64').Path + ';' + $env:PATH
+$env:PYTHON = (Get-Command python.exe).Source
+node --version
+npm.cmd --prefix backend run build:scenario -- --preset demo
+```
+
+The portable runtime is ignored by Git; teammates should install a supported Node
+version themselves. Selecting a runtime in one terminal does not change another
+already-open terminal's PATH.
 
 Use CLI/SDK 2.14.1, Python 3.11+, and Node satisfying
 `^22.23.4 || ^24.22.1 || >=26.12.1`. Run `nvm use` if available, then check

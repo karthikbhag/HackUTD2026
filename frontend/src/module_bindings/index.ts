@@ -34,8 +34,11 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AdvanceDashboardClockReducer from "./advance_dashboard_clock_reducer";
 import AdvanceExerciseClockReducer from "./advance_exercise_clock_reducer";
 import AdvanceResponseSimulationReducer from "./advance_response_simulation_reducer";
+import ApproveDashboardNoticeReducer from "./approve_dashboard_notice_reducer";
+import ApproveDashboardResponseReducer from "./approve_dashboard_response_reducer";
 import ApproveExerciseNoticeReducer from "./approve_exercise_notice_reducer";
 import ApprovePreparednessReducer from "./approve_preparedness_reducer";
 import AssignTeamReducer from "./assign_team_reducer";
@@ -50,6 +53,8 @@ import RecordExerciseReplyReducer from "./record_exercise_reply_reducer";
 import RecordOutreachReducer from "./record_outreach_reducer";
 import RefreshDecisionSnapshotReducer from "./refresh_decision_snapshot_reducer";
 import RenewRoutingLeaseReducer from "./renew_routing_lease_reducer";
+import ReplyDashboardNoticeReducer from "./reply_dashboard_notice_reducer";
+import ResetDashboardReducer from "./reset_dashboard_reducer";
 import ResetDemoReducer from "./reset_demo_reducer";
 import ResetResponseDemoReducer from "./reset_response_demo_reducer";
 import ResolveRequestReducer from "./resolve_request_reducer";
@@ -71,6 +76,10 @@ import UpdateTaskReducer from "./update_task_reducer";
 // Import all table schema definitions
 import ActivitiesRow from "./activities_table";
 import AssignmentsRow from "./assignments_table";
+import DashboardNoticesRow from "./dashboard_notices_table";
+import DashboardRecipientsRow from "./dashboard_recipients_table";
+import DashboardResponsesRow from "./dashboard_responses_table";
+import DashboardStateRow from "./dashboard_state_table";
 import DecisionsRow from "./decisions_table";
 import DisastersRow from "./disasters_table";
 import ExerciseRepliesRow from "./exercise_replies_table";
@@ -109,6 +118,34 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, AssignmentsRow),
+  dashboardNotices: __table({
+    name: 'dashboard_notices',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DashboardNoticesRow),
+  dashboardRecipients: __table({
+    name: 'dashboard_recipients',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DashboardRecipientsRow),
+  dashboardResponses: __table({
+    name: 'dashboard_responses',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DashboardResponsesRow),
+  dashboardState: __table({
+    name: 'dashboard_state',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DashboardStateRow),
   decisions: __table({
     name: 'decisions',
     indexes: [
@@ -246,8 +283,11 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("advance_dashboard_clock", AdvanceDashboardClockReducer),
   __reducerSchema("advance_exercise_clock", AdvanceExerciseClockReducer),
   __reducerSchema("advance_response_simulation", AdvanceResponseSimulationReducer),
+  __reducerSchema("approve_dashboard_notice", ApproveDashboardNoticeReducer),
+  __reducerSchema("approve_dashboard_response", ApproveDashboardResponseReducer),
   __reducerSchema("approve_exercise_notice", ApproveExerciseNoticeReducer),
   __reducerSchema("approve_preparedness", ApprovePreparednessReducer),
   __reducerSchema("assign_team", AssignTeamReducer),
@@ -262,6 +302,8 @@ const reducersSchema = __reducers(
   __reducerSchema("record_outreach", RecordOutreachReducer),
   __reducerSchema("refresh_decision_snapshot", RefreshDecisionSnapshotReducer),
   __reducerSchema("renew_routing_lease", RenewRoutingLeaseReducer),
+  __reducerSchema("reply_dashboard_notice", ReplyDashboardNoticeReducer),
+  __reducerSchema("reset_dashboard", ResetDashboardReducer),
   __reducerSchema("reset_demo", ResetDemoReducer),
   __reducerSchema("reset_response_demo", ResetResponseDemoReducer),
   __reducerSchema("resolve_request", ResolveRequestReducer),
