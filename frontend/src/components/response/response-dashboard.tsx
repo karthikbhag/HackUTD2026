@@ -8,7 +8,7 @@ import { TeamStopList } from "./team-stop-list";
 import { RoutingSettings } from "./routing-settings";
 import { SimulationControls } from "./simulation-controls";
 export function ResponseDashboard({uri,database,browserKey,workerUrl}:{uri:string;database:string;browserKey:string;workerUrl:string}){
- const {conn,snapshot:s}=useOperationalConnection(uri,database),[selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const {conn,snapshot:s}=useOperationalConnection(uri,database,false),[selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const run=s.runs.find(r=>r.status!=='reset'),states=s.teamStates.filter(t=>t.runId===run?.id),teamId=states.some(t=>String(t.teamId)===selected)?selected:String(states[0]?.teamId??'');
  const state=states.find(t=>String(t.teamId)===teamId),team=s.teams.find(t=>String(t.id)===teamId),route=s.routes.find(r=>r.runId===run?.id&&String(r.teamId)===teamId);
  const visits=s.visits.filter(v=>v.runId===run?.id),ordered=(route?.visitIds??[]).flatMap(id=>{const v=visits.find(v=>v.id===id);return v?[v]:[];});
