@@ -86,7 +86,7 @@ export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ revi
 }
 
 /** Maps SDK errors to safe messages. Upstream error text is logged by status only, never returned. */
-function toFailure(error: unknown): AreaReviewFailure {
+export function toFailure(error: unknown): AreaReviewFailure {
   if (error instanceof AreaReviewFailure) return error;
   if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) return new AreaReviewFailure("timeout", "Gemini did not respond within 30 seconds.", 504);
   if (error instanceof ApiError) {

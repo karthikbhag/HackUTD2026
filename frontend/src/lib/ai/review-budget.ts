@@ -1,5 +1,6 @@
 /**
- * Token and request budget for AI area reviews (Person 4).
+ * Token and request budget for Gemini calls (Person 4): AI area reviews and follow-up
+ * questions share one set of per-minute, per-day and token-per-day counters.
  *
  * Every limit is an environment variable with a free-tier-friendly default, so a
  * paid plan only needs new values in frontend/.env.local, not code changes.
@@ -62,17 +63,17 @@ function rollDay(now: number) {
 
 export type BudgetDenial = { reason: "minute" | "day_requests" | "day_tokens"; message: string; retryAfterSeconds: number };
 
-/** Reserves one Gemini request, or explains which limit blocks it. Cache hits must not call this. */
-export function reserveReview(now = Date.now(), config = reviewBudgetConfig()): BudgetDenial | null {
+/** Reserves one Gemini request (review or follow-up), or explains which limit blocks it. Cache hits must not call this. */
+export function reserveGeminiCall(now = Date.now(), config = reviewBudgetConfig()): BudgetDenial | null {
   rollDay(now);
   while (minute.length && now - minute[0] > 60_000) minute.shift();
   if (config.maxPerDay && day.requests >= config.maxPerDay)
-    return { reason: "day_requests", message: `Daily AI review limit reached (${config.maxPerDay} per day). It resets at midnight Pacific time.`, retryAfterSeconds: secondsToPacificMidnight(now) };
+    return { reason: "day_requests", message: `Daily AI request limit reached (${config.maxPerDay} per day, shared by reviews and follow-ups). It resets at midnight Pacific time.`, retryAfterSeconds: secondsToPacificMidnight(now) };
   if (config.maxTokensPerDay && day.tokens >= config.maxTokensPerDay)
     return { reason: "day_tokens", message: `Daily AI token budget used (${config.maxTokensPerDay.toLocaleString("en-US")} tokens). It resets at midnight Pacific time.`, retryAfterSeconds: secondsToPacificMidnight(now) };
   if (config.maxPerMinute && minute.length >= config.maxPerMinute) {
     const retryAfterSeconds = Math.max(1, Math.ceil((60_000 - (now - minute[0])) / 1000));
-    return { reason: "minute", message: `Too many AI reviews in the last minute (limit ${config.maxPerMinute}). Retry in ${retryAfterSeconds} s.`, retryAfterSeconds };
+    return { reason: "minute", message: `Too many AI requests in the last minute (limit ${config.maxPerMinute}). Retry in ${retryAfterSeconds} s.`, retryAfterSeconds };
   }
   minute.push(now);
   day.requests++;
@@ -126,4 +127,44 @@ export function shareInFlight(key: string, start: () => Promise<CachedReview>): 
   const promise = start().finally(() => inFlight.delete(key));
   inFlight.set(key, promise);
   return { promise, joined: false };
+}
+
+// ---------- follow-up questions ----------
+
+export interface ChatBudgetConfig {
+  /** Follow-up questions per generated review. 0 = unlimited. */
+  maxTurns: number;
+  /** Output cap per answer, including thinking tokens. */
+  maxOutputTokens: number;
+}
+
+export function chatBudgetConfig(): ChatBudgetConfig {
+  return {
+    maxTurns: intEnv("GEMINI_CHAT_MAX_TURNS", 6),
+    maxOutputTokens: Math.max(128, intEnv("GEMINI_CHAT_MAX_OUTPUT_TOKENS", 512)),
+  };
+}
+
+// Answered follow-ups per review, so one popup cannot use the whole daily budget.
+const turns = new Map<string, { used: number; expires: number }>();
+const TURN_WINDOW_MS = 60 * 60_000;
+const MAX_CONVERSATIONS = 200;
+
+function liveTurns(key: string, now: number) {
+  const entry = turns.get(key);
+  if (entry && entry.expires <= now) { turns.delete(key); return 0; }
+  return entry?.used ?? 0;
+}
+
+/** Follow-ups left for a review, or null when unlimited. */
+export function chatTurnsLeft(key: string, config = chatBudgetConfig(), now = Date.now()): number | null {
+  return config.maxTurns ? Math.max(0, config.maxTurns - liveTurns(key, now)) : null;
+}
+
+/** Counts one answered follow-up. Failed calls are not counted, so a retry does not use up a turn. */
+export function countChatTurn(key: string, now = Date.now()) {
+  const used = liveTurns(key, now) + 1;
+  turns.delete(key);
+  turns.set(key, { used, expires: now + TURN_WINDOW_MS });
+  while (turns.size > MAX_CONVERSATIONS) turns.delete(turns.keys().next().value!);
 }

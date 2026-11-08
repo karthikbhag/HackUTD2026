@@ -428,3 +428,27 @@ dl { font-size: 12px; margin-bottom: 0; } dt { color: var(--muted); margin-top: 
 .ai-review-actions .ai-generate:disabled { opacity: .6; cursor: progress; }
 .ai-review-error { border: 1px solid #e3b5ad; background: #fdf1ef; color: #8b2a1d; border-radius: 4px; padding: 8px 10px; font-size: 12px; line-height: 1.5; margin-top: 8px; }
 .ai-review-stale { background: #fff6dc; border-radius: 4px; padding: 6px 8px; font-size: 11px; }
+
+/* Person 4 AI follow-up questions (Gemini) */
+.ai-chat { border-top: 1px solid #eadfd7; margin-top: 10px; padding-top: 8px; }
+.ai-chat-thread { max-height: 240px; overflow-y: auto; padding-right: 4px; margin-bottom: 8px; }
+.ai-chat-turn { margin-bottom: 10px; }
+.ai-review p.ai-chat-question { font-size: 12px; margin: 0 0 4px; }
+.ai-chat-answer { background: #fff; border: 1px solid #f0e4dc; border-radius: 4px; padding: 6px 8px; }
+.ai-review .ai-chat-answer p { font-size: 12px; line-height: 1.5; margin: 4px 0; white-space: pre-line; }
+.ai-chat-starters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ai-chat-starters button, .ai-chat-retry { font-size: 11px; padding: 4px 8px; border: 1px solid #e7ded8; background: #fff; border-radius: 999px; cursor: pointer; }
+.ai-chat-starters button:disabled, .ai-chat-retry:disabled { opacity: .6; cursor: default; }
+.ai-chat-form { display: flex; gap: 6px; margin-bottom: 6px; }
+.ai-chat-form input { flex: 1; min-width: 0; font-size: 12px; padding: 6px 8px; border: 1px solid #e7ded8; border-radius: 4px; }
+.ai-chat-form button { font-size: 12px; padding: 6px 12px; }
+.ai-chat-form button:disabled, .ai-chat-form input:disabled { opacity: .6; }
+
+/* Area popup: the middle scrolls so the review and follow-ups stay reachable above the fixed actions. */
+.dialog-review-body { overflow: hidden; grid-template-rows: minmax(0, 1fr); }
+.dialog-review-body > .compact-area-brief { overflow-y: auto; min-height: 0; padding-right: 6px; overscroll-behavior: contain; }
+@media (max-width: 700px) {
+  /* Stacked layout: scroll the map and details together rather than a short inner box. */
+  .dialog-review-body { overflow-y: auto; grid-template-rows: auto; overscroll-behavior: contain; }
+  .dialog-review-body > .compact-area-brief { overflow: visible; padding-right: 0; }
+}

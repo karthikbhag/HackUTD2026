@@ -41,24 +41,24 @@ test('defaults are free-tier friendly and env overrides apply (0 = unlimited)', 
 
 test('per-minute limit blocks, then frees after a minute', () => {
   const t = noon(1);
-  assert.equal(budget.reserveReview(t, config()), null);
-  assert.equal(budget.reserveReview(t + 1000, config()), null);
-  const denied = budget.reserveReview(t + 2000, config());
+  assert.equal(budget.reserveGeminiCall(t, config()), null);
+  assert.equal(budget.reserveGeminiCall(t + 1000, config()), null);
+  const denied = budget.reserveGeminiCall(t + 2000, config());
   assert.equal(denied.reason, 'minute');
   assert.ok(denied.retryAfterSeconds > 0 && denied.retryAfterSeconds <= 60);
-  assert.equal(budget.reserveReview(t + 61_000, config()), null);
+  assert.equal(budget.reserveGeminiCall(t + 61_000, config()), null);
 });
 
 test('daily request and token limits block until midnight Pacific', () => {
   const t = noon(3);
-  for (let i = 0; i < 3; i++) assert.equal(budget.reserveReview(t + i * 61_000, config()), null);
-  const denied = budget.reserveReview(t + 4 * 61_000, config());
+  for (let i = 0; i < 3; i++) assert.equal(budget.reserveGeminiCall(t + i * 61_000, config()), null);
+  const denied = budget.reserveGeminiCall(t + 4 * 61_000, config());
   assert.equal(denied.reason, 'day_requests');
   assert.ok(denied.retryAfterSeconds > 10 * 3600 && denied.retryAfterSeconds <= 13 * 3600, `noon PT is ~12 h from midnight (${denied.retryAfterSeconds}s)`);
-  assert.equal(budget.reserveReview(noon(4), config()), null, 'a new Pacific day resets the count');
+  assert.equal(budget.reserveGeminiCall(noon(4), config()), null, 'a new Pacific day resets the count');
   budget.recordTokens(1200, noon(4));
-  assert.equal(budget.reserveReview(noon(4) + 61_000, config()).reason, 'day_tokens');
-  assert.equal(budget.reserveReview(noon(4) + 122_000, config({ maxTokensPerDay: 0, maxPerDay: 0 })), null, '0 disables daily limits');
+  assert.equal(budget.reserveGeminiCall(noon(4) + 61_000, config()).reason, 'day_tokens');
+  assert.equal(budget.reserveGeminiCall(noon(4) + 122_000, config({ maxTokensPerDay: 0, maxPerDay: 0 })), null, '0 disables daily limits');
   assert.deepEqual(budget.usageToday(noon(4) + 122_000), { requests: 2, tokens: 1200 });
 });
 
