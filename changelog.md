@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.21**
+Current version: **1.24**
 
 ## Instructions for future updates
 
@@ -30,6 +30,75 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.24 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a configurable token and request budget for the AI area review in `frontend/src/lib/ai/review-budget.ts`, so the free tier lasts longer and limits can be raised later through `frontend/.env.local` without code changes (0 turns a limit off):
+  - `GEMINI_REVIEW_CACHE_MINUTES` (default 30): a review for identical evidence (same model, area, phase, counts, and sources) is reused from an in-memory server cache with no Gemini call. Identical concurrent requests share one call.
+  - `GEMINI_THINKING_LEVEL` (default `minimal`; `default` keeps the model's own level, needed for models without `minimal` such as `gemini-3.8-flash` per Google's thinking docs).
+  - `GEMINI_REVIEW_MAX_OUTPUT_TOKENS` (default 1,024, minimum 256; includes thinking tokens). A truncated reply is reported as an error rather than shown.
+  - `GEMINI_REVIEW_MAX_PER_MINUTE` (default 5, replacing the fixed 6), `GEMINI_REVIEW_MAX_PER_DAY` (default 50), and `GEMINI_REVIEW_MAX_TOKENS_PER_DAY` (default 100,000), counted per Pacific-time day because Google resets daily quotas at midnight Pacific. Limits apply only when Gemini is actually called; cache hits are free.
+- The route now records Gemini's reported token usage (server log shows prompt, thinking, and output tokens) and returns `cached` and `tokens`. The popup shows the token count or "Reused for unchanged evidence (no new tokens)". After a successful review the button reads **Review is up to date** and is disabled until the area's evidence changes, then offers **Regenerate with new data**.
+- The development-only `GEMINI_REVIEW_SIMULATE_ERROR` check now runs before the cache, so cached reviews do not hide simulated errors.
+- Counters and cache are per server process and reset on restart; they are not shared across multiple deployed instances. Google's project-level quotas still apply (Google's rate-limit page says limits are per project, not per key, and lists per-model free-tier values in AI Studio rather than on the page).
+- Documented the variables in `frontend/.env.example` and the README.
+- Pre-PR review fixes: removed the `temperature: 0.2` setting because Google's text-generation docs say Gemini 3.6+ ignores custom temperature, top_p and top_k and advise removing them; restored the small-text style of the popup's "Geographic membership" note, which lost its `.compact-area-brief > .muted` match when v1.23 wrapped the summary in a container (now `.brief-summary`); updated the README implementation note that still cited the old fixed limit of 6 reviews per minute.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed.
+- `npm run test:scenario`: 25 of 25 passed, including 5 new budget tests (defaults and env overrides, invalid values, per-minute release, daily request/token limits and Pacific-day reset, cache expiry and disabling, in-flight sharing).
+- Live, with the Tampa fixture snapshot through the dev-server route: the first request returned 200 in 2.6 s using 984 tokens; an identical repeat returned in 5 ms from the cache with 0 tokens. A direct comparison with the same short prompt on `gemini-3.6-flash` used 1,413 tokens (827 thinking) and 5.7 s at the model's default level versus 742 tokens (0 thinking) and 2.3 s at `minimal`. One `minimal` comparison attempt first received Gemini 503 (overloaded).
+- Pending: interactive browser check of the token label and the up-to-date/regenerate button states.
+
+## Version 1.23 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Connected Gemini to the area-review popup's review section. `frontend/src/components/map/ai-area-review.tsx` replaces the "AI review · Preview" block in `AreaBrief` with the existing scenario guidance (now labeled **Scenario guidance**) and an explicit **Generate AI Review** button; nothing is generated on open, click, or data update. The section stays mounted while the evidence view is open, so a generated review is not lost.
+- Added `frontend/src/lib/ai/area-review.ts`, a dependency-free contract shared by browser and server: `buildAreaSnapshot` (selected area only: hazard, severity, source, timestamps, simulation flags, up to 8 impact layers with basis/limitations/data kind, household counts by check-in, recorded-need/vulnerability/never-contacted counts, top 8 needs and vulnerability flags, team counts by status, and up to 5 guidance items; no household names, IDs, or coordinates), `parseAreaSnapshot`, the Gemini JSON schema, and `parseAreaReview`, which requires all fields, caps lengths, and rejects any number not present in the snapshot.
+- Added `POST /api/area-review` (`frontend/src/app/api/area-review/route.ts`) and the server-only `frontend/src/lib/ai/generate-area-review.ts`. The route checks same-origin and JSON content type, limits the body to 16 KB, validates the snapshot, returns `not_configured` (503) without a key, and applies a local limit of 6 reviews per minute per server process. Generation uses the existing client and `GEMINI_MODEL` (default `gemini-3.6-flash`, free tier), temperature 0.2, structured JSON output, a 30-second timeout, and a system instruction to use only the snapshot, separate expected conditions from reported impacts, label simulations, and not invent numbers, evacuation orders, safe routes, or confirmed exposure. SDK errors map to `rate_limited` (429), `upstream_error`, `timeout`, or `invalid_response` with safe messages; upstream error text is logged by status only.
+- The UI shows the review with an **AI-generated · model** label, a **Simulation** label when the area or a layer is simulated, snapshot and generation times, and sections for summary, expected conditions, reported impacts, key risks, suggested next steps (employee review required), and limitations. Loading, retry, and error states keep the structured area details visible. Responses are keyed to the area and phase and guarded by a request sequence; a selection change or newer request aborts the old one, so a response cannot appear under another area. A notice appears when area data changes after the snapshot.
+- Added an optional `dataKind` (simulation/forecast/report) to `MapImpactLayer`, populated by the SpacetimeDB adapter so reported layers can be distinguished; fixtures report `unspecified`.
+- Added a development-only `GEMINI_REVIEW_SIMULATE_ERROR` switch (`rate_limit`, `api_error`, `timeout`, `invalid_response`) for testing error states without changing the key; it is ignored in production builds and listed in `frontend/.env.example`.
+- AI output is text only. It does not send notifications, dispatch teams, write to SpacetimeDB, or affect deterministic priority scores. No billing was enabled. Chatbot and AI-drafted notifications remain later work.
+- Added AI review styles to `globals.css`, `tests/area-review.test.cjs` (included in `npm run test:scenario`), and README/map handoff updates.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed with `/api/area-review` as a dynamic route.
+- `npm run test:scenario`: 20 of 20 passed, including 4 new offline tests for snapshot scoping and privacy (no names, IDs, or coordinates), snapshot validation of tampered/oversized input, review validation (missing fields, wrong types, invented numbers), and fingerprint changes.
+- Against the running dev server: an invalid snapshot returned 400, a cross-origin request 403, and GET 405. With the local key, the first two live requests with the Dallas fixture snapshot received Gemini 503 (overloaded), which the route returned as `upstream_error`; the next request returned 200 in about 20 seconds from `gemini-3.6-flash`, passed validation, and separated simulated expected conditions from reported check-ins.
+- Confirmed the key value and the `GEMINI_API_KEY` name do not appear in `.next/static` browser bundles or tracked files.
+- Rebased onto main after the response-routing merge (main v1.21) and Tien Phan's Gemini client entry (v1.22); this entry was renumbered from 1.22 to 1.23. The connected main dashboard README text from main was kept, with the AI review notes added.
+- Pending: interactive browser checks of the button, loading/error/retry states, area-switch cancellation, the stale-data notice, and the not-configured, simulated rate-limit, and API-error paths in the UI.
+
+## Version 1.22 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a reusable server-only Gemini client in `frontend/src/lib/ai/gemini.ts` for the planned AI area review. It reads `GEMINI_API_KEY` and an optional `GEMINI_MODEL` (default `gemini-3.6-flash`, the stable Flash model with a free API tier per Google's model and pricing pages checked on 2026-11-08). It uses the Gemini Developer API with API-key auth, not Vertex AI, and reuses one client unless the key changes. A missing key throws `GeminiNotConfiguredError`; `isGeminiConfigured()` reports presence without exposing the key.
+- `import "server-only"` makes any Client Component import of the client fail the build, so the key cannot be bundled for the browser.
+- Added the `@google/genai` 3.0.0 dependency (`frontend/package.json`, lockfile).
+- Added `frontend/.env.example` with SpacetimeDB and Gemini placeholders. The root `.gitignore` still ignores `.env*` (including `.env.local`) but now allows `.env.example` to be committed.
+- README: local setup notes for the Gemini variables and the free-tier data-use caveat; Person 4 AI review checklist note.
+- No UI, API route, chat, or SpacetimeDB change in this step. No billing was enabled.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed (`/`, `/demo`, `/_not-found`).
+- A temporary Client Component page importing the client failed the build with the `server-only` error, confirming the guard; the page was removed.
+- Offline check with a fake key and no network calls: no key reports not configured and throws `GeminiNotConfiguredError`; with a key the same client instance is reused with `vertexai` false; `GEMINI_MODEL` overrides the model after trimming, and a blank value falls back to the default.
+- Confirmed `frontend/.env.local` is ignored and has never been committed. No live Gemini request has been made yet.
+- Merged with main's v1.19, v1.20 (Aalvee Ahtav) and v1.21 (response-routing merge); this entry was renumbered from 1.19 to 1.21 and then to 1.22 to avoid duplicate versions.
 
 ## Version 1.21 — 2026-11-08
 
