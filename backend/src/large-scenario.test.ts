@@ -43,7 +43,7 @@ describe('large fixture inspection', () => {
     expect(test.db.household.count()).toBe(10000n);
     expect(test.db.impactLayer.count()).toBe(93n);
     expect(test.db.preparednessTask.count()).toBe(2597n);
-    expect(api.impactLayers(test.viewContext(admin))).toHaveLength(93);
+    expect(api.impactLayers(test.viewContext(admin))).toHaveLength(3 * Number(test.db.disaster.count()));
     const outsider = TestAuth.fromJwtPayload(JSON.stringify({ iss: 'test', sub: 'outsider' }), new ConnectionId(31n));
     expect(api.impactLayers(test.viewContext(outsider))).toEqual([]);
     expect([...test.db.impactLayer.iter()][0].updatedAt).toEqual(clock);

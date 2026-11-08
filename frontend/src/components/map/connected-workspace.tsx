@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DbConnection, tables } from "@/module_bindings";
 import { hazards, type MapData, type MapZone, type Selection } from "@/lib/map/types";
 
@@ -24,7 +25,7 @@ function useOperationalRows(conn: DbConnection) {
     let queued = false, disposed = false;
     const changed = () => { if (queued || disposed) return; queued = true; queueMicrotask(() => { queued = false; if (!disposed) setRevision(v => v + 1); }); };
     const handles = [conn.db.decisions, conn.db.scenarioInfo, conn.db.exercises, conn.db.exerciseReplies, conn.db.householdDecisions,
-      conn.db.teamRecommendations, conn.db.tasks, conn.db.assignments, conn.db.activities, conn.db.households, conn.db.requests];
+      conn.db.responseRuns, conn.db.welfareVisits, conn.db.responseTeamStates, conn.db.teamRecommendations, conn.db.tasks, conn.db.assignments, conn.db.activities, conn.db.households, conn.db.requests];
     for (const h of handles) { h.onInsert(changed); h.onDelete(changed); h.onUpdate(changed); }
     const subscription = conn.subscriptionBuilder().onApplied(changed).onError(ctx => setError(String(ctx.event)))
       .subscribe([tables.decisions, tables.scenarioInfo, tables.exercises, tables.activities]);
@@ -35,6 +36,7 @@ function useOperationalRows(conn: DbConnection) {
 
 export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { conn: DbConnection; data: MapData; zone: MapZone;
   selection: Selection; onSelect: (selection: Selection) => void }) {
+  const router = useRouter();
   const { revision, error } = useOperationalRows(conn);
   const [busy, setBusy] = useState(false), [message, setMessage] = useState("");
   const [page, setPage] = useState(0), [onlyOverlooked, setOnlyOverlooked] = useState(false), [search, setSearch] = useState("");
@@ -70,10 +72,20 @@ export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { 
   const actualPage = Math.min(page, Math.max(0, Math.ceil(rows.length / 25) - 1));
   const selectedId = selection?.kind === "household" && snapshot.homes.has(selection.id) ? selection.id : rows[0]?.householdId.toString();
   const perform: Action = async (work, success) => {
+    if (busy) return;
     setBusy(true); setMessage("");
     try { await work(); setMessage(success); } catch (e) { setMessage(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   };
+  const routingRun = [...conn.db.responseRuns.iter()].find(r => String(r.zoneId) === zone.id && r.scenarioRunId === snapshot.info?.runId && r.status !== "reset");
+  const welfare = [...conn.db.welfareVisits.iter()].filter(v => v.runId === routingRun?.id);
+  const candidates = [...conn.db.teams.iter()].filter(t => t.status === "available" && t.capabilities.includes("welfare_check") && ![...conn.db.responseTeamStates.iter()].some(s => s.teamId === t.id) && ![...conn.db.assignments.iter()].some(a => a.teamId === t.id && ["assigned", "in_progress"].includes(a.status)));
+  const [chosen, setChosen] = useState<string[]>([]), [routingApproved, setRoutingApproved] = useState(false);
+  const [latitude, setLatitude] = useState(""), [longitude, setLongitude] = useState("");
+  useEffect(() => {
+    if (routingApproved && routingRun) router.push(`/response?run=${routingRun.id}&team=${[...conn.db.responseTeamStates.iter()].find(t => t.runId === routingRun.id)?.teamId ?? ""}`);
+  }, [routingApproved, routingRun, conn, router]);
+  const blocked = !snapshot.exercise?.postSent ? "Approve a fresh post-impact notice first." : sourceZone?.level !== "neighborhood" || snapshot.homes.size > 20 ? "Routing supports compact neighborhoods with at most 20 households." : candidates.length < 2 ? "Two available, unreserved welfare-capable teams are required." : "";
   return <section className="scenario-desk connected-desk" aria-label="Shared scenario desk">
     <div className="desk-heading"><div><p className="eyebrow">Shared household decisions</p><h2>{zone.name}</h2>
       <p className="muted small">{hazards[zone.hazard].label} · {snapshot.homes.size.toLocaleString()} households, including community assistance cases. Geographic membership is distinct from exposure.</p></div>
@@ -90,6 +102,13 @@ export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { 
       <p className="simulation-notice">Employee-controlled exercise. No notification delivery, AI generation, evacuation order, or automatic dispatch. Individual replies below are explicitly recorded as simulated.</p>
       {sent && <details><summary>Approved notice text</summary><p>{after ? snapshot.exercise?.postMessage : snapshot.exercise?.preMessage}</p></details>}
       <div className="response-totals"><div><strong>{safe}</strong><span>Safe this round</span></div><div><strong>{help}</strong><span>Need help</span></div><div><strong>{current.length - safe - help}</strong><span>{minute >= 30 ? "Reply overdue" : "Awaiting reply"}</span></div></div>
+      <section aria-label="Area welfare routing"><h3>Welfare routing</h3><p>{help} help replies · {welfare.filter(v => v.priority === "unknown" && !["completed", "cancelled"].includes(v.state)).length} overdue checks · {welfare.filter(v => v.state === "completed").length} completed visits</p>
+      {routingRun ? <a href={`/response?run=${routingRun.id}`}>Open area response</a> : <details><summary>Set up welfare routing</summary><p>Review {zone.name}: exactly two teams, at most 20 households. Approval reserves teams and starts paused. Eligible checks can subsequently enter the queue; an empty queue monitors new replies. Welfare outcomes do not resolve assistance requests.</p>{blocked && <p role="status">{blocked}</p>}
+      <form onSubmit={e => { e.preventDefault(); setRoutingApproved(true); void perform(async () => { try { await conn.reducers.startResponseDemo({zoneId: BigInt(zone.id), teamIds: chosen.map(BigInt), stagingLatitude: Number(latitude), stagingLongitude: Number(longitude)}); } catch (error) { if (![...conn.db.responseRuns.iter()].some(r => String(r.zoneId) === zone.id && r.scenarioRunId === snapshot.info?.runId && r.status !== "reset")) { setRoutingApproved(false); throw error; } } }, "Waiting for subscribed area run…"); }}>
+      {candidates.map(t => <label key={String(t.id)}><input type="checkbox" checked={chosen.includes(String(t.id))} onChange={e => setChosen(v => e.target.checked ? [...v, String(t.id)] : v.filter(id => id !== String(t.id)))} />{t.name}</label>)}
+      <label>Staging latitude<input required type="number" step="any" min={-90} max={90} value={latitude} onChange={e => setLatitude(e.target.value)} /></label><label>Staging longitude<input required type="number" step="any" min={-180} max={180} value={longitude} onChange={e => setLongitude(e.target.value)} /></label>
+      <button disabled={busy || !!blocked || chosen.length !== 2}>Approve paused welfare exercise</button></form></details>}
+      {welfare.map(v => <p key={String(v.id)}>{snapshot.homes.get(String(v.householdId))?.name}: {label(v.state)}{v.outcome && ` · ${v.outcome}`}{v.notice && ` · ${v.notice}`}</p>)}</section>
       <details><summary>Recent shared activity</summary><ol>{snapshot.activities.map(a => <li key={String(a.id)}>{a.timestamp.toDate().toLocaleString()} · {a.summary}</li>)}</ol></details>
       {snapshot.info?.canManageScenario && <details><summary>Reset entire synthetic dataset</summary><p>Replaces all operational records and starts a new run. Access and activity history are preserved.</p>
         <label>Type RESET SYNTHETIC DEMO<input value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>

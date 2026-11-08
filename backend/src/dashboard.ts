@@ -1,7 +1,10 @@
+import { eventRevision, riskLevel } from './risk-bands';
+import { parseRiskMessages, expectedEventVersion } from './risk-messages';
 /** Authoritative adapter for the new dashboard policy. No delivery/network I/O. */
 import { SenderError, type InferSchema, type ReducerCtx, type ViewCtx } from 'spacetimedb/server';
 import type db from './schema';
-import { refreshDecisions } from './decisions';
+import { calculateExposure } from './exposure';
+import { operationalLayers, refreshDecisions } from './decisions';
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
 type ReadCtx = Pick<Ctx, 'db'> | Pick<ViewCtx<InferSchema<typeof db>>, 'db'>;
 export function clock(ctx: ReadCtx) {
@@ -20,7 +23,7 @@ function event(ctx: Ctx, id: bigint, action: string, summary: string) {
 }
 function area(ctx: ReadCtx, id: bigint) {
   const zone = ctx.db.zone.id.find(id);
-  if (!zone || zone.level !== 'neighborhood' || !ctx.db.disaster.id.find(zone.disasterId)?.isSimulated) throw new SenderError('Synthetic dashboard area not found');
+  if (!zone || zone.level !== 'neighborhood' || !ctx.db.disaster.id.find(zone.disasterId)) throw new SenderError('Synthetic dashboard area not found');
   return zone;
 }
 function homeArea(ctx: ReadCtx, householdId: bigint) {
@@ -44,18 +47,29 @@ function welfare(ctx: Ctx, householdId: bigint) {
 export function sendNotice(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; areaId: bigint; message: string }) {
   const state = validateClock(ctx, args), zone = area(ctx, args.areaId), phase = state.minute < 0 ? 'before' : 'after';
   const id = noticeId(state.runId, zone.id, phase), message = args.message.trim();
-  if (!message || message.length > 4000) throw new SenderError('Review a message of 1–4000 characters');
+  const messages = parseRiskMessages(message);
+  if (!message || message.length > (messages ? 76000 : 4000)) throw new SenderError('Review a message of 1–4000 characters');
   if (ctx.db.dashboardNotice.id.find(id)) throw new SenderError('This area already has an approved notice for this phase');
-  const homes = [...ctx.db.zone.disasterId.filter(zone.disasterId)].flatMap(z => [...ctx.db.household.zoneId.filter(z.id)])
+  const layers = operationalLayers(ctx).filter(l => l.disaster_id === String(zone.disasterId));
+  const version = eventRevision(layers);
+  if (expectedEventVersion(message) && expectedEventVersion(message) !== version) throw new SenderError('Risk changed; review the latest event before approval');
+  const exposed = calculateExposure([...ctx.db.household.iter()].map(h => ({ id: String(h.id), latitude: h.latitude, longitude: h.longitude })), layers);
+  const affected = new Set(exposed.households.filter(h => h.affected).map(h => h.householdId));
+  const homes = [...ctx.db.household.iter()].filter(h => affected.has(String(h.id)))
     .filter(h => h.isCustomer && !safe(ctx, state.runId, zone.id, h, phase));
   if (!homes.length) throw new SenderError('No unconfirmed customer recipients remain');
   saveClock(ctx, state);
   ctx.db.dashboardNotice.insert({ id, runId: state.runId, areaId: zone.id, phase, sentAt: state.minute, deadline: state.minute + 30, message });
-  for (const h of homes) ctx.db.dashboardRecipient.insert({ id: `${id}:${h.id}`, noticeId: id, householdId: h.id, status: 'unknown', repliedAt: undefined });
+  const risks = new Map(exposed.households.map(h => [h.householdId, riskLevel(h.highestSeverity)]));
+  for (const h of homes) {
+    const band = risks.get(String(h.id))!;
+    ctx.db.dashboardRecipient.insert({ id: `${id}:${h.id}`, noticeId: id, householdId: h.id, status: 'unknown', repliedAt: undefined,
+      riskLevel: band, approvedMessage: messages && band !== 'None' ? messages[band] : message, eventVersion: version });
+  }
   event(ctx, zone.id, 'notification_approved', `${phase} simulated notice approved for ${homes.length} recipients; no messages delivered`);
 }
-export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; reply: string }) {
-  const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId), phase = state.minute < 0 ? 'before' : 'after';
+export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; reply: string; areaId?: bigint }) {
+  const state = validateClock(ctx, args), original = homeArea(ctx, args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId), phase = state.minute < 0 ? 'before' : 'after';
   if (!['safe', 'needs_help'].includes(args.reply) || (phase === 'before' && args.reply !== 'safe')) throw new SenderError('Invalid reply for this notification phase');
   const recipient = ctx.db.dashboardRecipient.id.find(`${noticeId(state.runId, hotspot.id, phase)}:${home.id}`);
   if (!recipient || safe(ctx, state.runId, hotspot.id, home, phase)) throw new SenderError('Household is not awaiting a reply in this round');
@@ -92,8 +106,8 @@ function currentResponse(ctx: ReadCtx, run: bigint, householdId: bigint) {
   const assignment = response && ctx.db.assignment.id.find(response.assignmentId);
   return assignment && assignment.status !== 'cancelled' ? assignment : undefined;
 }
-export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint }) {
-  const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId);
+export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint; areaId?: bigint }) {
+  const state = validateClock(ctx,args), original = homeArea(ctx,args.householdId), home = original.home, hotspot = args.areaId === undefined ? original.hotspot : area(ctx,args.areaId);
   if (state.minute < 0 || safe(ctx, state.runId, hotspot.id, home, 'after')) throw new SenderError('Confirmed-safe or pre-impact households cannot receive dashboard response units');
   if (currentResponse(ctx, state.runId, home.id)) throw new SenderError('Response unit already approved');
   let requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');

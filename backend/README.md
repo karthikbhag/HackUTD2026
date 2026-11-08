@@ -38,6 +38,23 @@ spacetime call riskreach-local seed_demo --server http://127.0.0.1:3100
 
 No cloud deployment or external API keys are required. `spacetime.json` points at `backend/` and defaults to local; commands explicitly use port 3100 to avoid Next.js on 3000. Start Next.js with `npm --prefix frontend run dev`. The map supports shared subscriptions: set `NEXT_PUBLIC_SPACETIMEDB_URI=http://127.0.0.1:3100` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE=riskreach-local` in `frontend/.env.local`, restart Next.js, then enroll the browser identity displayed below the map. With neither variable set the main page reports setup instructions; `/demo` remains the browser-local rehearsal. See the [map handoff](../frontend/src/components/map/README.md). Connected workflow controls are implemented; see [current setup and enrollment](SHARED_WORKFLOW.md).
 
+## Seed another local database
+
+Publish the module once to the target database, then seed it using the publisher's CLI identity:
+
+```sh
+spacetime publish riskreach-other-local --server http://127.0.0.1:3100 --module-path backend --yes
+npm --prefix backend run seed -- --database riskreach-other-local
+```
+
+To replace that database's operational data with its bundled fixture:
+
+```sh
+npm --prefix backend run reseed -- --database riskreach-other-local
+```
+
+Reseeding preserves memberships and durable activity history. Both commands require an explicit database name, default to port 3100, and accept `--server http://127.0.0.1:PORT` for another local instance. They use the fixture bundled in the published module (Small by default); they do not copy live data from another database. Publish a selected scenario build first for Demo/Stress fixtures as described in [SCENARIOS.md](SCENARIOS.md).
+
 ## Contract and client handoff
 
 Generated bindings are committed under `frontend/src/module_bindings/`; regenerate after changing the schema or reducer arguments. The frontend SDK is pinned to match. `ConnectedDashboard` owns the shared browser connection and subscription lifecycle; `ConnectedWorkspace` reuses it for authoritative decisions and operational actions.

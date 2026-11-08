@@ -13,6 +13,9 @@ export type Phase = "before" | "after";
 // Leaflet uses [latitude, longitude]; reverse GeoJSON [longitude, latitude] in the adapter.
 export type Coordinate = [latitude: number, longitude: number];
 export interface MapZone {
+  eventVersion?: string;
+  eventCenter?: Coordinate;
+  radiiMeters?: [number, number, number];
   id: string;
   name: string;
   hazard: Hazard;
@@ -29,6 +32,8 @@ export interface MapZone {
   response: string[];
 }
 export interface MapHousehold {
+  riskByArea?: Record<string, "High" | "Medium" | "Low" | "None">;
+  riskLevel?: "High" | "Medium" | "Low" | "None";
   hotspotId?: string;
   membership?: "neighborhood" | "regional";
   id: string;
@@ -54,6 +59,7 @@ export interface MapTeam {
   capabilities: string[];
 }
 export interface MapImpactLayer {
+  riskCircle?: import("../../../../backend/src/risk-bands").RiskCircle;
   id: string; hotspotId: string; hazard: Hazard; boundary: Coordinate[];
   component: string; severity: string; severityBasis: string; source: string;
   simulated: boolean; updatedAt: string; label: string; limitations: string;

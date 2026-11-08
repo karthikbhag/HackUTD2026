@@ -1,3 +1,4 @@
+import { distanceMeters, type RiskCircle } from './risk-bands';
 /** Deterministic, dependency-free exposure calculation for simple local polygons.
  * No clocks, filesystem, network, SDK calls, or household zone assumptions.
  * Coordinates are [longitude, latitude]; boundaries count as exposed.
@@ -6,7 +7,7 @@ export type Hazard = 'tornado' | 'earthquake' | 'hurricane' | 'wildfire' | 'bliz
 export type Severity = 'moderate' | 'high' | 'critical';
 export type RecordId = string | bigint;
 export type Position = readonly [number, number];
-export interface Polygon { type: 'Polygon'; coordinates: readonly (readonly Position[])[] }
+export interface Polygon { type: 'Polygon'; coordinates: readonly (readonly Position[])[]; riskCircle?: RiskCircle }
 export interface LocatedHousehold<Id extends RecordId = string> {
   id: Id; latitude: number; longitude: number;
 }
@@ -53,7 +54,7 @@ function intersects(a: Position, b: Position, c: Position, d: Position) {
   return onSegment(a, b, c) || onSegment(a, b, d) || onSegment(c, d, a) || onSegment(c, d, b) ||
     (cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0);
 }
-type Prepared = { ring: readonly Position[]; minX: number; minY: number; maxX: number; maxY: number };
+type Prepared = { ring: readonly Position[]; minX: number; minY: number; maxX: number; maxY: number; riskCircle?: RiskCircle };
 function preparePolygon(polygon: Polygon): Prepared {
   requireValid(polygon.type === 'Polygon' && polygon.coordinates.length === 1, 'only one-ring Polygon is supported');
   const ring = polygon.coordinates[0];
@@ -71,11 +72,20 @@ function preparePolygon(polygon: Polygon): Prepared {
   const xs = ring.map(p => p[0]), ys = ring.map(p => p[1]);
   const bounds = { ring, minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
   requireValid(bounds.maxX - bounds.minX < 180, 'dateline-spanning polygons are unsupported');
+  if (polygon.riskCircle) {
+    const circle = polygon.riskCircle;
+    requireValid(validPoint(circle.center) && Number.isFinite(circle.radiusMeters) && circle.radiusMeters > 0 && circle.radiusMeters <= 500000, 'circle metadata');
+    requireValid(ring.every(p => Math.abs(distanceMeters(circle.center,p)-circle.radiusMeters) < 0.01), 'circle geometry does not match metadata');
+    const angular = circle.radiusMeters / 6371008.8;
+    const dLat = angular * 180/Math.PI, dLon = Math.asin(Math.sin(angular)/Math.cos(circle.center[1]*Math.PI/180))*180/Math.PI;
+    return {...bounds,minX:circle.center[0]-dLon,maxX:circle.center[0]+dLon,minY:circle.center[1]-dLat,maxY:circle.center[1]+dLat,riskCircle:circle};
+  }
   return bounds;
 }
 function contains(prepared: Prepared, p: Position) {
   const { ring, minX, maxX, minY, maxY } = prepared;
   if (p[0] < minX - EPSILON || p[0] > maxX + EPSILON || p[1] < minY - EPSILON || p[1] > maxY + EPSILON) return false;
+  if (prepared.riskCircle) return distanceMeters(prepared.riskCircle.center,p) <= prepared.riskCircle.radiusMeters + 0.001;
   let inside = false;
   for (let i = 0; i < ring.length - 1; i++) {
     const a = ring[i], b = ring[i + 1];

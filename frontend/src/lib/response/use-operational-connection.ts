@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { DbConnection, tables } from "@/module_bindings";
-import type { ResponseRun, WelfareVisit, TeamRoute, ResponseTeamState, Household, ResponseTeam } from "@/module_bindings/types";
+import type { ResponseRun, WelfareVisit, TeamRoute, ResponseTeamState, Household, ResponseTeam, Zone } from "@/module_bindings/types";
 import { toMapData, type OperationalRows } from "@/lib/map/backend-data";
 import { sharedDashboardSnapshot, type SharedDashboard } from "@/lib/map/shared-dashboard";
 import type { DataStatus, MapData } from "@/lib/map/types";
-interface Snapshot { data: MapData; rows?: OperationalRows; shared?: Omit<SharedDashboard, "onAction">; status: DataStatus; errorMessage?: string; routingError?: string; identity?: string; runs: ResponseRun[]; visits: WelfareVisit[]; routes: TeamRoute[]; teamStates: ResponseTeamState[]; households: Household[]; teams: ResponseTeam[] }
-const empty: Snapshot = { data:{zones:[],households:[],teams:[]},status:"loading",runs:[],visits:[],routes:[],teamStates:[],households:[],teams:[] };
+interface Snapshot { zones: Zone[]; data: MapData; rows?: OperationalRows; shared?: Omit<SharedDashboard, "onAction">; status: DataStatus; errorMessage?: string; routingError?: string; identity?: string; runs: ResponseRun[]; visits: WelfareVisit[]; routes: TeamRoute[]; teamStates: ResponseTeamState[]; households: Household[]; teams: ResponseTeam[] }
+const empty: Snapshot = { zones:[], data:{zones:[],households:[],teams:[]},status:"loading",runs:[],visits:[],routes:[],teamStates:[],households:[],teams:[] };
 /** One connection per mounted page shell; endpoint-scoped token matches the dispatcher. */
 export function useOperationalConnection(uri: string, database: string, includeMap = true) {
   const [conn,setConn]=useState<DbConnection|null>(null),[snapshot,setSnapshot]=useState<Snapshot>(empty);
@@ -22,10 +22,10 @@ export function useOperationalConnection(uri: string, database: string, includeM
       const rows: OperationalRows | undefined=includeMap ? {disasters:[...connection.db.disasters.iter()],zones:[...connection.db.zones.iter()],households:[...connection.db.households.iter()],requests:[...connection.db.requests.iter()],teams:[...connection.db.teams.iter()],tasks:[...connection.db.tasks.iter()],assignments:[...connection.db.assignments.iter()],impactLayers:[...connection.db.impactLayers.iter()],welfareVisits:visits,responseTeamStates:teamStates} : undefined;
       const data=rows ? toMapData(rows) : empty.data;
       const shared=rows ? sharedDashboardSnapshot([...connection.db.dashboardState.iter()][0],[...connection.db.dashboardNotices.iter()],[...connection.db.dashboardRecipients.iter()],[...connection.db.dashboardResponses.iter()],rows.assignments) : undefined;
-      setSnapshot({data,rows,shared,status:"connected",identity,routingError,runs:routingReady?[...connection.db.responseRuns.iter()]:[],visits,routes:routingReady?[...connection.db.teamRoutes.iter()]:[],teamStates,households:routingReady?[...connection.db.routingHouseholds.iter()]:[],teams:routingReady?[...connection.db.routingTeams.iter()]:[]});
+      setSnapshot({zones:[...connection.db.zones.iter()],data,rows,shared,status:"connected",identity,routingError,runs:routingReady?[...connection.db.responseRuns.iter()]:[],visits,routes:routingReady?[...connection.db.teamRoutes.iter()]:[],teamStates,households:routingReady?[...connection.db.routingHouseholds.iter()]:[],teams:routingReady?[...connection.db.routingTeams.iter()]:[]});
     }catch(e){if(!disposed)setSnapshot({...empty,status:"error",identity,errorMessage:e instanceof Error?e.message:String(e)});}};
     const changed=()=>{if(queued||disposed)return;queued=true;queueMicrotask(()=>{queued=false;refresh();});};
-    const handles=[...(includeMap ? [connection.db.disasters,connection.db.zones,connection.db.households,connection.db.requests,connection.db.teams,connection.db.tasks,connection.db.assignments,connection.db.impactLayers,connection.db.dashboardState,connection.db.dashboardNotices,connection.db.dashboardRecipients,connection.db.dashboardResponses] : []),connection.db.responseRuns,connection.db.welfareVisits,connection.db.teamRoutes,connection.db.responseTeamStates,connection.db.routingHouseholds,connection.db.routingTeams];
+    const handles=[connection.db.zones,...(includeMap ? [connection.db.disasters,connection.db.households,connection.db.requests,connection.db.teams,connection.db.tasks,connection.db.assignments,connection.db.impactLayers,connection.db.dashboardState,connection.db.dashboardNotices,connection.db.dashboardRecipients,connection.db.dashboardResponses] : []),connection.db.responseRuns,connection.db.welfareVisits,connection.db.teamRoutes,connection.db.responseTeamStates,connection.db.routingHouseholds,connection.db.routingTeams];
     for(const table of handles){table.onInsert(changed);table.onDelete(changed);table.onUpdate(changed);}
     // Keep optional routing views independent of the shared dashboard deployment.
     const core=connection.subscriptionBuilder().onApplied(()=>{ready=true;refresh();}).onError(ctx=>fail(ctx.event))

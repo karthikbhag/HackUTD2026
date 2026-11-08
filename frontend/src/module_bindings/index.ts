@@ -47,11 +47,14 @@ import CreateRequestReducer from "./create_request_reducer";
 import CreateTaskReducer from "./create_task_reducer";
 import EscalateScenarioReducer from "./escalate_scenario_reducer";
 import HoldResponsePlanningReducer from "./hold_response_planning_reducer";
+import IngestHazardEventReducer from "./ingest_hazard_event_reducer";
 import PauseResponseDemoReducer from "./pause_response_demo_reducer";
 import PublishResponsePlanReducer from "./publish_response_plan_reducer";
 import RecordExerciseReplyReducer from "./record_exercise_reply_reducer";
 import RecordOutreachReducer from "./record_outreach_reducer";
 import RefreshDecisionSnapshotReducer from "./refresh_decision_snapshot_reducer";
+import RegisterDispatchTeamReducer from "./register_dispatch_team_reducer";
+import RemoveAlaskaHawaiiReducer from "./remove_alaska_hawaii_reducer";
 import RenewRoutingLeaseReducer from "./renew_routing_lease_reducer";
 import ReplyDashboardNoticeReducer from "./reply_dashboard_notice_reducer";
 import ResetDashboardReducer from "./reset_dashboard_reducer";
@@ -62,6 +65,7 @@ import ResponsePlanningFailedReducer from "./response_planning_failed_reducer";
 import ResumeResponseDemoReducer from "./resume_response_demo_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
 import SeedResponseRoutingDemoReducer from "./seed_response_routing_demo_reducer";
+import SetDispatchApprovalReducer from "./set_dispatch_approval_reducer";
 import SetEmployeeReducer from "./set_employee_reducer";
 import SetResponseTeamAvailabilityReducer from "./set_response_team_availability_reducer";
 import SetRoutingWorkerReducer from "./set_routing_worker_reducer";
@@ -82,11 +86,13 @@ import DashboardResponsesRow from "./dashboard_responses_table";
 import DashboardStateRow from "./dashboard_state_table";
 import DecisionsRow from "./decisions_table";
 import DisastersRow from "./disasters_table";
+import DispatchApprovalsRow from "./dispatch_approvals_table";
 import ExerciseRepliesRow from "./exercise_replies_table";
 import ExercisesRow from "./exercises_table";
 import HouseholdDecisionsRow from "./household_decisions_table";
 import HouseholdsRow from "./households_table";
 import ImpactLayersRow from "./impact_layers_table";
+import MyDispatchTeamRow from "./my_dispatch_team_table";
 import RequestsRow from "./requests_table";
 import ResponseRunsRow from "./response_runs_table";
 import ResponseTeamStatesRow from "./response_team_states_table";
@@ -160,6 +166,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, DisastersRow),
+  dispatchApprovals: __table({
+    name: 'dispatch_approvals',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DispatchApprovalsRow),
   exerciseReplies: __table({
     name: 'exercise_replies',
     indexes: [
@@ -195,6 +208,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, ImpactLayersRow),
+  myDispatchTeam: __table({
+    name: 'my_dispatch_team',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyDispatchTeamRow),
   requests: __table({
     name: 'requests',
     indexes: [
@@ -296,11 +316,14 @@ const reducersSchema = __reducers(
   __reducerSchema("create_task", CreateTaskReducer),
   __reducerSchema("escalate_scenario", EscalateScenarioReducer),
   __reducerSchema("hold_response_planning", HoldResponsePlanningReducer),
+  __reducerSchema("ingest_hazard_event", IngestHazardEventReducer),
   __reducerSchema("pause_response_demo", PauseResponseDemoReducer),
   __reducerSchema("publish_response_plan", PublishResponsePlanReducer),
   __reducerSchema("record_exercise_reply", RecordExerciseReplyReducer),
   __reducerSchema("record_outreach", RecordOutreachReducer),
   __reducerSchema("refresh_decision_snapshot", RefreshDecisionSnapshotReducer),
+  __reducerSchema("register_dispatch_team", RegisterDispatchTeamReducer),
+  __reducerSchema("remove_alaska_hawaii", RemoveAlaskaHawaiiReducer),
   __reducerSchema("renew_routing_lease", RenewRoutingLeaseReducer),
   __reducerSchema("reply_dashboard_notice", ReplyDashboardNoticeReducer),
   __reducerSchema("reset_dashboard", ResetDashboardReducer),
@@ -311,6 +334,7 @@ const reducersSchema = __reducers(
   __reducerSchema("resume_response_demo", ResumeResponseDemoReducer),
   __reducerSchema("seed_demo", SeedDemoReducer),
   __reducerSchema("seed_response_routing_demo", SeedResponseRoutingDemoReducer),
+  __reducerSchema("set_dispatch_approval", SetDispatchApprovalReducer),
   __reducerSchema("set_employee", SetEmployeeReducer),
   __reducerSchema("set_response_team_availability", SetResponseTeamAvailabilityReducer),
   __reducerSchema("set_routing_worker", SetRoutingWorkerReducer),

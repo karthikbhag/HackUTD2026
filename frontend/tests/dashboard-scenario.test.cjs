@@ -93,3 +93,25 @@ test('reset clears all areas, rounds, clock and assignments without mutating sou
   assert.equal(data.teams[0].status, 'available');
   assert.equal(data.households[1].checkIn, 'unknown');
 });
+
+const { householdMapAction } = loaded.exports;
+test('map badges follow notification rounds, responses, and assignment', () => {
+  const row = data.households[2];
+  assert.equal(householdMapAction(initial, row, 'before').kind, 'notification');
+  const prepared = apply(send());
+  assert.equal(householdMapAction(prepared, row, 'before'), undefined);
+  const impacted = reduce(prepared, impact);
+  assert.equal(householdMapAction(impacted, row, 'after').label, 'Follow-up notification needed');
+  const contacted = reduce(impacted, send());
+  assert.equal(householdMapAction(contacted, row, 'after'), undefined);
+  const help = reduce(contacted, reply('help', 'needs_help'));
+  assert.equal(householdMapAction(help, row, 'after').kind, 'response');
+  assert.equal(householdMapAction(reduce(help, assign('help')), row, 'after'), undefined);
+  assert.equal(householdMapAction(reduce(contacted, reply('help', 'safe')), row, 'after'), undefined);
+  assert.equal(householdMapAction(reduce(contacted, deadline), row, 'after').kind, 'response');
+});
+test('map badges suppress safe, unexposed, and non-customer outreach', () => {
+  assert.equal(householdMapAction(initial, { ...customer('x'), riskLevel: 'None' }, 'before'), undefined);
+  assert.equal(householdMapAction(initial, { ...customer('x'), isCustomer: false }, 'before'), undefined);
+  assert.equal(householdMapAction(initial, { ...customer('x'), checkIn: 'safe' }, 'after', false), undefined);
+});

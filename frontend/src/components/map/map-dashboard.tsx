@@ -8,8 +8,9 @@ import { DetailPanel } from "./detail-panel";
 import { DashboardIcon } from "./dashboard-icon";
 import { AreaReviewDialog } from "./area-review-dialog";
 import { ConnectedActionDialog } from "./connected-action-dialog";
+import { localRiskData } from "@/lib/map/local-risk-data";
 import { NotificationDialog } from "./notification-dialog";
-import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
+import { notificationAreaIdFor, areaIdFor, householdMapAction, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import type { SharedDashboard } from "@/lib/map/shared-dashboard";
 import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
 
@@ -20,13 +21,15 @@ const hazardTypes = Object.keys(hazards) as Hazard[];
 /** Lets Person 4's panel read and set the map selection without owning map state. */
 export type WorkflowPanelContext = { selection: Selection; onSelect: (selection: Selection) => void };
 /** Person 4 supplies subscription data and mounts operational controls in workflowPanel. */
-export function MapDashboard({ data, status = "demo", errorMessage, workflowPanel, sharedDashboard, renderWorkspace }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode | ((context: WorkflowPanelContext) => ReactNode); sharedDashboard?: SharedDashboard; renderWorkspace?: (data: MapData, zone: MapZone, selection: Selection, onSelect: (selection: Selection) => void) => ReactNode }) {
+export function MapDashboard({ data: suppliedData, status = "demo", errorMessage, workflowPanel, sharedDashboard, renderWorkspace }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode | ((context: WorkflowPanelContext) => ReactNode); sharedDashboard?: SharedDashboard; renderWorkspace?: (data: MapData, zone: MapZone, selection: Selection, onSelect: (selection: Selection) => void) => ReactNode }) {
+  const data = useMemo(()=>status === "demo" ? localRiskData(suppliedData) : suppliedData,[suppliedData,status]);
   // These are local presentation choices; operational records arrive through data props.
   const [reviewId, setReviewId] = useState<string | null>(null);
   const openAreaReview = useCallback((id: string) => { setReviewId(id); }, []);
   const [browsePage, setBrowsePage] = useState(0);
   const [view, setView] = useState<View>("overview");
   const [enabled, setEnabled] = useState<Hazard[]>(hazardTypes);
+  const [markerFilter, setMarkerFilter] = useState<"all" | "notification" | "response">("all");
   const demo = status === "demo";
   const [localScenario, localDispatch] = useReducer((state: DashboardScenario, action: DashboardAction) => dashboardScenarioReducer(state, action, data), initialDashboardScenario);
   const scenario = sharedDashboard?.state ?? localScenario;
@@ -56,6 +59,10 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
     })),
     teams: filtered.teams.map(team => Object.values(scenario.assignments).includes(team.id) ? { ...team, status: "assigned" } : team),
   }), [filtered, scenarioEnabled, scenario, phase]);
+  const mapActions = useMemo(() => Object.fromEntries(visible.households.flatMap(row => {
+    const action = householdMapAction(scenario, row, phase, scenarioEnabled);
+    return action ? [[row.id, action]] : [];
+  })), [visible.households, scenario, phase, scenarioEnabled]);
   const safeCount = filtered.households.filter(row => row.isCustomer && confirmedSafe(scenario, row, phase)).length;
   const readyCount = filtered.households.filter(row => responseEligible(scenario, row)).length;
   const preparationSent = Object.values(scenario.areas).some(area => area.before);
@@ -103,7 +110,7 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
     <div className="utility-bar"><span>HackUTD prototype · <Link href={status === "demo" ? "/" : "/demo/local"}>{status === "demo" ? "Main dashboard" : "Try local rehearsal"}</Link></span><span className={`connection ${status === "connected" ? "live" : ""}`} role="status"><span aria-hidden="true" />{status === "demo" ? "Simulation data" : status === "connected" ? "Connected" : status === "loading" ? "Connecting…" : "Connection interrupted"}</span></div>
     <header className="app-header">
       <Link className="brand" href="/" aria-label="StateWatch home"><span className="statefarm-wordmark">State Farm<span className="wordmark-dot">®</span></span><span className="product-name">StateWatch</span></Link>
-      <span className="employee-label"><DashboardIcon kind="teams" />Employee workspace</span>
+      <div className="header-workspace-actions"><span className="employee-label"><DashboardIcon kind="teams" />Employee workspace</span><Link className="dispatcher-signin" href="/response">Sign in as Dispatcher</Link></div>
     </header>
     <div className="workspace-heading"><p className="eyebrow">State Farm · Preparedness & response</p><h1>Disaster watch</h1><p className="alerts-needing-action" role="status">{alertsNeedingAction} {alertsNeedingAction === 1 ? "alert needs" : "alerts need"} action</p><div className="phase-toggle" aria-label="Disaster workflow"><button aria-pressed={phase === "before"} onClick={() => { setPhase("before"); setSelection(null); }}>Disaster prep</button><button disabled={scenarioEnabled && scenario.minute < 0} aria-pressed={phase === "after"} onClick={() => { setPhase("after"); setSelection(null); }}>After disaster respond</button></div></div>
     {status === "error" && <div className="error-banner" role="alert">{errorMessage || "Unable to connect to operational data. Check the shared connection."}</div>}
@@ -123,10 +130,17 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
       <section className="map-panel" aria-label="National disaster overview">
         <div className="outlook-heading"><h2>Your national outlook</h2><span className="scenario-label">{status === "demo" ? "Simulation · Fictional multi-hazard scenarios" : "Source and timing available in area details"}</span></div>
         <div className="hazard-filters" role="group" aria-label="Hazard layers">{hazardTypes.map(type => <label key={type}><input type="checkbox" checked={enabled.includes(type)} onChange={() => setEnabled(current => current.includes(type) ? current.filter(item => item !== type) : [...current, type])}/><span className="hazard-dot" style={{ background: hazards[type].color }}/><span>{hazards[type].label}</span></label>)}</div>
+        <div className="marker-filters" role="group" aria-label="Filter map markers by action">
+          <span>Show markers</span>
+          <button aria-pressed={markerFilter === "all"} onClick={() => setMarkerFilter("all")}>All</button>
+          <button aria-pressed={markerFilter === "notification"} onClick={() => setMarkerFilter("notification")}><i className="map-action-key notification" aria-hidden="true">!</i> Yellow · Notification needed</button>
+          <button aria-pressed={markerFilter === "response"} onClick={() => setMarkerFilter("response")}><i className="map-action-key response" aria-hidden="true">!</i> Red · Assistance needed</button>
+          <span className="marker-filter-status" role="status">{markerFilter === "all" ? "Showing all markers" : markerFilter === "notification" ? "Showing yellow markers only" : "Showing red markers only"}</span>
+        </div>
         <div className="map-toolbar"><span>{counts.total.toLocaleString()} dataset households ({counts.neighborhood.toLocaleString()} neighborhood / {counts.regional.toLocaleString()} regional)<br/>{visible.zones.length} filtered hotspots · {visible.households.length.toLocaleString()} matching households · {visible.teams.length.toLocaleString()} teams</span><button onClick={() => { setSelection(null); setOverviewVersion(value => value + 1); }}>Reset view <span aria-hidden="true">↗</span></button></div>
-        <DisasterMap data={visible} selection={effectiveSelection} onSelect={setSelection} overviewVersion={overviewVersion} onReview={openAreaReview}/>
-        <div className="map-legend"><span><i className="household-key"/> Household</span><span><i className="team-key">+</i> Response team</span><span>Dashed = geographic context · Filled = hazard footprints</span><span><i className="area-info-key">i</i> Area review</span><span>Heavier outlines = higher severity</span></div>
-        <p className="map-hint">Numbered circles count household locations. Click a cluster to expand it, or select a hotspot to inspect neighborhood and regional records. Counts represent geographic membership, not hazard exposure.</p>
+        <DisasterMap data={visible} selection={effectiveSelection} onSelect={setSelection} overviewVersion={overviewVersion} onReview={openAreaReview} actions={mapActions} markerFilter={markerFilter}/>
+        <div className="map-legend"><span><i className="household-key"/> Household</span><span><i className="team-key">+</i> Response team</span><span>Dashed = geographic context</span><span><i className="map-action-key notification">!</i> Notification needed</span>{phase === "after" && <span><i className="map-action-key response">!</i> Assistance / welfare check needed</span>}<span>Dark = High risk · Lighter = Medium / Low · Outside = None</span></div>
+        <p className="map-hint">Numbered circles count household locations. Click a cluster to expand it, or select a hotspot to inspect neighborhood and regional records. Counts represent geographic membership, not hazard exposure. Select an ! badge to review pending actions; red takes priority when an area also needs outreach.</p>
         <details className="hotspot-picker"><summary>Explore visible hotspots <span className="count">{visible.zones.length}</span></summary><div className="hotspot-list">{[...visible.zones].sort((a, b) => ({ critical: 3, high: 2, moderate: 1 }[b.severity] - { critical: 3, high: 2, moderate: 1 }[a.severity])).map(zone => <button key={zone.id} aria-pressed={effectiveSelection?.kind === "zone" && effectiveSelection.id === zone.id} onClick={() => setSelection({ kind: "zone", id: zone.id })}><span className="hotspot-type" style={{ color: hazards[zone.hazard].color }}>{hazards[zone.hazard].label}</span><strong>{zone.name}</strong><span className={`severity ${zone.severity}`}>{zone.severity} severity</span><span className="hotspot-membership">{(hotspotCounts.get(zone.id) ?? 0).toLocaleString()} households · geographic context</span></button>)}{!visible.zones.length && <p className="muted small">No visible hotspots. Enable a hazard layer or wait for scenario data.</p>}</div></details>
       </section>
       <div id="review-panel" className="review-panel" tabIndex={-1}>
@@ -137,7 +151,7 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
           {scenarioEnabled && <p className="queue-summary">{safeCount} confirmed safe · {phase === "after" ? `${readyCount} ready for response review` : "Safe replies leave this queue"}</p>}
           <p className="muted panel-subtitle">{view === "overview" ? "Review by check-in status · Visible hotspots" : view === "households" ? "All households in your visible hotspots" : view === "teams" ? "Availability and capabilities at a glance" : "Select a hotspot to review its guidance."}</p>
           {(view === "overview" || view === "households") && <>
-            <div className="review-list">{(view === "overview" ? reviewHouseholds : visible.households.slice(pageStart, pageStart + PAGE_SIZE)).map(item => <button className="review-row" key={item.id} onClick={() => scenarioEnabled ? setNotificationId(areaIdFor(item)) : setSelection({ kind: "household", id: item.id })}><DashboardIcon kind="home" /><span className="review-row-copy"><strong>{item.name}</strong><small>{item.needs.join(" · ") || (item.lastContactAt ? "View contact and household details" : "No contact recorded")}</small></span><span className={`check-in ${item.checkIn}`}>{scenarioEnabled ? dashboardHouseholdStatus(scenario, item, phase) : item.checkIn.replaceAll("_", " ")}</span></button>)}{!(view === "overview" ? reviewHouseholds : visible.households).length && <p className="empty-state">{visible.households.length ? "No households currently need review." : "No households in the visible zones."}</p>}</div>
+            <div className="review-list">{(view === "overview" ? reviewHouseholds : visible.households.slice(pageStart, pageStart + PAGE_SIZE)).map(item => <button className="review-row" key={item.id} onClick={() => scenarioEnabled ? setNotificationId(notificationAreaIdFor(item)) : setSelection({ kind: "household", id: item.id })}><DashboardIcon kind="home" /><span className="review-row-copy"><strong>{item.name}</strong><small>Risk: {item.riskLevel ?? "None"} · {item.needs.join(" · ") || (item.lastContactAt ? "View contact and household details" : "No contact recorded")}</small></span><span className={`check-in ${item.checkIn}`}>{scenarioEnabled ? dashboardHouseholdStatus(scenario, item, phase) : item.checkIn.replaceAll("_", " ")}</span></button>)}{!(view === "overview" ? reviewHouseholds : visible.households).length && <p className="empty-state">{visible.households.length ? "No households currently need review." : "No households in the visible zones."}</p>}</div>
             {view === "overview" && <><button className="primary-button" onClick={() => openView("households")}>Review all households</button><button className="secondary-link" onClick={() => openView("preparation")}>{phase === "before" ? "View preparedness guidance" : "View response guidance"} <span aria-hidden="true">→</span></button></>}
           </>}
           {view === "teams" && <div className="review-list">{visible.teams.slice(pageStart, pageStart + PAGE_SIZE).map(team => <button className="review-row" key={team.id} onClick={() => setSelection({ kind: "team", id: team.id })}><DashboardIcon kind="teams" /><span className="review-row-copy"><strong>{team.name}</strong><small>{team.capabilities.join(" · ")}</small></span><span className={`check-in ${team.status}`}>{team.status}</span></button>)}{!visible.teams.length && <p className="empty-state">No teams recorded in the visible zones.</p>}</div>}
@@ -147,9 +161,9 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
         </aside>}
       </div>
     </div>
-    {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={scenarioEnabled ? () => { setReviewId(null); setNotificationId(popupZone.id); } : renderWorkspace ? () => { setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
+    {popupZone && <AreaReviewDialog key={popupZone.id} data={data} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={scenarioEnabled ? () => { setReviewId(null); setNotificationId(popupZone.id); } : renderWorkspace ? () => { setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
     {!scenarioEnabled && notificationZone && renderWorkspace && <ConnectedActionDialog key={notificationZone.id} name={notificationZone.name} onClose={() => setNotificationId(null)}>{renderWorkspace(data, notificationZone, effectiveSelection, setSelection)}</ConnectedActionDialog>}
-    {scenarioEnabled && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}-${sharedDashboard?.runId ?? "local"}`} data={filtered} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} shared={!!sharedDashboard} busy={sharedBusy} error={sharedError} assignmentStatuses={sharedDashboard?.assignmentStatuses} onClose={() => setNotificationId(null)}/>}
+    {scenarioEnabled && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}-${sharedDashboard?.runId ?? "local"}`} data={data} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} shared={!!sharedDashboard} busy={sharedBusy} error={sharedError} assignmentStatuses={sharedDashboard?.assignmentStatuses} onClose={() => setNotificationId(null)}/>}
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{typeof workflowPanel === "function" ? workflowPanel({ selection: effectiveSelection, onSelect: setSelection }) : workflowPanel}</section>}
     <footer className="app-footer"><span>StateWatch · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>
   </main>;
