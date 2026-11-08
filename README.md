@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.7 — 2026-11-07.** Integrated main’s map dashboard with the SpacetimeDB backend, preserving fixture mode and adding an optional read-only subscribed map. Prior fixture-backed browser verification remains recorded below; integrated browser acceptance checks and operational controls remain pending. Seed/reset now use Person 3’s checked-in dataset (60 households, 12 teams, 12 requests); source metadata and simulation labels remain intact. See the changelog for current verification.
+**Current checkpoint: v1.8 — 2026-11-07.** Integrated main’s map dashboard with the SpacetimeDB backend, preserving fixture mode and adding an optional read-only subscribed map. Prior fixture-backed browser verification remains recorded below; integrated browser acceptance checks and operational controls remain pending. Seed/reset now use Person 3’s checked-in dataset (60 households, 12 teams, 12 requests); source metadata and simulation labels remain intact. Regional assignments are resolved against all backend households; actively assigned regional teams are omitted from neighborhood grouping. See the changelog for current verification.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -238,13 +238,13 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.7
+### Current checkpoint — v1.8
 
-The dashboard supports fixture mode and an optional employee-authorized SpacetimeDB subscription connection. The adapter converts IDs, GeoJSON coordinates, timestamps, risk levels, requests, tasks, and assignment-aware team display grouping. Backend workflows exist; operational UI controls, final decision rules, and integrated browser acceptance checks remain pending. See [changelog v1.7](changelog.md#version-17--2026-11-07).
+The dashboard supports fixture mode and an optional employee-authorized SpacetimeDB subscription connection. The adapter converts IDs, GeoJSON coordinates, timestamps, risk levels, requests, tasks, and assignment-aware team display grouping. Backend workflows exist; operational UI controls, final decision rules, and integrated browser acceptance checks remain pending. See [changelog v1.8](changelog.md#version-18--2026-11-07).
 
 ### Local setup
 
-Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
+Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. Lint retains one existing generated-bindings warning. The frontend production build still encounters the Turbopack CSS worker-port permission failure, including an elevated retry. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
 
 ```sh
 # Optional, if you use nvm:
@@ -331,4 +331,4 @@ The initial online npm audit reported eight moderate findings in the development
 
 `seed_demo` and `reset_demo` import `data/scenarios/nationwide-v1.json` via `backend/src/scenario.ts`, using the existing schema and generated bindings. See the [mapping and limitations](data/scenarios/README.md#backend-integration). Source IDs map to bigint IDs; baseline times shift together to the reducer clock. Source `supply_delivery` becomes demo water assistance, and missing party sizes default to one person. Team capacity retains its numeric limit under the backend’s single-active-assignment rule; source household-case capacity is not a verified people count. No shared database was deployed.
 
-The map remains neighborhood-only: 48 of the 60 imported households are visible; 12 regional households stay available in backend views. Unconfigured UI fixture mode remains separate. Larger presets pass conversion tests but are not a measured database/browser scale claim.
+The map remains neighborhood-only: 48 of the 60 imported households are visible; 12 regional households stay available in backend views. Teams with active regional assignments (or missing subscribed destination rows) are omitted from neighborhood map markers, lists, and counts. Active neighborhood assignments retain destination grouping; only teams with no active assignment use proximity grouping, which resumes after cancellation/completion. Unconfigured UI fixture mode remains separate. Larger presets pass conversion tests but are not a measured database/browser scale claim.

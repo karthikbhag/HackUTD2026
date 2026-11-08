@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.7**
+Current version: **1.8**
 
 ## Instructions for future updates
 
@@ -31,13 +31,32 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
+## Version 1.8 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Fixed PR #3's map adapter to resolve active assignment destinations against all backend households. Teams assigned to regional households are omitted from neighborhood markers, lists, and counts; missing active destination rows also cause omission. Active neighborhood assignments keep destination grouping. Only teams without active assignments use proximity grouping, which resumes after cancellation/completion; unavailable status remains intact.
+- Added two production-seed/reducer regressions for a welfare check on `tornado-household-09` dispatched to `earthquake-team-1`, covering assigned/in-progress states, missing destination rows, cancellation/completion, unavailable teams, and access revocation.
+- Corrected current merge status: fetched latest origin/main (`b7b533e`), already retained via existing merge commit `1f36906`. Both contributors’ backend/frontend work and dataset history remain intact; source fixtures/generator and generated bindings were not edited.
+- Preserved limitations: only 48/60 households render; generic supplies map to water; absent party sizes default to one; source household-case capacity differs from backend people-per-assignment capacity; larger presets have conversion-only coverage.
+
+### Verification
+
+- The two new cases failed against the old adapter and passed after the fix. All 18 backend tests passed on SDK-supported Node 24.22.1, including existing neighborhood assignment/cancellation coverage and generated Demo/Stress conversion. Backend typecheck and SpacetimeDB module build passed.
+- Frontend typecheck passed; lint passed with zero errors and one existing generated-bindings unused-disable warning. Production build was attempted normally and with escalation on Node 24.22.1; both failed because Turbopack's CSS worker could not bind a port (`Operation not permitted`). This is the known environment failure; production compilation remains unverified, and the attempt does not establish absence of later application build errors.
+- All six Python tests and checked-in fixture validation passed (six disasters, 12 zones, 60 households, 12 teams, 12 requests). Larger preset testing remains generation/validation/conversion only, without database/subscription/browser performance claims.
+- Review-fix diff whitespace/conflict-marker checks passed; no secrets, unrelated changes, generated bundles, or binding edits were added. The full branch comparison against origin/main reports four pre-existing extra EOF blank lines in generated bindings (`index.ts`, `types.ts`, `types/procedures.ts`, `types/reducers.ts`); these were left untouched to avoid hand-editing generated output. No commit, push, merge, deployment, or shared-database mutation was performed during this review fix. Live SDK smoke and integrated browser acceptance were not rerun; earlier local smoke results remain historical evidence.
+- The requested PR review fixes satisfy the merge recommendation at code-review scope. Frontend production build, integrated browser acceptance, and larger-preset database/performance checks remain explicit verification gaps.
+
 ## Version 1.7 — 2026-11-07
 
 **Author:** Josh Sebastian
 
 ### Changes
 
-- Integrated origin/main `b7b533ea8f32fd7beda87dfd0307b6de44011f71` (dataset PR #2) into `josh/person-2-spacetime-backend` without committing. Preserved the pre-existing staged backend/frontend integration using a retained stash and external patch backups. Resolved README/changelog and homepage/map handoff conflicts with both contributors' work retained. Kept main's dataset history as v1.3/v1.4, renumbered the branch backend/map checkpoints to v1.5/v1.6, and kept all entries.
+- Integrated origin/main `b7b533ea8f32fd7beda87dfd0307b6de44011f71` (dataset PR #2) into `josh/person-2-spacetime-backend`, recorded in merge commit `1f36906`. Preserved the pre-existing staged backend/frontend integration using a retained stash and external patch backups. Resolved README/changelog and homepage/map handoff conflicts with both contributors' work retained. Kept main's dataset history as v1.3/v1.4, renumbered the branch backend/map checkpoints to v1.5/v1.6, and kept all entries.
 - Connected Person 3's checked-in Small dataset to actual administrator seed/reset: six disasters, 12 metro/neighborhood zones, 60 households, 12 teams, 12 requests, and 18 pending outreach tasks for never-contacted households. The previous sparse fixture is retained only for existing workflow regression tests.
 - Added a validated adapter for source string IDs and foreign keys, snake_case fields, null options, exact UTC microsecond timestamps shifted together to the reducer clock, named risk/urgency, region → metro, serialized GeoJSON longitude/latitude polygons, and capability/need aliases. Kept schema, reducer arguments, frontend adapter, and generated bindings unchanged.
 - Preserved raw source metadata, simulation labels, source IDs, vulnerabilities, generator presets, and geometry in the portable dataset. Explicit demo assumptions: generic supply delivery becomes water; missing party size becomes one person; source household-case team capacities retain their numeric limits under the existing single-active-assignment backend policy. These assumptions require review before operational use.
@@ -50,7 +69,7 @@ Entry template:
 - Frontend: type checking passed; lint passed with zero errors and the existing one generated-bindings unused-disable warning. Production build failed normally and with escalation because Turbopack's CSS worker could not bind a local port (`Operation not permitted`). Production build remains unverified.
 - Published and seeded only an isolated in-memory local database on port 3112. Live smoke passed: two authorized clients synchronized map/check-in/outreach, exactly one competing dispatch succeeded, completion cleared displayed need/released the team, outsider rejection and access revocation worked. The temporary server was stopped afterward; no shared deployment was made.
 - Verification used Node 24.20.0, below SDK 2.14.1's supported patch range; supported-Node verification remains pending. Browser acceptance, larger-preset database/batched loading, performance, final geometry/decision rules and operational UI remain pending. The neighborhood-only map displays 48 of 60 imported households; regional households remain stored and authorized views expose all 60.
-- Final diff review and whitespace/conflict-marker checks passed. No generated bundles, tokens, environment files, or unrelated files were added. Merge remains uncommitted; nothing pushed.
+- Final diff review and whitespace/conflict-marker checks passed. No generated bundles, tokens, environment files, or unrelated files were added. The integration was subsequently recorded in merge commit `1f36906`.
 
 ## Version 1.6 — 2026-11-07
 
@@ -72,7 +91,7 @@ Entry template:
 - Published and seeded a disposable in-memory local database on port 3111. The expanded live smoke check passed with two authorized clients and an outsider: map adaptation, synchronized check-in/outreach, exactly one competing dispatch succeeding, assignment-aware team grouping, completion clearing displayed needs, and revocation clearing map records. No cloud deployment was made.
 - `npm --prefix frontend ci` accepted the merged manifest/lockfile. Frontend production build was attempted normally and with escalation; both failed at the existing Turbopack CSS worker port restriction (`Operation not permitted`). Integrated browser rendering, reconnect/unmount behavior in a browser, and full workflow acceptance checks remain unverified.
 - Checks ran on Node 24.20.0, below SDK 2.14.1’s declared minimum patch; supported-Node verification remains pending. The historical development dependency findings were not re-audited in this update.
-- `git diff --check` passed. README/changelog conflicts are resolved; the merge remains uncommitted and nothing was pushed.
+- `git diff --check` passed. README/changelog conflicts were resolved at this checkpoint; the integration was subsequently recorded in merge commit `1f36906`.
 
 ## Version 1.5 — 2026-11-07
 

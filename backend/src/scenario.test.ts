@@ -4,7 +4,7 @@ import { ConnectionId, Timestamp } from 'spacetimedb';
 import { createModuleTestHarness, TestAuth } from 'spacetimedb/server/test-utils';
 import db, * as api from './index';
 import { adaptScenario, source, type Scenario } from './scenario';
-import { toMapData } from '../../frontend/src/lib/map/backend-data';
+import { toMapData, type OperationalRows } from '../../frontend/src/lib/map/backend-data';
 const now = new Timestamp(1900000000123456n);
 const admin = TestAuth.fromJwtPayload(JSON.stringify({ iss: 'test', sub: 'dataset-admin' }), new ConnectionId(20n));
 function fixture() {
@@ -89,6 +89,51 @@ describe('Person 3 dataset integration', () => {
     expect(map.zones).toHaveLength(6);
     expect(map.households).toHaveLength(48); // Regional households remain in backend; map shows neighborhoods only.
     expect(map.teams).toHaveLength(12);
+  });
+  it.each(['cancelled', 'completed'] as const)('omits active regional dispatches until %s using production seed/reducers', status => {
+    const test = fixture();
+    const employee = TestAuth.fromJwtPayload(JSON.stringify({ iss: 'test', sub: 'regional-dispatch' }), new ConnectionId(21n));
+    test.withReducerTx(admin, ctx => api.setEmployee(ctx, { identity: test.viewContext(employee).sender, enabled: true }));
+    const rows = (): OperationalRows => {
+      const ctx = test.viewContext(employee);
+      return { disasters: api.disasters(ctx), zones: api.zones(ctx), households: api.households(ctx), requests: api.requests(ctx), teams: api.teams(ctx), tasks: api.tasks(ctx), assignments: api.assignments(ctx) };
+    };
+    const maps = adaptScenario(source, now).maps;
+    const householdId = maps.households.get('tornado-household-09')!;
+    const teamId = maps.teams.get('earthquake-team-1')!;
+    const household = test.db.household.id.find(householdId)!;
+    expect(test.db.zone.id.find(household.zoneId)?.level).toBe('metro');
+    const initial = toMapData(rows());
+    expect(initial.households).toHaveLength(48);
+    expect(initial.households.some(h => h.id === String(householdId))).toBe(false);
+    const homeZoneId = initial.teams.find(t => t.id === String(teamId))!.zoneId;
+    expect(initial.zones.find(z => z.id === homeZoneId)?.hazard).toBe('earthquake');
+    expect(initial.teams.find(t => t.id === String(teamId))?.status).toBe('available');
+    const unavailable = [...test.db.responseTeam.iter()].find(t => t.status === 'unavailable')!;
+    expect(initial.teams.find(t => t.id === String(unavailable.id))?.status).toBe('unavailable');
+
+    test.withReducerTx(employee, ctx => api.createRequest(ctx, { householdId, needType: 'welfare_check', urgency: 5, people: 1 }));
+    const request = [...test.db.helpRequest.iter()].find(r => r.householdId === householdId && r.needType === 'welfare_check')!;
+    test.withReducerTx(employee, ctx => api.assignTeam(ctx, { requestId: request.id, teamId }));
+    const assignment = [...test.db.assignment.iter()].find(a => a.requestId === request.id)!;
+    for (const activeStatus of ['assigned', 'in_progress'] as const) {
+      if (activeStatus === 'in_progress') test.withReducerTx(employee, ctx => api.updateAssignment(ctx, { assignmentId: assignment.id, status: activeStatus }));
+      expect(test.db.assignment.id.find(assignment.id)?.status).toBe(activeStatus);
+      expect(toMapData(rows()).teams.some(t => t.id === String(teamId))).toBe(false);
+      // Incomplete subscription rows must never cause an active assignment to fall back to proximity.
+      const missingDestination = rows();
+      missingDestination.households = missingDestination.households.filter(h => h.id !== householdId);
+      expect(toMapData(missingDestination).teams.some(t => t.id === String(teamId))).toBe(false);
+      missingDestination.requests = missingDestination.requests.filter(r => r.id !== request.id);
+      expect(toMapData(missingDestination).teams.some(t => t.id === String(teamId))).toBe(false);
+    }
+    test.withReducerTx(employee, ctx => api.updateAssignment(ctx, { assignmentId: assignment.id, status }));
+    expect(test.db.helpRequest.id.find(request.id)?.status).toBe(status === 'completed' ? 'resolved' : 'open');
+    const after = toMapData(rows());
+    expect(after.teams.find(t => t.id === String(teamId))).toMatchObject({ zoneId: homeZoneId, status: 'available' });
+    expect(after.teams.find(t => t.id === String(unavailable.id))?.status).toBe('unavailable');
+    test.withReducerTx(admin, ctx => api.setEmployee(ctx, { identity: test.viewContext(employee).sender, enabled: false }));
+    expect(toMapData(rows())).toEqual({ zones: [], households: [], teams: [] });
   });
   it('adapts generated v2 demo and stress presets without dropping relationships', () => {
     for (const [preset, count] of [['demo', 10000], ['stress', 100000]] as const) {

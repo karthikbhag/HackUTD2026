@@ -56,22 +56,27 @@ export function toMapData(rows: OperationalRows): MapData {
       lastContactAt: row.lastContactAt?.toDate().toISOString() ?? null,
     };
   });
+  const allHouseholds = new Map(rows.households.map(row => [row.id, row]));
   const teams = rows.teams.flatMap(row => {
     if (!["available", "assigned", "responding", "unavailable"].includes(row.status)) throw new Error("Unknown response team status.");
     const assignment = rows.assignments.find(item => item.teamId === row.id && ["assigned", "in_progress"].includes(item.status));
     const request = assignment && rows.requests.find(item => item.id === assignment.requestId);
-    const assignedHousehold = request && households.find(item => item.id === String(request.householdId));
-    // Prefer the actual assignment's household zone; otherwise group by nearest
-    // neighborhood centroid for display, including teams just outside its boundary.
-    const nearest = [...zones].sort((a, b) => {
+    const assignedHousehold = request && allHouseholds.get(request.householdId);
+    // Resolve destinations against all backend households. Active regional (or
+    // not-yet-loaded) destinations cannot be represented on this neighborhood map.
+    // Never replace an active assignment with a proximity-based display location.
+    if (assignment && (!assignedHousehold || !zoneIds.has(String(assignedHousehold.zoneId)))) return [];
+    // Only unassigned teams use the nearest neighborhood centroid for display,
+    // including teams just outside its boundary.
+    const nearest = !assignment ? [...zones].sort((a, b) => {
       const distance = (zone: typeof a) => {
         const lat = zone.boundary.reduce((sum, point) => sum + point[0], 0) / zone.boundary.length;
         const lon = zone.boundary.reduce((sum, point) => sum + point[1], 0) / zone.boundary.length;
         return (lat - row.latitude) ** 2 + ((lon - row.longitude) * Math.cos(row.latitude * Math.PI / 180)) ** 2;
       };
       return distance(a) - distance(b);
-    })[0];
-    const zoneId = assignedHousehold?.zoneId ?? nearest?.id;
+    })[0] : undefined;
+    const zoneId = assignedHousehold ? String(assignedHousehold.zoneId) : nearest?.id;
     return zoneId ? [{ id: String(row.id), zoneId, name: row.name, position: [row.latitude, row.longitude] as Coordinate, status: row.status as MapData["teams"][number]["status"], capacity: row.capacity, capabilities: row.capabilities }] : [];
   });
   return { zones, households, teams };
