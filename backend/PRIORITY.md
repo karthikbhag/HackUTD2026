@@ -113,4 +113,4 @@ seed/reset still use v1, and the current database converter accepts v1/v2 only.
 Persisted impact/exposure/scoring relations, authenticated views, live
 recomputation, and browser rendering remain integration work. Overdue-contact
 flags are now available through the separate [follow-up helper](FOLLOW_UP.md).
-Preparedness/team recommendations remain subsequent Person 3 tasks.
+Preparedness suggestions are now available through the separate [preparedness helper](PREPAREDNESS.md). Team recommendations remain a subsequent Person 3 task.
