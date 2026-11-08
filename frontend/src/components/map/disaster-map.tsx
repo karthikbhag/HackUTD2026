@@ -18,6 +18,7 @@ function fitOptions(instance: L.Map): L.FitBoundsOptions {
   // space for content actually covering the canvas; never subtract them twice.
   const overlays = instance.getContainer().parentElement?.querySelector(".map-overlays");
   const bottom = overlays?.getBoundingClientRect().height ?? 0;
+  if (instance.getContainer().closest(".dialog-area-map")) return { paddingTopLeft: [16, 20], paddingBottomRight: [16, bottom + 24], animate: false };
   return { paddingTopLeft: [32, 48], paddingBottomRight: [32, bottom + 40], animate: false };
 }
 function setUSPanBounds(instance: L.Map, zoom = instance.getZoom() ?? instance.getMinZoom()) {
@@ -58,8 +59,8 @@ function revealHousehold(group: L.MarkerClusterGroup | null, marker?: L.Marker) 
   if (parent instanceof L.MarkerCluster) parent.spiderfy();
   marker.openTooltip();
 }
-interface Props { data: MapData; selection: Selection; onSelect: (selection: Selection) => void; overviewVersion: number }
-export default function DisasterMap({ data, selection, onSelect, overviewVersion }: Props) {
+interface Props { data: MapData; selection: Selection; onSelect: (selection: Selection) => void; overviewVersion: number; onReview?: (zoneId: string) => void }
+export default function DisasterMap({ data, selection, onSelect, overviewVersion, onReview }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const overlays = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -176,12 +177,10 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
       const info = tooltip("i");
       info.setAttribute("aria-hidden", "true");
       L.marker(polygon.getBounds().getCenter(), { icon: L.divIcon({ className: "area-info-marker", html: info, iconSize: [26, 26], iconAnchor: [13, 13] }), title: `Review ${zone.name} · ${zone.severity} severity`, alt: `Review ${zone.name}` })
-        .bindTooltip(tooltip(`${zone.name} · ${zone.severity} · Select to open area details and scenario desk`))
+        .bindTooltip(tooltip(`${zone.name} · ${zone.severity} · Open area review`))
         .on("click", () => {
-          onSelect({ kind: "zone", id: zone.id });
-          const desk = document.getElementById("scenario-desk");
-          desk?.focus({ preventScroll: true });
-          desk?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+          if (onReview) onReview(zone.id);
+          else onSelect({ kind: "zone", id: zone.id });
         }).addTo(geometry);
       polygons.set(zone.id, polygon);
       polygon.bindTooltip(tooltip(`${zone.name} · Geographic context only`));
@@ -213,7 +212,7 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     instance.on("zoomend", refreshTeams);
     refreshTeams();
     return () => { instance.off("zoomend", refreshTeams); geometry.remove(); teams.remove(); group.clearLayers(); group.remove(); clusters.current = null; markers.clear(); polygons.clear(); };
-  }, [data, onSelect]);
+  }, [data, onSelect, onReview]);
   useEffect(() => {
     const previous = currentSelection.current;
     const records = currentData.current;

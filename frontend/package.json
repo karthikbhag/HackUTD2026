@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:scenario": "node --test tests/scenario-demo.test.cjs"
+    "test:scenario": "node --test tests/scenario-demo.test.cjs tests/dashboard-scenario.test.cjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

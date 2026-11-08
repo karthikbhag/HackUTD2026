@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { OutreachDashboard } from "./outreach-dashboard";
 import { useOperationalConnection } from "@/lib/response/use-operational-connection";
 import { MapDashboard } from "./map-dashboard";
 import { ConnectedWorkspace } from "./connected-workspace";
 
 
-export function ConnectedDashboard({ uri, database }: { uri: string; database: string }) {
+export function ConnectedDashboard({ uri, database, areaId }: { uri: string; database: string; areaId?: string }) {
   const { conn: activeConnection, snapshot: state } = useOperationalConnection(uri, database);
+  if (areaId !== undefined) return <OutreachDashboard {...state} areaId={areaId}/>;
   return <MapDashboard {...state} renderWorkspace={activeConnection && state.status === "connected" ? (data, zone, selection, onSelect) =>
     <ConnectedWorkspace key={zone.id} conn={activeConnection} data={data} zone={zone} selection={selection} onSelect={onSelect} /> : undefined} workflowPanel={<div className="guidance">
     <h3>Shared operational map</h3>

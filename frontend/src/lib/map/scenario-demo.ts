@@ -28,7 +28,7 @@ export function scenarioDemoReducer(state: ScenarioDemo, action: DemoAction): Sc
     case "send": return round ? state : { ...state, [phase]: { sentAt: state.minute, replies: {} }, events: log(`${phase === 'before' ? 'Preparation' : 'Post-disaster'} check-in approved (simulated).`) };
     case "impact": return state.minute >= 0 ? state : { ...state, minute: 0, events: [...state.events, 'T+0 min · Time advanced to post-disaster conditions.'] };
     case "deadline": return state.after && state.minute < state.after.sentAt + 30 ? { ...state, minute: state.after.sentAt + 30, events: [...state.events, 'T+30 min · Post-disaster response deadline reached.'] } : state;
-    case "reply": return !round ? state : { ...state, [phase]: { ...round, replies: { ...round.replies, [action.id]: action.reply } }, events: log(`${action.id}: ${action.reply === 'safe' ? 'confirmed safe' : 'requested help'}.`) };
+    case "reply": return !round || (phase === "before" && action.reply !== "safe") ? state : { ...state, [phase]: { ...round, replies: { ...round.replies, [action.id]: action.reply } }, events: log(`${action.id}: ${action.reply === 'safe' ? 'confirmed safe' : 'requested help'}.`) };
     case "assign": {
       const reply = state.after?.replies[action.id];
       const overdue = state.after && state.minute >= state.after.sentAt + 30;

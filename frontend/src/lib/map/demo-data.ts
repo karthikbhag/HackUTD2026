@@ -15,7 +15,7 @@ export const demoMapData: MapData = {
   // Cycle severities to exercise all legend states and retain a fixed source timestamp.
   zones: hotspots.map((spot, i) => {
     const [lat, lng] = spot.center;
-    return { id: spot.id, name: spot.name, hazard: spot.hazard, severity: i % 3 === 0 ? "critical" : i % 3 === 1 ? "high" : "moderate", boundary: [[lat - 0.22, lng - 0.3], [lat + 0.18, lng - 0.28], [lat + 0.25, lng + 0.2], [lat - 0.15, lng + 0.32]], source: "RiskReach fictional UI scenario", updatedAt: "2026-11-07T20:00:00Z", simulated: true, preparation: [spot.preparation], response: [spot.response] };
+    return { id: spot.id, name: spot.name, hazard: spot.hazard, severity: i % 3 === 0 ? "critical" : i % 3 === 1 ? "high" : "moderate", boundary: [[lat - 0.22, lng - 0.3], [lat + 0.18, lng - 0.28], [lat + 0.25, lng + 0.2], [lat - 0.15, lng + 0.32]], source: "State Watch fictional UI scenario", updatedAt: "2026-11-07T20:00:00Z", simulated: true, preparation: [spot.preparation], response: [spot.response] };
   }),
   // Three customer check-ins plus a community case exercise each rehearsal outcome.
   households: hotspots.flatMap((spot, i) => [
@@ -33,8 +33,8 @@ export const demoMapData: MapData = {
       : [[lat - .13, lng - .2], [lat + .13, lng - .14], [lat + .17, lng + .13], [lat - .1, lng + .21]];
     const inner: Coordinate[] = [[lat - .045, lng - .06], [lat + .06, lng - .05], [lat + .07, lng + .055], [lat - .04, lng + .075]];
     return [
-      { id: `${spot.id}-outer`, hotspotId: spot.id, hazard: spot.hazard, boundary: outer, component: "scenario_extent", severity: "moderate", severityBasis: "Invented outer impact band for UI demonstration", source: "RiskReach fictional UI scenario", simulated: true, updatedAt: "2026-11-07T20:00:00Z", label: "Outer scenario impact area", limitations: "Illustrative geometry; not a forecast or measured footprint." },
-      { id: `${spot.id}-core`, hotspotId: spot.id, hazard: spot.hazard, boundary: inner, component: "scenario_core", severity, severityBasis: "Invented inner impact band for UI demonstration", source: "RiskReach fictional UI scenario", simulated: true, updatedAt: "2026-11-07T20:00:00Z", label: "Core scenario impact area", limitations: "Illustrative geometry; no verified household exposure or evacuation order." },
+      { id: `${spot.id}-outer`, hotspotId: spot.id, hazard: spot.hazard, boundary: outer, component: "scenario_extent", severity: "moderate", severityBasis: "Invented outer impact band for UI demonstration", source: "State Watch fictional UI scenario", simulated: true, updatedAt: "2026-11-07T20:00:00Z", label: "Outer scenario impact area", limitations: "Illustrative geometry; not a forecast or measured footprint." },
+      { id: `${spot.id}-core`, hotspotId: spot.id, hazard: spot.hazard, boundary: inner, component: "scenario_core", severity, severityBasis: "Invented inner impact band for UI demonstration", source: "State Watch fictional UI scenario", simulated: true, updatedAt: "2026-11-07T20:00:00Z", label: "Core scenario impact area", limitations: "Illustrative geometry; no verified household exposure or evacuation order." },
     ];
   }),
   // One nearby team per hotspot supports the browser-local welfare-check rehearsal.
