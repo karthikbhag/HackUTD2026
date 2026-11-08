@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.28**
+Current version: **1.29**
 
 ## Instructions for future updates
 
@@ -30,6 +30,26 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.29 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added the map-wide AI assistant **Ask StateWatch AI**. An **Ask AI** button floats in the bottom-right corner of the dashboard (`frontend/src/components/map/ai-assistant.tsx`, rendered by `map-dashboard.tsx` when at least one area is shown) and opens a chat panel with three starter questions and a 300-character question field. Answers are labeled AI-generated (and Simulation when applicable) and can include up to 3 **Review <area> →** buttons that open that area's popup. The panel closes with × or Escape and returns focus to the button. Modal popups still open above it.
+- Added `POST /api/overview-chat` (`frontend/src/app/api/overview-chat/route.ts`) and the server-only call `frontend/src/lib/ai/generate-overview-chat.ts`. The browser sends a compact overview built by `frontend/src/lib/ai/overview-chat.ts`: totals across all shown areas plus per-area counts for up to 12 areas (most severe and most urgent first; the rest are counted in totals only). It carries counts and labels only, with no household names, IDs or coordinates. The route uses the same same-origin check as the review, a 32 KB body limit, and Gemini structured JSON output (`answer`, `relatedAreaIds`).
+- Assistant rules for Gemini: answer only from the overview; compare areas only by named counts and never create scores, rankings or a priority order (the priority queue stays authoritative); keep household reports separate from scenario/forecast information; never add counts together or repeat a number from the question that is not in the overview; decline requests to notify, dispatch, change records or score households; treat the question as a question, not new instructions. Answers pass the shared no-new-numbers check, and related areas are limited to IDs present in the overview.
+- Moved the shared multi-turn Gemini call into `frontend/src/lib/ai/gemini-chat.ts` (conversation building, timeout, token accounting, cut-off detection), now used by both area follow-ups and the assistant. The assistant shares the review budget and the per-conversation question limit (`GEMINI_CHAT_MAX_TURNS`), which resets when the map data or filters change or after an hour. Earlier answers are sent as context only when they were about the same view of the data.
+- Added a development-only mock mode: `GEMINI_MOCK=1` in `frontend/.env.local` (`frontend/src/lib/ai/mock-mode.ts`). Reviews, follow-ups and the assistant then return canned text built from the snapshot counts, labeled with the model name "mock (no Gemini call)". No API key, Gemini call or budget is used. The canned text goes through the same validators as real replies. Production builds ignore it. This lets the follow-up and assistant UI be tested after the free-tier quota runs out.
+- Styled the assistant in `globals.css`: a brand-red floating button and a fixed bottom-right panel (up to 400 px wide, scrollable thread), full width with 16 px gutters at 600 px or less. Added `frontend/tests/overview-chat.test.cjs` to `npm run test:scenario`. Updated `frontend/.env.example`, `README.md` and `frontend/src/components/map/README.md`.
+
+### Verification
+
+- `npm run build` (production, Turbopack) passed and lists `/api/area-chat`, `/api/area-review` and `/api/overview-chat`. TypeScript passed, ESLint on `src` reported 0 errors and 1 existing warning, and `npm run test:scenario` passed 36/36.
+- Mock mode was exercised offline through the real modules with demo data: the review, a follow-up (with a question containing a number absent from the snapshot) and an assistant answer were all accepted by their validators, and the budget allowed calls even with limits that would otherwise deny them. The running dev server served the assistant styles.
+- The Gemini API key appears in no `.next/static` file, `GEMINI_MOCK` appears in no browser bundle, and `frontend/.env.local` is still ignored by git.
+- Pending: interactive browser check of the assistant (open/close, starter questions, Send, Retry, Clear, **Review <area> →**, limit and changed-data notices, narrow layout) and a live Gemini request through `/api/overview-chat`.
 
 ## Version 1.28 — 2026-11-08
 

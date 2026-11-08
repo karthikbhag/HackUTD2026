@@ -7,6 +7,7 @@ import { filterHazards, householdCounts, PAGE_SIZE } from "@/lib/map/presentatio
 import { DetailPanel } from "./detail-panel";
 import { DashboardIcon } from "./dashboard-icon";
 import { AreaReviewDialog } from "./area-review-dialog";
+import { ConnectedActionDialog } from "./connected-action-dialog";
 import { NotificationDialog } from "./notification-dialog";
 import { AiAssistant } from "./ai-assistant";
 import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
@@ -147,10 +148,9 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
         </aside>}
       </div>
     </div>
-    {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={scenarioEnabled ? () => { setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
+    {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={scenarioEnabled ? () => { setReviewId(null); setNotificationId(popupZone.id); } : renderWorkspace ? () => { setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
+    {!scenarioEnabled && notificationZone && renderWorkspace && <ConnectedActionDialog key={notificationZone.id} name={notificationZone.name} onClose={() => setNotificationId(null)}>{renderWorkspace(data, notificationZone, effectiveSelection, setSelection)}</ConnectedActionDialog>}
     {scenarioEnabled && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}-${sharedDashboard?.runId ?? "local"}`} data={filtered} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} shared={!!sharedDashboard} busy={sharedBusy} error={sharedError} assignmentStatuses={sharedDashboard?.assignmentStatuses} onClose={() => setNotificationId(null)}/>}
-    {!demo && <div id="scenario-desk" tabIndex={-1}>{reviewZone && renderWorkspace ? <div key={reviewZone.id}>{renderWorkspace(visible, reviewZone, effectiveSelection, setSelection)}</div> : null}</div>}
-    <nav className="quick-actions" aria-label="Quick actions"><button onClick={() => openView("overview")}><DashboardIcon kind="phone" />Review follow-ups <span aria-hidden="true">→</span></button><button onClick={() => openView("teams")}><DashboardIcon kind="teams" />View teams <span aria-hidden="true">→</span></button><button onClick={() => openView("preparation")}><DashboardIcon kind="tasks" />{phase === "before" ? "Preparedness guidance" : "Response guidance"} <span aria-hidden="true">→</span></button><button onClick={() => { setSelection(null); setOverviewVersion(value => value + 1); }}><DashboardIcon kind="map" />National overview <span aria-hidden="true">→</span></button></nav>
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{typeof workflowPanel === "function" ? workflowPanel({ selection: effectiveSelection, onSelect: setSelection }) : workflowPanel}</section>}
     {visible.zones.length > 0 && <AiAssistant data={visible} phase={phase} onOpenArea={openAreaReview}/>}
     <footer className="app-footer"><span>StateWatch · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>

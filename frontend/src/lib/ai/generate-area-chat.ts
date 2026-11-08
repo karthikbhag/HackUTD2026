@@ -6,6 +6,7 @@ import "server-only";
 import { AreaReviewFailure } from "./generate-area-review";
 import { chatContents, runGeminiChat } from "./gemini-chat";
 import { parseAreaChatAnswer, type AreaChatRequest } from "./area-chat";
+import { geminiMockEnabled, MOCK_MODEL } from "./mock-mode";
 
 const SYSTEM_INSTRUCTION = `You answer an employee's follow-up questions about one disaster area for a utility/insurance-style outreach team.
 You are given the area's JSON evidence snapshot and an earlier AI review of it.
@@ -20,6 +21,14 @@ Rules:
 
 /** One follow-up answer. History is already trimmed to the last few turns by the request contract. */
 export async function generateAreaChatAnswer(request: AreaChatRequest): Promise<{ answer: string; model: string; tokens: number }> {
+  if (geminiMockEnabled()) {
+    // Never echoes the question: it may contain numbers that the validator would reject.
+    const h = request.snapshot.households;
+    const text = `- Mock answer, no Gemini call was made.\n- ${request.snapshot.area.name} has ${h.total} households in the snapshot, with ${h.checkIns.urgent} urgent check-ins.\n- ${request.history.length ? "This is a later question in the thread" : "This is the first question in the thread"}; ask another to test it.`;
+    const mock = parseAreaChatAnswer(text, request.snapshot);
+    if ("error" in mock) throw new AreaReviewFailure("invalid_response", `Mock answer failed validation: ${mock.error}`, 502);
+    return { answer: mock.answer, model: MOCK_MODEL, tokens: 0 };
+  }
   const evidence = `Area evidence snapshot (JSON):\n${JSON.stringify(request.snapshot)}\n\nEarlier AI review (JSON):\n${JSON.stringify(request.review)}`;
   const { text, model, tokens } = await runGeminiChat({ tag: "area-chat", systemInstruction: SYSTEM_INSTRUCTION, contents: chatContents(evidence, request.history, request.question) });
   const result = parseAreaChatAnswer(text, request.snapshot);

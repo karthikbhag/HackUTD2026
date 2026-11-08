@@ -65,6 +65,8 @@ export type BudgetDenial = { reason: "minute" | "day_requests" | "day_tokens"; m
 
 /** Reserves one Gemini request (review or follow-up), or explains which limit blocks it. Cache hits must not call this. */
 export function reserveGeminiCall(now = Date.now(), config = reviewBudgetConfig()): BudgetDenial | null {
+  // GEMINI_MOCK=1 (dev only, see mock-mode.ts) makes no Gemini calls, so it uses no quota. Inlined so offline tests can load this file alone.
+  if (process.env.NODE_ENV !== "production" && process.env.GEMINI_MOCK?.trim() === "1") return null;
   rollDay(now);
   while (minute.length && now - minute[0] > 60_000) minute.shift();
   if (config.maxPerDay && day.requests >= config.maxPerDay)

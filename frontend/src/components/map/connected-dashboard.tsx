@@ -28,6 +28,7 @@ export function ConnectedDashboard({ uri, database, areaId }: { uri: string; dat
     workflowPanel={({ selection, onSelect }) => <>
       <div className="guidance">
         <h3>Shared operational map</h3>
+        {state.routingError && <p role="alert">{state.routingError}</p>}
         <p><Link href="/response">Open simulated response teams</Link></p>
         <p>{state.visits.filter(v => v.priority === "urgent" && !["completed", "cancelled"].includes(v.state)).length} urgent / {state.visits.filter(v => v.priority === "unknown" && !["completed", "cancelled"].includes(v.state)).length} unknown welfare checks</p>
         {state.visits.filter(v => v.state === "pending" && v.notice).map(v => <p key={String(v.id)}>{v.notice}</p>)}

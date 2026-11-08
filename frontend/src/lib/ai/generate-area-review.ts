@@ -6,6 +6,7 @@ import "server-only";
 import { ApiError, FinishReason, ThinkingLevel } from "@google/genai";
 import { geminiModel, getGeminiClient } from "./gemini";
 import { recordTokens, reviewBudgetConfig } from "./review-budget";
+import { geminiMockEnabled } from "./mock-mode";
 import { AREA_REVIEW_JSON_SCHEMA, parseAreaReview, type AreaReview, type AreaReviewErrorCode, type AreaSnapshot } from "./area-review";
 
 const TIMEOUT_MS = 30_000;
@@ -49,6 +50,12 @@ export function simulatedFailure(): AreaReviewFailure | null {
  */
 export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ review: AreaReview; model: string; tokens: number }> {
   const model = geminiModel();
+  if (geminiMockEnabled()) {
+    // Same validator as real replies, so the mock only uses numbers from the snapshot.
+    const result = parseAreaReview(mockAreaReview(snapshot), snapshot);
+    if ("error" in result) throw new AreaReviewFailure("invalid_response", `Mock review failed validation: ${result.error}`, 502);
+    return { review: result.review, model, tokens: 0 };
+  }
   const budget = reviewBudgetConfig();
   let text: string | undefined;
   let tokens = 0;
@@ -98,4 +105,17 @@ export function toFailure(error: unknown): AreaReviewFailure {
   }
   console.error("[area-review] Gemini request failed", error instanceof Error ? error.name : typeof error);
   return new AreaReviewFailure("upstream_error", "Gemini request failed.", 502);
+}
+
+/** Canned review for GEMINI_MOCK=1, built only from snapshot counts and labels. */
+function mockAreaReview(s: AreaSnapshot): AreaReview {
+  const h = s.households, sim = s.area.simulated ? "simulated " : "";
+  return {
+    summary: `[Mock review, no Gemini call] ${s.area.name} is a ${sim}${s.area.severity} ${s.area.hazard} area with ${h.total} households in the snapshot. ${h.checkIns.urgent} urgent and ${h.checkIns.needs_help} needs-help check-ins are recorded; ${h.checkIns.unknown} households have not checked in.`,
+    expectedConditions: [`The scenario describes ${s.area.severity} ${s.area.hazard} conditions.`, ...s.impactLayers.slice(0, 2).map(layer => `${layer.label} (${layer.dataKind}).`)],
+    reportedImpacts: h.checkIns.urgent || h.checkIns.needs_help ? [`${h.checkIns.urgent} urgent and ${h.checkIns.needs_help} needs-help check-ins.`] : [],
+    keyRisks: [`${h.neverContacted} households have never been contacted.`, `${h.withVulnerabilityFlags} households have vulnerability flags.`],
+    nextSteps: ["Review the urgent check-ins first.", `Confirm team availability (${s.teams.byStatus.available} available).`],
+    limitations: ["This is mock text for testing the UI; it is not an AI assessment."],
+  };
 }
