@@ -17,7 +17,7 @@ export function utcMicros(value: string) {
   if (!Number.isFinite(millis) || new Date(millis).toISOString().slice(0, 19) !== whole) throw new Error('Invalid priority fixture date');
   return BigInt(millis) * 1000n + BigInt(fraction.padEnd(6, '0'));
 }
-export function rankScenario(data: PriorityScenario, config: PriorityConfig = DEFAULT_PRIORITY_CONFIG) {
+export function scenarioPriorityInputs(data: PriorityScenario) {
   if (data.schema_version !== 3 || !Array.isArray(data.impact_layers)) throw new Error('Priority fixture requires schema v3 impact layers');
   const exposure = calculateExposure(data.households, data.impact_layers);
   const households = data.households.map(h => ({ id: h.id, checkInStatus: h.check_in_status,
@@ -26,5 +26,10 @@ export function rankScenario(data: PriorityScenario, config: PriorityConfig = DE
     if (!['moderate', 'urgent'].includes(r.urgency)) throw new Error('Invalid priority fixture urgency');
     return { id: r.id, householdId: r.household_id, needType: r.need_type, urgency: r.urgency === 'urgent' ? 5 : 3, status: r.status };
   });
-  return rankHouseholds(households, requests, exposure.households, utcMicros(data.reference_time), config);
+  return { households, requests, exposures: exposure.households, nowMicros: utcMicros(data.reference_time) };
+}
+
+export function rankScenario(data: PriorityScenario, config: PriorityConfig = DEFAULT_PRIORITY_CONFIG) {
+  const { households, requests, exposures, nowMicros } = scenarioPriorityInputs(data);
+  return rankHouseholds(households, requests, exposures, nowMicros, config);
 }

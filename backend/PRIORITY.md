@@ -112,4 +112,5 @@ No schema, seed source, reducer, binding, or frontend queue is changed. Existing
 seed/reset still use v1, and the current database converter accepts v1/v2 only.
 Persisted impact/exposure/scoring relations, authenticated views, live
 recomputation, and browser rendering remain integration work. Overdue-contact
-flags and preparedness/team recommendations remain subsequent Person 3 tasks.
+flags are now available through the separate [follow-up helper](FOLLOW_UP.md).
+Preparedness/team recommendations remain subsequent Person 3 tasks.

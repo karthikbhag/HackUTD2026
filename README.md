@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v2.0 — 2026-11-07.** Person 3's pure TypeScript priority helper ranks households with configurable demo weights and six readable score contributions, using unresolved requests, check-in status, exposure, vulnerabilities, and contact age. Small/Demo/Stress verification, all 42 backend tests, type checking, and module build pass. Existing map subscriptions and legacy Small seed/reset remain intact; persisted exposure/score integration and priority queue rendering remain pending.
+**Current checkpoint: v2.1 — 2026-11-07.** Person 3's follow-up helper now detects overlooked cases from independent unresolved concerns and configurable contact thresholds. Contact clears the overdue flag while assistance needs remain visible; safe check-ins never hide open requests. All 59 backend tests, nine Python tests, type checking, and module build pass. Existing map subscriptions and legacy Small seed/reset remain intact; persisted exposure/score/flag integration and queue rendering remain pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -193,7 +193,7 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Rendering and persisted layer integration remain pending.
 - [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); persistence and live UI integration remain pending.
 - [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted/live scores and queue rendering remain pending integration.
-- [ ] Implement overdue-contact/overlooked-case detection.
+- [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Live persistence, scheduled recomputation, and queue filtering remain pending integration.
 - [ ] Implement preparedness action suggestions.
 - [ ] Implement capability/capacity-aware team recommendations and approximate distance/ETA.
 - [ ] Implement reproducible multi-hazard scenario escalation and reset behavior.
@@ -238,9 +238,9 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v2.0
+### Current checkpoint — v2.1
 
-The dashboard supports fixture mode and optional employee-authorized SpacetimeDB subscriptions. Existing operational reducers and legacy Small seed/reset remain available. Person 3 provides synthetic hazard layers, preparedness templates, an [exposure helper](backend/EXPOSURE.md), and [priority scores with explanations](backend/PRIORITY.md). Persisted impact/exposure/score integration, overdue flags, operational UI controls, and integrated browser acceptance checks remain pending. See [changelog v2.0](changelog.md#version-20--2026-11-07).
+The dashboard supports fixture mode and optional employee-authorized SpacetimeDB subscriptions. Existing operational reducers and legacy Small seed/reset remain available. Person 3 provides synthetic hazard layers, preparedness templates, an [exposure helper](backend/EXPOSURE.md), [priority scores](backend/PRIORITY.md), and [follow-up flags](backend/FOLLOW_UP.md). Persisted impact/exposure/score/flag integration, time-driven recomputation, operational UI controls, and integrated browser acceptance checks remain pending. See [changelog v2.1](changelog.md#version-21--2026-11-07).
 
 ### Local setup
 
