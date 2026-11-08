@@ -68,7 +68,7 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 
 ## Technical design
 
-**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Next.js frontend now includes a fixture-backed map dashboard using Leaflet and OpenStreetMap tiles. SpacetimeDB and persisted disaster workflows are not yet implemented. The initial map choice can be revisited during team integration.
+**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Leaflet/OpenStreetMap dashboard and operational backend are integrated through an optional read-only subscription connection. Demo mode remains available without configuration. See [backend setup and contract](backend/README.md) and [map integration handoff](frontend/src/components/map/README.md). Operational UI controls and final decision logic remain pending.
 
 | Layer | Proposed approach | Responsibility |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ Use reducers for validated transactional changes. If external APIs are added, us
 
 ### Initial data contract
 
-Agree on exact field names, types, IDs, and status enums before separate frontend/backend work begins. These are proposed entities, not existing tables.
+Agree on exact field names, types, IDs, and status enums before separate frontend/backend work begins. These entities now have backend tables; exact implemented field types, reducer inputs, geography, and subscription names are documented in [the backend contract](backend/README.md#contract-and-client-handoff). Team-wide contract sign-off remains pending.
 
 | Entity | Suggested fields |
 | --- | --- |
@@ -118,12 +118,12 @@ An optional AI feature can summarize structured evidence and suggest next steps 
 
 ## Four-person work split
 
-Aalvee Ahtav owns Person 1's map and interface work. Other role assignments remain pending. Each person owns one workstream and helps with integration.
+Aalvee Ahtav owns Person 1's map and interface work. Josh owns Person 2’s backend work; other role assignments remain pending. Each person owns one workstream and helps with integration.
 
 | Owner | Workstream | Concrete deliverables | Dependencies and handoff |
 | --- | --- | --- | --- |
 | Person 1 — Aalvee Ahtav | Map and interface | App shell, nationwide pannable/zoomable map, hazard-layer controls, before/after toggle, zone/neighborhood selection, household detail panel, loading/error states | Agree on hazard-layer and geographic contracts with Persons 2 and 3; consume shared data and actions through Person 4's integration |
-| Person 2 — name TBD | Spacetime backend | Project/module setup, multi-hazard schema, reducers, validation, subscriptions support, seed/reset behavior, activity events, and concurrent updates | Publish initial schema and generate bindings early; coordinate disaster types, status enums, and validation rules with everyone |
+| Person 2 — Josh | Spacetime backend | Project/module setup, multi-hazard schema, reducers, validation, subscriptions support, seed/reset behavior, activity events, and concurrent updates | Publish initial schema and generate bindings early; coordinate disaster types, status enums, and validation rules with everyone |
 | Person 3 — name TBD | Disaster data and decision logic | Fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods; hazard geometry, household exposure, priority rules/reasons, hazard-specific preparedness suggestions, team capability matching, and approximate ETA logic | Agree on geographic and hazard contracts with Persons 1 and 2; hand tested logic/data to Person 2 for authoritative backend use |
 | Person 4 — name TBD | Operational workflow, integration, and demo | Multi-hazard filters, priority queue, outreach/task controls, request/assignment controls, shared client connection, two-session verification, hazard escalation flow, demo script, and documentation | Pair with Persons 1 and 2 to wire UI actions; use Person 3's explanations and recommendations |
 
@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.4 — 2026-11-07.** Person 3's repeatable generator supports Small (60 households), Demo (10,000), and Stress (100,000). Demo/Stress cover all 50 states with 56 hotspots and 112 zones; validation and regression tests pass offline. Person 1's browser-verified map dashboard still uses its temporary fixtures. Dataset integration, SpacetimeDB, remaining decision logic, and dashboard production build verification remain pending; the existing Turbopack worker-port restriction is unchanged.
+**Current checkpoint: v1.8 — 2026-11-07.** Integrated main’s map dashboard with the SpacetimeDB backend, preserving fixture mode and adding an optional read-only subscribed map. Prior fixture-backed browser verification remains recorded below; integrated browser acceptance checks and operational controls remain pending. Seed/reset now use Person 3’s checked-in dataset (60 households, 12 teams, 12 requests); source metadata and simulation labels remain intact. Regional assignments are resolved against all backend households; actively assigned regional teams are omitted from neighborhood grouping. See the changelog for current verification.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -161,7 +161,7 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 
 ### Map and interface — Person 1
 
-Browser verification covers the fixture-backed UI. Live backend connection checks remain pending integration.
+Browser verification covers the fixture-backed UI. Integrated browser connection checks remain pending.
 
 - [x] Scaffold the Next.js + TypeScript frontend and document how to run it.
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
@@ -176,18 +176,20 @@ Browser verification covers the fixture-backed UI. Live backend connection check
 
 ### Backend — Person 2
 
-- [ ] Set up and verify the SpacetimeDB module and local development workflow.
-- [ ] Implement agreed tables, indexes, and generated client bindings.
-- [ ] Add fictional seed data and a controlled demo reset.
-- [ ] Implement household check-in and outreach/task updates.
-- [ ] Implement help-request creation and status changes.
-- [ ] Implement assignment creation, completion, cancellation, and validation.
-- [ ] Persist activity events alongside operational changes.
-- [ ] Keep sensitive household data scoped to authorized employee views; keep credentials out of the repository.
+- [x] Set up and verify the SpacetimeDB module and local development workflow.
+- [x] Implement tables, indexes, and generated client bindings. (team-wide contract sign-off pending)
+- [x] Add fictional seed data and a controlled demo reset.
+- [x] Implement household check-in and outreach/task updates.
+- [x] Implement help-request creation and status changes.
+- [x] Implement assignment creation, completion, cancellation, and validation.
+- [x] Persist activity events alongside operational changes.
+- [x] Keep sensitive household data scoped to authorized employee views; keep credentials out of the repository.
+
+See [backend setup/contract](backend/README.md) and [remaining Person 2 integration plan](backend/PLAN.md).
 
 ### Data and decision logic — Person 3
 
-- [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Completed by Karthik Bhagavatula: [generator and data handoff](data/scenarios/README.md), with repeatable 60/10,000/100,000-household presets; Demo/Stress cover 50 states and 56 hotspots. Validated offline; database seeding, map aggregation, scoped subscriptions, and replacement of Person 1's temporary UI fixtures remain pending integration.
+- [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading, aggregation, scoped subscriptions, and performance measurements remain pending.
 - [ ] Define hazard-specific impact geometry, source labels, and preparedness recommendations.
 - [ ] Determine affected households from the scenario zones.
 - [ ] Implement priority scores and readable reasons.
@@ -198,7 +200,8 @@ Browser verification covers the fixture-backed UI. Live backend connection check
 
 ### Workflow, integration, and delivery — Person 4
 
-- [ ] Connect frontend views to SpacetimeDB subscriptions and actions.
+- [x] Connect the map to optional read-only SpacetimeDB subscriptions. (adapter datastore/live SDK checks passed; integrated browser verification pending)
+- [ ] Connect operational action controls to the shared SpacetimeDB connection.
 - [ ] Build priority queue and overlooked-case filtering.
 - [ ] Build preparedness/outreach action controls.
 - [ ] Build help-request and assignment controls.
@@ -210,7 +213,7 @@ Browser verification covers the fixture-backed UI. Live backend connection check
 
 ## Acceptance checks
 
-All checks are pending until implemented and exercised. Record outcomes and remaining limitations in `changelog.md`.
+The full browser acceptance checks below remain pending UI integration. Backend datastore/live SDK verification is recorded separately in `changelog.md`; it does not mark these browser checks complete.
 
 1. **Shared updates:** Open two sessions on the same database. Change a check-in status in one; the other updates without refreshing.
 2. **Preparedness:** Pan/zoom to a forecast/scenario hotspot for any supported disaster type, inspect affected households, and record outreach. Both sessions show its new status and activity event.
@@ -235,13 +238,13 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.4
+### Current checkpoint — v1.8
 
-The frontend includes the Person 1 map dashboard with temporary fictional UI data, a canvas-fitted national overview, and selection highlights scoped by entity kind and ID. Person 3's portable fixtures, configurable seeded generator, validation, regression tests, and scale handoff are available in [data/scenarios](data/scenarios/README.md). Backend code, generated bindings, live subscriptions, fixture integration, decision logic, and operational controls remain pending. See [changelog v1.4](changelog.md#version-14--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
+The dashboard supports fixture mode and an optional employee-authorized SpacetimeDB subscription connection. The adapter converts IDs, GeoJSON coordinates, timestamps, risk levels, requests, tasks, and assignment-aware team display grouping. Backend workflows exist; operational UI controls, final decision rules, and integrated browser acceptance checks remain pending. See [changelog v1.8](changelog.md#version-18--2026-11-07).
 
 ### Local setup
 
-Use Node.js 22 or newer; `.nvmrc` selects Node.js 24. The initial checks ran with Node.js 26.13.0 and npm 11.20.0. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
+Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. Lint retains one existing generated-bindings warning. The frontend production build still encounters the Turbopack CSS worker-port permission failure, including an elevated retry. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
 
 ```sh
 # Optional, if you use nvm:
@@ -257,7 +260,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the RiskReach simulation dashboard. If SpacetimeDB later runs locally on port 3000, use `npm run dev -- --port 3001` for Next.js.
 
-No environment variables, API keys, or SpacetimeDB instance are required for the current fixture-backed dashboard. Internet access is needed for OpenStreetMap basemap tiles; the UI displays a warning when tile loading fails. Backend startup, generated bindings, and seed/reset commands will be documented when implemented. Never commit API keys or real customer information.
+With no connection configuration, the page uses fictional UI fixtures. For subscribed operational data, set both `NEXT_PUBLIC_SPACETIMEDB_URI` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE` in `frontend/.env.local`, restart Next.js, and enroll the displayed browser identity using the [backend setup instructions](backend/README.md). Partial configuration shows an error. Internet access is needed for OpenStreetMap tiles; tile failure displays a warning while scenario overlays remain available. Never commit tokens, API keys, or real customer information.
 
 ### Available commands
 
@@ -291,14 +294,18 @@ frontend/
   package.json        # Frontend dependencies and scripts
   package-lock.json   # Reproducible npm dependency versions
 backend/
-  README.md           # SpacetimeDB work planned for this directory
+  README.md           # Verified backend setup and integration contract
+  PLAN.md             # Person 2 progress and remaining handoffs
+  src/                # Schema, reducers, seed fixtures, and datastore tests
+  scripts/            # Repeatable live subscription check
+  package.json        # Backend build, test, and binding-generation commands
 .nvmrc                # Shared Node.js version
 .gitignore            # Ignores generated files throughout the repository
 README.md             # Project plan and setup
 changelog.md          # Change history
 ```
 
-SpacetimeDB module code in `backend/` and client bindings in `frontend/` have not been added. Keep future map/browser subscriptions in appropriate client components and preserve SpacetimeDB as the authoritative backend.
+SpacetimeDB module code is in `backend/src/` and generated bindings are in `frontend/src/module_bindings/`. Keep map/browser subscriptions in client components and preserve SpacetimeDB as the authoritative backend.
 
 ### Dependency findings
 
@@ -319,3 +326,9 @@ The initial online npm audit reported eight moderate findings in the development
 - [Next.js quickstart](https://spacetimedb.com/docs/quickstarts/nextjs/)
 - [Client subscriptions](https://spacetimedb.com/docs/clients/subscriptions/)
 - [Current SpacetimeDB capabilities and misconceptions](https://spacetimedb.com/docs/intro/misconceptions/)
+
+### Dataset integration checkpoint
+
+`seed_demo` and `reset_demo` import `data/scenarios/nationwide-v1.json` via `backend/src/scenario.ts`, using the existing schema and generated bindings. See the [mapping and limitations](data/scenarios/README.md#backend-integration). Source IDs map to bigint IDs; baseline times shift together to the reducer clock. Source `supply_delivery` becomes demo water assistance, and missing party sizes default to one person. Team capacity retains its numeric limit under the backend’s single-active-assignment rule; source household-case capacity is not a verified people count. No shared database was deployed.
+
+The map remains neighborhood-only: 48 of the 60 imported households are visible; 12 regional households stay available in backend views. Teams with active regional assignments (or missing subscribed destination rows) are omitted from neighborhood map markers, lists, and counts. Active neighborhood assignments retain destination grouping; only teams with no active assignment use proximity grouping, which resumes after cancellation/completion. Unconfigured UI fixture mode remains separate. Larger presets pass conversion tests but are not a measured database/browser scale claim.

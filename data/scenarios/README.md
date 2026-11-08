@@ -1,6 +1,6 @@
 # Repeatable nationwide scenario datasets
 
-Person 3's portable source data supports the map and future Spacetime seed reducer. It is not yet connected to the app or loaded into a database. Python 3.11+ is needed only for generation and validation, with no dependencies.
+Person 3's portable source data supports the map and future Spacetime seed reducer. The Small fixture is connected to backend seed/reset through a validated adapter; the larger presets remain offline generation/conversion fixtures. Python 3.11+ is needed only for generation and validation, with no dependencies.
 
 ## Presets
 
@@ -48,3 +48,19 @@ All events, households, teams, needs, and geometry are synthetic. Simultaneous e
 Use hotspot summaries or clusters nationally, and load individual households for the selected area or viewport. Scope Spacetime subscriptions to needed data and index the relevant zone/location fields. Seed in controlled batches appropriate to the eventual module. These are integration plans: map clustering, scoped subscriptions, and batched seeding are not implemented here.
 
 The presets verify fixture generation and integrity only. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration; generating 100,000 rows does not prove application performance. Priority, exposure, preparedness suggestions, recommendations, escalation, and database reset remain subsequent work.
+
+## Backend integration
+
+`backend/src/scenario.ts` adapts the portable source to `backend/src/schema.ts`; `backend/src/seed.ts` is used by both administrator-only `seed_demo` and controlled `reset_demo`. The default bundles the checked-in Small JSON. Source JSON/generator conventions are preserved, including source IDs, simulation labels, vulnerabilities, national framing, v2 hotspot summaries, and optional team regions. The backend stores the fields its current schema supports; it does not add these metadata fields to tables.
+
+- IDs: sorted source IDs receive positive bigint IDs within each collection, independent of row order. Foreign keys use the same maps. This crosswalk is stable within a fixture, not across different presets. Request IDs are actually allocated by SpacetimeDB on insert (`0n`) to avoid reusing historical request IDs across resets; source request IDs are provenance in JSON, not runtime primary keys. Tasks and activities also use database IDs.
+- Fields: snake_case becomes camelCase; null optional contacts/parents become `undefined`. Boundary objects become JSON strings without changing GeoJSON `[longitude, latitude]` ordering. Source `region` becomes backend `metro`; no national impact footprint is invented. Regional households retain their region.
+- Time: UTC timestamps are parsed to exact microseconds (including up to six fractional digits), validated, then shifted together by reducer time minus `reference_time`. Never-contacted values remain absent; old contact/request intervals survive reset.
+- Risk: moderate → 2, high → 4. Urgency: moderate → 3, urgent → 5. Status values retain their backend-compatible meaning; safe never resolves a request and unavailable teams remain unavailable.
+- Needs/capabilities: shelter_support → shelter; evacuation_assistance → evacuation; smoke_support → fire_smoke_support; welfare_check and winter_weather_support retain their spelling. Generic supply_delivery → water is an explicit simulation assumption, not inferred real-world need. Unknown values fail validation.
+- Missing request party size defaults to one person for the demonstration. Source team capacity counts household cases, whereas backend capacity counts people per assignment. The numeric limit is retained with this one-person-case assumption and the existing single-active-assignment rule. Real party sizes/capacity units require team review before operational use; no multi-case concurrency is introduced.
+- The source has no tasks or assignments. Seed creates pending outreach tasks for never-contacted households (18 in Small); it invents no hazard advice or assignment history.
+
+The adapter rejects duplicate/empty IDs, broken references/hierarchy, unsupported enums/geometry, malformed/future timestamps, invalid coordinates, and invalid resources before insertion. Reducer authorization/transaction rules still govern seed/reset. Regression tests exercise actual seeding, dispatch/completion, repeated reset/history/access, map compatibility, damaged copies, and generated Demo/Stress conversion. The existing Python tests retain generator integrity coverage.
+
+Limitations: larger presets are not wired to a selectable/batched database importer and have no database/subscription/browser benchmarks. The current frontend displays neighborhoods only (48/60 Small households); the other 12 are stored in authorized views. Teams with active regional assignments are omitted from neighborhood map markers, lists, and counts; only teams without active assignments use proximity grouping. Assignment destinations are looked up across all backend households. Team region metadata and national framing remain in source rather than schema. Polygon rectangles, decision rules, prioritization, exposure, clustering, scoped subscriptions, and browser workflow checks remain future work.
