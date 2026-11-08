@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.11**
+Current version: **1.14**
 
 ## Instructions for future updates
 
@@ -30,6 +30,61 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.14 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Merged main's priority scoring and follow-up detection helpers, tests, scripts and handoffs into the large-dataset feature branch. Preserved the isolated fixture build/subscription/map implementation and both sets of backend commands.
+- Reconciled README and scenario handoffs to distinguish implemented footprint persistence/display from pending exposure/score/flag persistence and queue integration.
+- Kept release numbering in the requested 1.x series. Main's priority/follow-up entries, originally labeled 2.0/2.1, are retained below as 1.12/1.13 with their original authors and content; feature entries 1.10/1.11 and earlier history remain intact.
+
+### Verification
+
+- All 62 backend tests passed on Node 24.22.2, covering both upstream priority/follow-up logic and the feature branch's large-fixture regressions. Backend/frontend typechecks and the SpacetimeDB module build passed.
+- Frontend lint passed with the existing generated-bindings warning. No runtime code conflict required resolution; helper implementations remain unchanged from main. Browser interaction and the known production-build limitation remain as previously recorded.
+
+## Version 1.13 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 5 with `backend/src/follow-up.ts`, a deterministic helper distinguishing contact freshness, remaining follow-up concerns, and overlooked cases. Cases are overlooked only when a qualifying concern and overdue/missing contact coexist.
+- Added independent reasons for unresolved requests, needs-help/urgent check-ins, unconfirmed high-risk exposure, and optional vulnerable exposure. Preserves request/layer IDs, priority explanations, and unique household totals; overlapping reason counts remain separate.
+- Added configurable labeled demo thresholds: six hours normally, one hour for urgent check-ins or active request urgency 4/5; never-contacted cases are immediately contact-overdue. Fresh contact clears the overlooked flag without resolving assistance. Request resolution and safe check-ins remove only their relevant concerns; assignment does not hide unresolved requests.
+- Reused priority validation and ordering while keeping flag eligibility independent of priority weights and customer status. Extracted shared pure schema-v3 fixture input normalization without changing scoring behavior.
+- Added an offline full/summary follow-up report command and `backend/FOLLOW_UP.md` covering exact threshold semantics, transitions, concern counts, assumptions, and integration responsibilities. Updated README progress and handoffs.
+
+### Verification
+
+- All 59 backend tests passed, including 17 new follow-up cases and all 42 existing regressions. All nine Python generator/geometry tests, backend TypeScript checking, and Spacetime module build passed on Node 24.22.1.
+- Verified microsecond boundary behavior, urgent/standard thresholds, never-contacted cases, fresh-contact clearing, request resolution, independent concerns, safe check-ins, assignment/in-progress independence, configurable exposure/vulnerability policy, priority-weight independence, clock advancement, counts, customer neutrality, stable order, bigint IDs, and invalid inputs.
+- Evaluated every household in Small (60), Demo (10,000), and Stress (100,000); for each preset verified an unresolved seeded case loses its overlooked flag after contact while retaining its assistance need.
+- Ran the Stress summary report: 69,433 households retain follow-up concerns and 57,997 are flagged overlooked under demo defaults; saved the first 25 overlooked rows with complete counts/assumptions to an ignored local report. These are synthetic scenario results, not operational findings or backend performance benchmarks.
+- No schema, seed/reset, reducer, binding, or frontend behavior changes were made. Flags remain derived snapshots; persisted/live authorized flags, timer-driven recomputation, subscriptions, and queue filtering are pending integration. No commit, push, publish, or database mutation was made.
+
+## Version 1.12 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 4 with a deterministic SDK-independent priority helper in `backend/src/priority.ts`. Scores use configurable demo weights for strongest unresolved request urgency, capped distinct need types, check-in status, maximum impact severity, capped vulnerability contributions, and explicit-clock contact age.
+- Added six readable reason contributions per household, retained full overlapping exposure evidence, and returned a copy of the configuration used. Customer status has no effect; safe check-ins do not remove unresolved needs. Resolved requests stop contributing urgency/needs, while assigned/in-progress requests remain active.
+- Added deterministic tie-breaking by score, active urgency, oldest/missing contact, and ID; supports string or bigint IDs. Validates clock/contact values, required exposure coverage, duplicate IDs, request references/statuses/urgency, and scoring configuration.
+- Added a pure schema-v3 fixture adapter and an offline priority report command. Full reports include all households; `--summary-only` scores all records but writes the top 25 with configuration and total count. Documented exact weights, caps, time thresholds, ID/time conventions, queue-filter responsibilities, and integration limits in `backend/PRIORITY.md`.
+- Updated README progress and data/backend handoffs. Existing schema, production seed/reset, reducers, generated bindings, and frontend behavior are unchanged; persisted scores and live queue integration remain pending.
+
+### Verification
+
+- All 42 backend tests passed, including 14 new priority cases and the existing 28 workflow, conversion, map, and exposure regressions. All nine Python generator/geometry tests passed. Backend TypeScript checking and Spacetime module build passed on Node 24.22.1.
+- Verified score/reason arithmetic, customer neutrality, safe-but-unresolved cases, urgency/severity escalation, resolution and assignment independence, need/flag deduplication and caps, contact-tier boundaries, exact microsecond parsing, custom weights, deterministic secondary ties, bigint IDs, and invalid inputs. Scored every household in Small (60), Demo (10,000), and Stress (100,000).
+- Ran the offline Stress summary report: all 100,000 households ranked; the top 25 were written to an ignored report. The highest observed score was 150 under default demo weights; this is an exercise result, not an operational urgency threshold or performance guarantee.
+- Before implementation, fast-forwarded the clean local main checkout to the user's already-merged remote main so the exposure helper was available. No new commit, push, database publish, or database mutation was made.
+- Scoring is a derived helper/report, not persisted or subscribed functionality. Overdue/overlooked flags, household-specific suggestions, team recommendations, and live priority queue verification remain pending.
 
 ## Version 1.11 — 2026-11-07
 

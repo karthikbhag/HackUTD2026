@@ -81,7 +81,7 @@ All operational changes persist an activity event transactionally. Assignment di
 
 ## Repeatable verification
 
-All 31 backend tests cover authorization, workflow transitions, legacy/v2/v3 conversion,
+All 62 backend tests cover authorization, workflow transitions, priority/follow-up calculations, legacy/v2/v3 conversion,
 regional destination grouping, exposure correctness and large-fixture map/filter/
 viewport behavior. Backend/frontend typechecks and frontend lint pass on Node
 24.22.2; nine Python tests pass. Real Demo/Stress subscriptions are verified by the
@@ -109,6 +109,10 @@ npm --prefix backend run test:live
 The live test creates three temporary client identities, authorizes two through the CLI publisher, verifies map adaptation, synchronization and competing dispatch, completes assistance, checks displayed needs/team grouping, revocation and outsider rejection, and revokes test memberships on exit. It mutates this disposable fixture. Override `SPACETIMEDB_URI` and `SPACETIMEDB_DATABASE` if needed; the script restricts the host to localhost/127.0.0.1.
 
 ## Remaining integration
+
+Person 3 task 5 now provides [overdue-contact and overlooked-case detection](FOLLOW_UP.md), including independent concern reasons, configurable thresholds, flag-clearing behavior, and offline reports across all presets. Live authorized flags, time-driven recomputation, subscriptions, and queue filtering still require integration.
+
+Person 3 task 4 now provides configurable [priority scoring and reason breakdowns](PRIORITY.md), verified across Small/Demo/Stress. The pure helper and offline report do not change database schema, reducers, seed/reset, or live UI behavior. Authenticated live score/flag integration and remaining recommendations still need implementation.
 
 Person 3 task 3 provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). The converter now accepts v1/v2/v3; v3 layers are persisted and rendered through authorized subscriptions. Exposure relations remain unpersisted. See [large fixture verification](SCENARIOS.md).
 

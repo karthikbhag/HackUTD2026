@@ -6,6 +6,8 @@
     "build": "spacetime build --module-path .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "follow-up": "esbuild scripts/follow-up.ts --bundle --platform=node --format=esm --outfile=.test-output/follow-up.mjs && node .test-output/follow-up.mjs",
+    "priority": "esbuild scripts/priority.ts --bundle --platform=node --format=esm --outfile=.test-output/priority.mjs && node .test-output/priority.mjs",
     "exposure": "esbuild scripts/exposure.ts --bundle --platform=node --format=esm --outfile=.test-output/exposure.mjs && node .test-output/exposure.mjs",
     "generate": "spacetime generate --lang typescript --module-path . --out-dir ../frontend/src/module_bindings --yes",
     "test:live": "esbuild scripts/live-smoke.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/live-smoke.mjs && node .test-output/live-smoke.mjs",

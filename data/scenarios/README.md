@@ -99,6 +99,8 @@ until actual tests justify them. Both datasets passed database/subscription chec
 interactive browser acceptance remains pending. Exposure helper correctness is
 separate from browser performance and no exposure relations are persisted.
 
+The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested across all three sizes. Persisted scores/flags, scheduled recomputation, household-specific suggestions and team recommendations remain subsequent work.
+
 ## Backend integration
 
 `backend/src/scenario.ts` adapts the portable source to `backend/src/schema.ts`; `backend/src/seed.ts` is used by both administrator-only `seed_demo` and controlled `reset_demo`. The default bundles the checked-in Small JSON; staged preset builds select a large v3 fixture without replacing it. v3 impact layers retain source IDs, mapped disaster/context IDs and shifted timestamps in a separate authorized table/view. Source JSON/generator conventions are preserved, including source IDs, simulation labels, vulnerabilities, national framing, v2 hotspot summaries, and optional team regions. The backend stores the fields its current schema supports; it does not add these metadata fields to tables.
