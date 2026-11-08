@@ -1,6 +1,6 @@
 # Map integration handoff
 
-Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional read-only SpacetimeDB connection. It does not perform operational mutations. The scenario desk rehearses notification approval, check-in replies, time skips, and welfare-check assignments in fixture demo mode using browser-local state only.
+Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an shared SpacetimeDB connection. `ConnectedWorkspace` now provides authoritative decisions and employee-reviewed mutations in the main scenario desk; `/demo` remains local. The scenario desk rehearses notification approval, check-in replies, time skips, and welfare-check assignments in fixture demo mode using browser-local state only.
 
 For the isolated 10,000/100,000-household flow, use the [local scenario runbook](../../../../backend/SCENARIOS.md).
 
@@ -32,7 +32,7 @@ zoom. Individual circles use the same hazard colors as the filters and clusters,
 markers remain visible at zoom 9+. Details use the complete filtered model and household lists page 50 rows.
 Context outlines and explicit synthetic hazard footprints are separate layers;
 footprint details retain overlapping components, provenance and severity basis.
-Legacy Small has no explicit footprints. Counts are never labeled as affected.
+Default Small now includes ten explicit footprints; the legacy fixture remains unchanged for compatibility tests. Counts are never labeled as affected.
 
 ## Components
 
@@ -45,7 +45,7 @@ Legacy Small has no explicit footprints. Counts are never labeled as affected.
 
 ## Person 4: extend the shared client
 
-The read-only connection is implemented in `connected-dashboard.tsx`. Extend that shared connection for operational controls rather than creating a second connection/identity. It adapts subscription rows to `MapData` and passes:
+The shared connection is implemented in `connected-dashboard.tsx`. `ConnectedWorkspace` reuses it for operational controls through the `renderWorkspace` composition point; no second connection/identity is created. The map still supports the existing `workflowPanel` composition point:
 
 ```tsx
 <MapDashboard
@@ -78,6 +78,10 @@ The initial/reset views include Alaska and Hawaii; the large presets supply hots
 
 Open `/demo` to rehearse independently of any configured database connection. Select an area using its map information icon or the hotspot picker, then open the scenario desk below the map. In fixture mode, approve a preparation notice, simulate customer replies, skip two hours to impact, approve a fresh check-in, and skip 30 minutes to reveal unanswered cases. Help requests can receive an employee-approved simulated welfare-check unit immediately; unanswered cases require the deadline. A safe pre-impact reply remains history and does not answer the post-impact check-in. Matching uses an available local welfare-check team with positive capacity; duplicate local assignments are prevented. Resetting or switching areas clears the rehearsal.
 
-AI area reviews are explicitly labeled source-based previews; no AI provider is connected. Fixture impact bands are invented and do not establish measured household exposure. Connected mode shows evidence and read-only details without enabling rehearsal actions. Nothing is delivered, dispatched, persisted, or synchronized by this local demo.
+AI area reviews are explicitly labeled source-based previews; no AI provider is connected. Fixture impact bands are invented and do not establish measured household exposure. The main connected desk uses authoritative exposure and shared workflow controls. Nothing is delivered, dispatched, persisted, or synchronized by the separate browser-local `/demo` rehearsal.
 
 Run `npm run test:scenario` from `frontend/` to verify round separation, follow-up timing, urgent-help dispatch eligibility, safe-response exclusion, duplicate assignments, and reset behavior.
+
+## Connected main desk — v1.18
+
+`MapDashboard.renderWorkspace` composes `ConnectedWorkspace` for the selected hotspot using the same SDK connection. It supplies a paged priority queue, selected-case evidence, reviewed tasks and dispatch, and a persisted/shared scenario clock with separate reply rounds. Subscriptions are cleaned up when selection changes. The old `ScenarioWorkspace` remains the browser-local `/demo` rehearsal. See [setup and verification](../../../../backend/SHARED_WORKFLOW.md).

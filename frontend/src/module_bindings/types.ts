@@ -24,6 +24,17 @@ export const ActivityEvent = __t.object("ActivityEvent", {
 });
 export type ActivityEvent = __Infer<typeof ActivityEvent>;
 
+export const AreaExercise = __t.object("AreaExercise", {
+  disasterId: __t.u64(),
+  runId: __t.u64(),
+  minute: __t.i32(),
+  preSent: __t.bool(),
+  postSent: __t.bool(),
+  preMessage: __t.string(),
+  postMessage: __t.string(),
+});
+export type AreaExercise = __Infer<typeof AreaExercise>;
+
 export const Assignment = __t.object("Assignment", {
   id: __t.u64(),
   requestId: __t.u64(),
@@ -38,6 +49,29 @@ export type Assignment = __Infer<typeof Assignment>;
 
 export const Assignments = __t.object("Assignments", {});
 export type Assignments = __Infer<typeof Assignments>;
+
+export const DecisionSummary = __t.object("DecisionSummary", {
+  householdId: __t.u64(),
+  runId: __t.u64(),
+  score: __t.u32(),
+  overlooked: __t.bool(),
+  needsFollowUp: __t.bool(),
+  highestSeverity: __t.string(),
+  layerIds: __t.array(__t.string()),
+  computedAt: __t.timestamp(),
+  highestUrgency: __t.u8(),
+  lastContactMicros: __t.option(__t.u64()),
+});
+export type DecisionSummary = __Infer<typeof DecisionSummary>;
+
+export const DecisionTick = __t.object("DecisionTick", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type DecisionTick = __Infer<typeof DecisionTick>;
+
+export const Decisions = __t.object("Decisions", {});
+export type Decisions = __Infer<typeof Decisions>;
 
 export const Disaster = __t.object("Disaster", {
   id: __t.u64(),
@@ -58,6 +92,28 @@ export const Employee = __t.object("Employee", {
   admin: __t.bool(),
 });
 export type Employee = __Infer<typeof Employee>;
+
+export const ExerciseCheckIn = __t.object("ExerciseCheckIn", {
+  id: __t.string(),
+  disasterId: __t.u64(),
+  householdId: __t.u64(),
+  runId: __t.u64(),
+  phase: __t.string(),
+  status: __t.string(),
+  sentAtMinute: __t.i32(),
+  deadlineMinute: __t.i32(),
+  replyAtMinute: __t.option(__t.i32()),
+  requestId: __t.option(__t.u64()),
+});
+export type ExerciseCheckIn = __Infer<typeof ExerciseCheckIn>;
+
+export const ExerciseReplies = __t.object("ExerciseReplies", {
+  disasterId: __t.u64(),
+});
+export type ExerciseReplies = __Infer<typeof ExerciseReplies>;
+
+export const Exercises = __t.object("Exercises", {});
+export type Exercises = __Infer<typeof Exercises>;
 
 export const HelpRequest = __t.object("HelpRequest", {
   id: __t.u64(),
@@ -84,6 +140,17 @@ export const Household = __t.object("Household", {
 });
 export type Household = __Infer<typeof Household>;
 
+export const HouseholdDecisionRow = __t.object("HouseholdDecisionRow", {
+  householdId: __t.u64(),
+  payload: __t.string(),
+});
+export type HouseholdDecisionRow = __Infer<typeof HouseholdDecisionRow>;
+
+export const HouseholdDecisions = __t.object("HouseholdDecisions", {
+  householdId: __t.u64(),
+});
+export type HouseholdDecisions = __Infer<typeof HouseholdDecisions>;
+
 export const Households = __t.object("Households", {});
 export type Households = __Infer<typeof Households>;
 
@@ -102,6 +169,7 @@ export const ImpactLayer = __t.object("ImpactLayer", {
   updatedAt: __t.timestamp(),
   label: __t.string(),
   limitations: __t.string(),
+  recommendationIds: __t.array(__t.string()),
 });
 export type ImpactLayer = __Infer<typeof ImpactLayer>;
 
@@ -116,8 +184,27 @@ export const PreparednessTask = __t.object("PreparednessTask", {
   status: __t.string(),
   createdAt: __t.timestamp(),
   completedAt: __t.option(__t.timestamp()),
+  scenarioRunId: __t.u64(),
+  recommendationId: __t.string(),
 });
 export type PreparednessTask = __Infer<typeof PreparednessTask>;
+
+export const RecommendationTemplate = __t.object("RecommendationTemplate", {
+  id: __t.string(),
+  hazardType: __t.string(),
+  title: __t.string(),
+  description: __t.string(),
+  guidanceUrl: __t.string(),
+  guidanceCheckedOn: __t.string(),
+  sourceLabel: __t.string(),
+});
+export type RecommendationTemplate = __Infer<typeof RecommendationTemplate>;
+
+export const RequestRecommendationRow = __t.object("RequestRecommendationRow", {
+  requestId: __t.u64(),
+  payload: __t.string(),
+});
+export type RequestRecommendationRow = __Infer<typeof RequestRecommendationRow>;
 
 export const Requests = __t.object("Requests", {});
 export type Requests = __Infer<typeof Requests>;
@@ -133,8 +220,35 @@ export const ResponseTeam = __t.object("ResponseTeam", {
 });
 export type ResponseTeam = __Infer<typeof ResponseTeam>;
 
+export const ScenarioInfo = __t.object("ScenarioInfo", {});
+export type ScenarioInfo = __Infer<typeof ScenarioInfo>;
+
+export const ScenarioInfoRow = __t.object("ScenarioInfoRow", {
+  id: __t.u8(),
+  runId: __t.u64(),
+  scenarioId: __t.string(),
+  startedAt: __t.timestamp(),
+  evaluatedAt: __t.timestamp(),
+  canManageScenario: __t.bool(),
+});
+export type ScenarioInfoRow = __Infer<typeof ScenarioInfoRow>;
+
+export const ScenarioState = __t.object("ScenarioState", {
+  id: __t.u8(),
+  runId: __t.u64(),
+  scenarioId: __t.string(),
+  startedAt: __t.timestamp(),
+  evaluatedAt: __t.timestamp(),
+});
+export type ScenarioState = __Infer<typeof ScenarioState>;
+
 export const Tasks = __t.object("Tasks", {});
 export type Tasks = __Infer<typeof Tasks>;
+
+export const TeamRecommendations = __t.object("TeamRecommendations", {
+  requestId: __t.u64(),
+});
+export type TeamRecommendations = __Infer<typeof TeamRecommendations>;
 
 export const Teams = __t.object("Teams", {});
 export type Teams = __Infer<typeof Teams>;

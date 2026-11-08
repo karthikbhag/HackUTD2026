@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.17**
+Current version: **1.18**
 
 ## Instructions for future updates
 
@@ -30,6 +30,28 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.18 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Restored Person 3's missing authoritative decision integration from the earlier staged source: preparedness helper/adapter, 17 tests and report CLI; private decision/run/catalog/timer state; authorized summary and selected-household/request views; transactional refresh; reviewed run-aware task approval; capped critical exposure and scoring; and selected-fixture reset preserving access/history. These changes were absent from the updated checkout despite the earlier session report. Preserved the current team's map redesign and `/demo` additions.
+- Added a shared synthetic exercise clock per disaster, separately persisted pre/post-impact reply rounds and approved notice text. Enrolled employees can approve a simulated notice, record simulated replies and advance the bounded exercise to impact and its 30-minute deadline. Earlier replies remain in history and cannot confirm post-impact safety. Full dataset reset and direct scenario escalation remain administrator-only.
+- Added overdue fresh post-impact concerns independently of older contact freshness, with reviewable welfare requests for unanswered/needs-help cases. Existing active welfare requests are reused. Safety replies do not silently resolve assistance; recommendations never reserve teams and dispatch still requires explicit employee approval with transactional revalidation. Clock/run checks reject stale/duplicate operations.
+- Connected the redesigned main scenario desk through the existing SDK connection: area-scoped priority ranking/search/25-row pages/overlooked filtering, selected-case score and exposure explanations, sourced preparedness approval and task completion, contact, requests, team eligibility/distance/approximate ETA, assignment lifecycle and shared activity. Dynamic selected-area/household/request subscriptions are cleaned up when selection changes. Both customers and community assistance cases participate under the same decision rules.
+- Kept `/demo` browser-local. The main `/` route now requires database configuration rather than silently substituting demo records. Added a public `.env.example` and ignored local configuration pointing to a newly created persistent loopback database, `riskreach-person3-demo`, containing the 10,000-household Demo preset on port 3100. Started the main Next.js development page on localhost:3000. Browser identity enrollment remains required; no self-enrollment or token-sharing flow was added.
+- Restored modern bundled schema-v3 Small (ten impacts and 12 reviewed templates), generator-v4 Small team regions and reproducibility coverage, while retaining legacy-v1 and generator-v3 compatibility. Windows staging uses dependency junctions. Regenerated TypeScript bindings for all restored and new views/reducers.
+- Installed the two already-declared MarkerCluster packages missing from this checkout. Scoped the CommonJS test lint rule to the existing Node `.cjs` demo tests. Updated the README tracker and backend/map/data handoffs; added `backend/SHARED_WORKFLOW.md` with startup, enrollment, persistent storage, permissions, replay and verification commands.
+
+### Verification
+
+- All 101 backend tests across nine files passed on supported Node 24.22.1 with Python 3.12, including 17 restored preparedness cases and four new shared workflow/authorization/lifecycle cases. The four shared cases passed again after final employee time-skip authorization changes. All nine Python tests (including exact bundled Small reproducibility) and all six existing browser-local demo-state tests passed.
+- Backend/frontend TypeScript checking, module generation/build, staged Demo build, frontend lint and production build passed. Lint retains one existing generated-bindings warning. Initially, missing MarkerCluster packages blocked frontend checking and the existing CommonJS test imports failed lint; installing the declared packages and applying the narrow test-file rule resolved both. The older CSS worker-port build failure did not recur.
+- Published/seeded a new persistent local Demo database without deleting existing data. Tested the complete workflow in a separate disposable Small database with two enrolled SDK clients plus an outsider: suggestion approval/duplicate rejection, separate rounds, employee time skips, fresh overdue welfare review, non-customer assistance, competing dispatch with one winner, completion/team release, the real scheduled refresh, shared reset/replay, stale-run rejection and live revocation all passed. Test memberships are revoked in cleanup; the main Demo dataset was not mutated by the verifier.
+- Interactive browser acceptance and enrollment of the user's actual browser remain separate from these automated checks. Actual AI generation and notification delivery remain pending. Full-table subscriptions remain; fixture correctness and SDK checks are not production throughput or browser-responsiveness guarantees.
+- No commit, push or cloud deployment was made. The older local verification databases on port 3123 were left unchanged.
 
 ## Version 1.17 — 2026-11-07
 

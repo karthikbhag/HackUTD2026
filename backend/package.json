@@ -6,6 +6,8 @@
     "build": "spacetime build --module-path .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:shared:live": "esbuild scripts/verify-shared.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-shared.mjs && node .test-output/verify-shared.mjs",
+    "preparedness": "esbuild scripts/preparedness.ts --bundle --platform=node --format=esm --outfile=.test-output/preparedness.mjs && node .test-output/preparedness.mjs",
     "recommend-teams": "esbuild scripts/recommend-teams.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/recommend-teams.mjs && node .test-output/recommend-teams.mjs",
     "follow-up": "esbuild scripts/follow-up.ts --bundle --platform=node --format=esm --outfile=.test-output/follow-up.mjs && node .test-output/follow-up.mjs",
     "priority": "esbuild scripts/priority.ts --bundle --platform=node --format=esm --outfile=.test-output/priority.mjs && node .test-output/priority.mjs",

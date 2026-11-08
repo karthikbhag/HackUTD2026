@@ -7,14 +7,15 @@ import { filterHazards, householdCounts, PAGE_SIZE } from "@/lib/map/presentatio
 import { DetailPanel } from "./detail-panel";
 import { DashboardIcon } from "./dashboard-icon";
 import { ScenarioWorkspace } from "./scenario-workspace";
-import { hazards, type DataStatus, type Hazard, type MapData, type Phase, type Selection } from "@/lib/map/types";
+import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
 
 // Leaflet accesses browser APIs, so load the renderer only on the client.
 const DisasterMap = dynamic(() => import("./disaster-map"), { ssr: false, loading: () => <div className="map-loading" role="status">Loading interactive map…</div> });
 type View = "overview" | "households" | "teams" | "preparation";
 const hazardTypes = Object.keys(hazards) as Hazard[];
 /** Person 4 supplies subscription data and mounts operational controls in workflowPanel. */
-export function MapDashboard({ data, status = "demo", errorMessage, workflowPanel }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode }) {
+export function MapDashboard({ data, status = "demo", errorMessage, workflowPanel, renderWorkspace }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode;
+  renderWorkspace?: (data: MapData, zone: MapZone, selection: Selection, onSelect: (selection: Selection) => void) => ReactNode }) {
   // These are local presentation choices; operational records arrive through data props.
   const [browsePage, setBrowsePage] = useState(0);
   const [view, setView] = useState<View>("overview");
@@ -98,11 +99,11 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
           {view === "teams" && <div className="review-list">{visible.teams.slice(pageStart, pageStart + PAGE_SIZE).map(team => <button className="review-row" key={team.id} onClick={() => setSelection({ kind: "team", id: team.id })}><DashboardIcon kind="teams" /><span className="review-row-copy"><strong>{team.name}</strong><small>{team.capabilities.join(" · ")}</small></span><span className={`check-in ${team.status}`}>{team.status}</span></button>)}{!visible.teams.length && <p className="empty-state">No teams recorded in the visible zones.</p>}</div>}
           {(view === "households" || view === "teams") && <div className="list-pagination"><button disabled={currentPage === 0} onClick={() => setBrowsePage(currentPage - 1)}>Previous</button><span>{browseCount ? pageStart + 1 : 0}–{Math.min(pageStart + PAGE_SIZE, browseCount)} of {browseCount.toLocaleString()}</span><button disabled={pageStart + PAGE_SIZE >= browseCount} onClick={() => setBrowsePage(currentPage + 1)}>Next</button></div>}
           {view === "preparation" && <div className="review-list">{visible.zones.map(zone => <button className="review-row" key={zone.id} onClick={() => setSelection({ kind: "zone", id: zone.id })}><DashboardIcon kind="tasks" /><span className="review-row-copy"><strong>{zone.name}</strong><small>{hazards[zone.hazard].label} · {phase === "before" ? "Preparedness" : "Response"}</small></span><span aria-hidden="true">→</span></button>)}{!visible.zones.length && <p className="empty-state">Enable a hazard to explore area guidance.</p>}</div>}
-          <div className="review-note"><DashboardIcon kind="phone" /><div><h3>Keep the connection going.</h3><p>Review household needs and contact history before planning your next step.</p><small>Read-only workspace. Outreach and dispatch actions are pending integration.</small></div></div>
+          <div className="review-note"><DashboardIcon kind="phone" /><div><h3>Keep the connection going.</h3><p>Review household needs and contact history before planning your next step.</p><small>{status === "connected" ? "Open the shared scenario desk below for priority explanations, outreach and employee-reviewed dispatch." : "Use the local scenario desk below to rehearse outreach and employee-reviewed assistance."}</small></div></div>
         </aside>}
       </div>
     </div>
-    <div id="scenario-desk" tabIndex={-1}>{reviewZone ? <ScenarioWorkspace key={`${status}-${reviewZone.id}`} data={visible} zone={reviewZone} demo={status === "demo"}/> : <section className="scenario-desk"><h2>No visible area</h2><p>Enable a hazard layer to open an area review and scenario rehearsal.</p></section>}</div>
+    <div id="scenario-desk" tabIndex={-1}>{reviewZone ? renderWorkspace ? renderWorkspace(visible, reviewZone, effectiveSelection, setSelection) : <ScenarioWorkspace key={`${status}-${reviewZone.id}`} data={visible} zone={reviewZone} demo={status === "demo"}/> : <section className="scenario-desk"><h2>No visible area</h2><p>Enable a hazard layer to open an area review and scenario rehearsal.</p></section>}</div>
     <nav className="quick-actions" aria-label="Quick actions"><button onClick={() => openView("overview")}><DashboardIcon kind="phone" />Review follow-ups <span aria-hidden="true">→</span></button><button onClick={() => openView("teams")}><DashboardIcon kind="teams" />View teams <span aria-hidden="true">→</span></button><button onClick={() => openView("preparation")}><DashboardIcon kind="tasks" />{phase === "before" ? "Preparedness guidance" : "Response guidance"} <span aria-hidden="true">→</span></button><button onClick={() => { setSelection(null); setOverviewVersion(value => value + 1); }}><DashboardIcon kind="map" />National overview <span aria-hidden="true">→</span></button></nav>
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{workflowPanel}</section>}
     <footer className="app-footer"><span>RiskReach · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>

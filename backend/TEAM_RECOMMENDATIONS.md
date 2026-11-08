@@ -129,7 +129,4 @@ empty results, invalid inputs, all requests in Small/Demo/Stress, and actual
 dispatch/cancellation/completion through the module test harness. Reducer
 distance/ETA values agree with recommendations at the default speed.
 
-No schema, reducer logic, bindings, frontend controls, or deployed database is
-changed. Source need mapping is shared with the existing converter without
-changing its behavior. Authorized live recommendation views, UI selection,
-freshness handling, and browser acceptance remain integration work.
+The helper now powers authorized selected-request views and explicit assignment controls in the [connected main desk](SHARED_WORKFLOW.md). Every assignment is transactionally revalidated; suggestions never reserve teams. Two-client competing dispatch passes. Browser interaction acceptance remains pending.

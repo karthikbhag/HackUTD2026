@@ -34,11 +34,16 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AdvanceExerciseClockReducer from "./advance_exercise_clock_reducer";
+import ApproveExerciseNoticeReducer from "./approve_exercise_notice_reducer";
+import ApprovePreparednessReducer from "./approve_preparedness_reducer";
 import AssignTeamReducer from "./assign_team_reducer";
 import CreateRequestReducer from "./create_request_reducer";
 import CreateTaskReducer from "./create_task_reducer";
 import EscalateScenarioReducer from "./escalate_scenario_reducer";
+import RecordExerciseReplyReducer from "./record_exercise_reply_reducer";
 import RecordOutreachReducer from "./record_outreach_reducer";
+import RefreshDecisionSnapshotReducer from "./refresh_decision_snapshot_reducer";
 import ResetDemoReducer from "./reset_demo_reducer";
 import ResolveRequestReducer from "./resolve_request_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
@@ -52,11 +57,17 @@ import UpdateTaskReducer from "./update_task_reducer";
 // Import all table schema definitions
 import ActivitiesRow from "./activities_table";
 import AssignmentsRow from "./assignments_table";
+import DecisionsRow from "./decisions_table";
 import DisastersRow from "./disasters_table";
+import ExerciseRepliesRow from "./exercise_replies_table";
+import ExercisesRow from "./exercises_table";
+import HouseholdDecisionsRow from "./household_decisions_table";
 import HouseholdsRow from "./households_table";
 import ImpactLayersRow from "./impact_layers_table";
 import RequestsRow from "./requests_table";
+import ScenarioInfoRow from "./scenario_info_table";
 import TasksRow from "./tasks_table";
+import TeamRecommendationsRow from "./team_recommendations_table";
 import TeamsRow from "./teams_table";
 import ZonesRow from "./zones_table";
 
@@ -78,6 +89,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, AssignmentsRow),
+  decisions: __table({
+    name: 'decisions',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, DecisionsRow),
   disasters: __table({
     name: 'disasters',
     indexes: [
@@ -85,6 +103,27 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, DisastersRow),
+  exerciseReplies: __table({
+    name: 'exercise_replies',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ExerciseRepliesRow),
+  exercises: __table({
+    name: 'exercises',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ExercisesRow),
+  householdDecisions: __table({
+    name: 'household_decisions',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, HouseholdDecisionsRow),
   households: __table({
     name: 'households',
     indexes: [
@@ -106,6 +145,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, RequestsRow),
+  scenarioInfo: __table({
+    name: 'scenario_info',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ScenarioInfoRow),
   tasks: __table({
     name: 'tasks',
     indexes: [
@@ -113,6 +159,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, TasksRow),
+  teamRecommendations: __table({
+    name: 'team_recommendations',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TeamRecommendationsRow),
   teams: __table({
     name: 'teams',
     indexes: [
@@ -131,11 +184,16 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("advance_exercise_clock", AdvanceExerciseClockReducer),
+  __reducerSchema("approve_exercise_notice", ApproveExerciseNoticeReducer),
+  __reducerSchema("approve_preparedness", ApprovePreparednessReducer),
   __reducerSchema("assign_team", AssignTeamReducer),
   __reducerSchema("create_request", CreateRequestReducer),
   __reducerSchema("create_task", CreateTaskReducer),
   __reducerSchema("escalate_scenario", EscalateScenarioReducer),
+  __reducerSchema("record_exercise_reply", RecordExerciseReplyReducer),
   __reducerSchema("record_outreach", RecordOutreachReducer),
+  __reducerSchema("refresh_decision_snapshot", RefreshDecisionSnapshotReducer),
   __reducerSchema("reset_demo", ResetDemoReducer),
   __reducerSchema("resolve_request", ResolveRequestReducer),
   __reducerSchema("seed_demo", SeedDemoReducer),
@@ -155,6 +213,7 @@ const REMOTE_MODULE = {
     cliVersion: "2.14.1" as const,
   },
   tables: tablesSchema.schemaType.tables,
+  viewsWithArgs: ["exercise_replies", "household_decisions", "team_recommendations"],
   reducers: reducersSchema.reducersType.reducers,
   ...proceduresSchema,
 } satisfies __RemoteModule<

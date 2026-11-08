@@ -8,7 +8,7 @@ const preset = args.length === 2 && args[0] === '--preset' ? args[1] : undefined
 if (!preset || !['small', 'demo', 'stress'].includes(preset)) throw new Error('Usage: npm run build:scenario -- --preset small|demo|stress');
 const backend = process.cwd();
 const root = resolve(backend, '..');
-const fixture = preset === 'small' ? join(root, 'data/scenarios/nationwide-v1.json') : join(root, `data/scenarios/generated/${preset}.json`);
+const fixture = preset === 'small' ? join(backend, 'src/default-scenario.json') : join(root, `data/scenarios/generated/${preset}.json`);
 execFileSync(process.env.PYTHON ?? 'python3', [join(root, 'data/scenarios/validate.py'), fixture], { stdio: 'inherit' });
 const raw = readFileSync(fixture);
 const data = JSON.parse(raw.toString());
@@ -20,7 +20,7 @@ const modulePath = join(stage, 'backend');
 mkdirSync(modulePath, { recursive: true });
 cpSync(join(backend, 'src'), join(modulePath, 'src'), { recursive: true, filter: path => !path.endsWith('.test.ts') });
 for (const name of ['package.json', 'tsconfig.json']) copyFileSync(join(backend, name), join(modulePath, name));
-if (!existsSync(join(modulePath, 'node_modules'))) symlinkSync(join(backend, 'node_modules'), join(modulePath, 'node_modules'), 'dir');
+if (!existsSync(join(modulePath, 'node_modules'))) symlinkSync(join(backend, 'node_modules'), join(modulePath, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
 mkdirSync(join(stage, 'data/scenarios'), { recursive: true });
 copyFileSync(fixture, join(stage, 'data/scenarios/nationwide-v1.json'));
 execFileSync('spacetime', ['build', '--module-path', modulePath], { stdio: 'inherit' });

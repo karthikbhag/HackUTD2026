@@ -224,3 +224,18 @@ dl { font-size: 12px; margin-bottom: 0; } dt { color: var(--muted); margin-top: 
 @media (max-width: 1000px) { .desk-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; } .scenario-desk { padding: 20px; } .area-brief, .checkin-workspace { padding: 18px; } .scenario-steps > div { padding: 12px 8px; gap: 6px; font-size: 11px; } }
 @media (max-width: 700px) { .desk-grid { grid-template-columns: minmax(0, 1fr); } .desk-heading, .scenario-intro { flex-direction: column; align-items: start; } .scenario-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .scenario-steps > div:nth-child(3) { border-left: 0; } .scenario-steps > div:nth-child(n+3) { border-top: 1px solid var(--border); } .scenario-desk { padding: 16px; } .response-totals > div { padding: 10px; } }
 .utility-bar a { color: inherit; text-underline-offset: 3px; }
+.connected-desk input:not([type="checkbox"]), .connected-desk select, .connected-desk textarea { display: block; width: 100%; box-sizing: border-box; margin: 6px 0 12px; padding: 9px; color: var(--foreground); background: white; border: 1px solid var(--border); border-radius: 5px; font: inherit; }
+.connected-desk label { display: block; font-size: 12px; margin-top: 10px; }
+.connected-desk .overlooked-filter { display: flex; align-items: center; gap: 8px; }
+.connected-desk .priority-list { max-height: 430px; overflow-y: auto; }
+.connected-desk .priority-list button { width: 100%; background: white; text-align: left; border: 0; border-bottom: 1px solid var(--border); }
+.connected-desk .priority-list button[aria-pressed="true"] { background: #fff3f0; outline: 1px solid #9e281e; outline-offset: -1px; }
+.connected-case { margin-top: 25px; padding-top: 20px; border-top: 2px solid var(--border); }
+.connected-case h4 { margin-top: 22px; }
+.connected-desk details { margin: 14px 0; font-size: 12px; }
+.connected-desk summary { cursor: pointer; font-weight: 600; }
+.connected-desk li { margin: 7px 0; line-height: 1.55; }
+.connected-desk .suggestion { border: 1px solid var(--border); border-radius: 5px; margin: 12px 0; padding: 12px; font-size: 12px; }
+.connected-desk .case-action { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 0; font-size: 12px; }
+.connected-desk .reply-actions { flex-wrap: wrap; }
+.connected-desk .request-form { border-top: 1px solid var(--border); padding-top: 14px; }
