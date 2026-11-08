@@ -245,6 +245,15 @@ export const PreparednessTask = __t.object("PreparednessTask", {
 });
 export type PreparednessTask = __Infer<typeof PreparednessTask>;
 
+export const ProposedResponseRoute = __t.object("ProposedResponseRoute", {
+  teamId: __t.u64(),
+  positionVersion: __t.u64(),
+  visitIds: __t.array(__t.u64()),
+  arrivalMinutes: __t.array(__t.f64()),
+  returnMinute: __t.f64(),
+});
+export type ProposedResponseRoute = __Infer<typeof ProposedResponseRoute>;
+
 export const RecommendationTemplate = __t.object("RecommendationTemplate", {
   id: __t.string(),
   hazardType: __t.string(),
@@ -265,6 +274,33 @@ export type RequestRecommendationRow = __Infer<typeof RequestRecommendationRow>;
 export const Requests = __t.object("Requests", {});
 export type Requests = __Infer<typeof Requests>;
 
+export const ResponseRun = __t.object("ResponseRun", {
+  id: __t.u64(),
+  disasterId: __t.u64(),
+  zoneId: __t.u64(),
+  scenarioRunId: __t.u64(),
+  ownsFixture: __t.bool(),
+  config: __t.string(),
+  configVersion: __t.u32(),
+  epoch: __t.u64(),
+  planVersion: __t.u64(),
+  status: __t.string(),
+  elapsedMinutes: __t.f64(),
+  anchorMicros: __t.u64(),
+  startMinute: __t.f64(),
+  stagingLatitude: __t.f64(),
+  stagingLongitude: __t.f64(),
+  holdUntil: __t.u64(),
+  leaseOwner: __t.option(__t.identity()),
+  leaseUntil: __t.u64(),
+  fence: __t.u64(),
+  planningError: __t.string(),
+});
+export type ResponseRun = __Infer<typeof ResponseRun>;
+
+export const ResponseRuns = __t.object("ResponseRuns", {});
+export type ResponseRuns = __Infer<typeof ResponseRuns>;
+
 export const ResponseTeam = __t.object("ResponseTeam", {
   id: __t.u64(),
   name: __t.string(),
@@ -275,6 +311,32 @@ export const ResponseTeam = __t.object("ResponseTeam", {
   capabilities: __t.array(__t.string()),
 });
 export type ResponseTeam = __Infer<typeof ResponseTeam>;
+
+export const ResponseTeamState = __t.object("ResponseTeamState", {
+  teamId: __t.u64(),
+  runId: __t.u64(),
+  positionVersion: __t.u64(),
+  updatedAt: __t.timestamp(),
+  mode: __t.string(),
+  currentVisitId: __t.option(__t.u64()),
+  available: __t.bool(),
+  tickSequence: __t.u64(),
+});
+export type ResponseTeamState = __Infer<typeof ResponseTeamState>;
+
+export const ResponseTeamStates = __t.object("ResponseTeamStates", {});
+export type ResponseTeamStates = __Infer<typeof ResponseTeamStates>;
+
+export const RoutingHouseholds = __t.object("RoutingHouseholds", {});
+export type RoutingHouseholds = __Infer<typeof RoutingHouseholds>;
+
+export const RoutingTeams = __t.object("RoutingTeams", {});
+export type RoutingTeams = __Infer<typeof RoutingTeams>;
+
+export const RoutingWorker = __t.object("RoutingWorker", {
+  identity: __t.identity(),
+});
+export type RoutingWorker = __Infer<typeof RoutingWorker>;
 
 export const ScenarioInfo = __t.object("ScenarioInfo", {});
 export type ScenarioInfo = __Infer<typeof ScenarioInfo>;
@@ -306,8 +368,51 @@ export const TeamRecommendations = __t.object("TeamRecommendations", {
 });
 export type TeamRecommendations = __Infer<typeof TeamRecommendations>;
 
+export const TeamRoute = __t.object("TeamRoute", {
+  id: __t.u64(),
+  runId: __t.u64(),
+  teamId: __t.u64(),
+  version: __t.u64(),
+  planningEpoch: __t.u64(),
+  visitIds: __t.array(__t.u64()),
+  returnMinute: __t.f64(),
+  status: __t.string(),
+  provider: __t.string(),
+  error: __t.string(),
+});
+export type TeamRoute = __Infer<typeof TeamRoute>;
+
+export const TeamRoutes = __t.object("TeamRoutes", {});
+export type TeamRoutes = __Infer<typeof TeamRoutes>;
+
 export const Teams = __t.object("Teams", {});
 export type Teams = __Infer<typeof Teams>;
+
+export const UncoveredVisit = __t.object("UncoveredVisit", {
+  visitId: __t.u64(),
+  reason: __t.string(),
+});
+export type UncoveredVisit = __Infer<typeof UncoveredVisit>;
+
+export const WelfareVisit = __t.object("WelfareVisit", {
+  id: __t.u64(),
+  runId: __t.u64(),
+  householdId: __t.u64(),
+  priority: __t.string(),
+  eligibleSince: __t.f64(),
+  state: __t.string(),
+  teamId: __t.option(__t.u64()),
+  sequence: __t.u32(),
+  arrivalMinute: __t.f64(),
+  serviceMinutes: __t.f64(),
+  startedMinute: __t.option(__t.f64()),
+  outcome: __t.string(),
+  notice: __t.string(),
+});
+export type WelfareVisit = __Infer<typeof WelfareVisit>;
+
+export const WelfareVisits = __t.object("WelfareVisits", {});
+export type WelfareVisits = __Infer<typeof WelfareVisits>;
 
 export const Zone = __t.object("Zone", {
   id: __t.u64(),

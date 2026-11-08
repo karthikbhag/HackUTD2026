@@ -22,6 +22,8 @@ cpSync(join(backend, 'src'), join(modulePath, 'src'), { recursive: true, filter:
 for (const name of ['package.json', 'tsconfig.json']) copyFileSync(join(backend, name), join(modulePath, name));
 if (!existsSync(join(modulePath, 'node_modules'))) symlinkSync(join(backend, 'node_modules'), join(modulePath, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
 mkdirSync(join(stage, 'data/scenarios'), { recursive: true });
+cpSync(join(root, 'shared'), join(stage, 'shared'), { recursive: true });
+copyFileSync(join(root, 'data/scenarios/response-routing-demo.json'), join(stage, 'data/scenarios/response-routing-demo.json'));
 copyFileSync(fixture, join(stage, 'data/scenarios/nationwide-v1.json'));
 execFileSync('spacetime', ['build', '--module-path', modulePath], { stdio: 'inherit' });
 copyFileSync(join(modulePath, 'dist/bundle.js'), join(output, 'bundle.js'));

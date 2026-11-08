@@ -10,7 +10,7 @@ import { AreaReviewDialog } from "./area-review-dialog";
 import { NotificationDialog } from "./notification-dialog";
 import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import type { SharedDashboard } from "@/lib/map/shared-dashboard";
-import { hazards, type DataStatus, type Hazard, type MapData, type Phase, type Selection } from "@/lib/map/types";
+import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
 
 // Leaflet accesses browser APIs, so load the renderer only on the client.
 const DisasterMap = dynamic(() => import("./disaster-map"), { ssr: false, loading: () => <div className="map-loading" role="status">Loading interactive map…</div> });
@@ -19,7 +19,7 @@ const hazardTypes = Object.keys(hazards) as Hazard[];
 /** Lets Person 4's panel read and set the map selection without owning map state. */
 export type WorkflowPanelContext = { selection: Selection; onSelect: (selection: Selection) => void };
 /** Person 4 supplies subscription data and mounts operational controls in workflowPanel. */
-export function MapDashboard({ data, status = "demo", errorMessage, workflowPanel, sharedDashboard }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode | ((context: WorkflowPanelContext) => ReactNode); sharedDashboard?: SharedDashboard }) {
+export function MapDashboard({ data, status = "demo", errorMessage, workflowPanel, sharedDashboard, renderWorkspace }: { data: MapData; status?: DataStatus; errorMessage?: string; workflowPanel?: ReactNode | ((context: WorkflowPanelContext) => ReactNode); sharedDashboard?: SharedDashboard; renderWorkspace?: (data: MapData, zone: MapZone, selection: Selection, onSelect: (selection: Selection) => void) => ReactNode }) {
   // These are local presentation choices; operational records arrive through data props.
   const [reviewId, setReviewId] = useState<string | null>(null);
   const openAreaReview = useCallback((id: string) => { setReviewId(id); }, []);
@@ -148,6 +148,7 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
     </div>
     {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={scenarioEnabled ? () => { setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
     {scenarioEnabled && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}-${sharedDashboard?.runId ?? "local"}`} data={filtered} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} shared={!!sharedDashboard} busy={sharedBusy} error={sharedError} assignmentStatuses={sharedDashboard?.assignmentStatuses} onClose={() => setNotificationId(null)}/>}
+    {!demo && <div id="scenario-desk" tabIndex={-1}>{reviewZone && renderWorkspace ? <div key={reviewZone.id}>{renderWorkspace(visible, reviewZone, effectiveSelection, setSelection)}</div> : null}</div>}
     <nav className="quick-actions" aria-label="Quick actions"><button onClick={() => openView("overview")}><DashboardIcon kind="phone" />Review follow-ups <span aria-hidden="true">→</span></button><button onClick={() => openView("teams")}><DashboardIcon kind="teams" />View teams <span aria-hidden="true">→</span></button><button onClick={() => openView("preparation")}><DashboardIcon kind="tasks" />{phase === "before" ? "Preparedness guidance" : "Response guidance"} <span aria-hidden="true">→</span></button><button onClick={() => { setSelection(null); setOverviewVersion(value => value + 1); }}><DashboardIcon kind="map" />National overview <span aria-hidden="true">→</span></button></nav>
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{typeof workflowPanel === "function" ? workflowPanel({ selection: effectiveSelection, onSelect: setSelection }) : workflowPanel}</section>}
     <footer className="app-footer"><span>StateWatch · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>

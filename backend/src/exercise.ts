@@ -1,3 +1,4 @@
+import { synchronizeWelfare } from './response-routing';
 /** Shared, employee-controlled synthetic clock. Delivery is recorded, never sent. */
 import { SenderError, type InferSchema, type ReducerCtx } from 'spacetimedb/server';
 import type db from './schema';
@@ -61,7 +62,10 @@ export function advanceExercise(ctx: Ctx, args: { disasterId: bigint; expectedRu
   save(ctx, { ...state, minute: 30 });
   for (const row of [...ctx.db.exerciseCheckIn.disasterId.filter(state.disasterId)]) {
     if (row.runId === state.runId && row.phase === 'after' && row.status === 'unknown') {
-      ctx.db.exerciseCheckIn.id.update({ ...row, requestId: row.requestId ?? welfareRequest(ctx, row.householdId) });
+      const home = ctx.db.household.id.find(row.householdId);
+      const routed = home && [...ctx.db.responseRun.iter()].some(r => r.zoneId === home.zoneId && r.scenarioRunId === state.runId && r.status !== 'reset');
+      if (routed) synchronizeWelfare(ctx, row.householdId);
+      else ctx.db.exerciseCheckIn.id.update({ ...row, requestId: row.requestId ?? welfareRequest(ctx, row.householdId) });
     }
   }
   refreshDecisions(ctx);
@@ -78,6 +82,7 @@ export function replyToExercise(ctx: Ctx, args: { disasterId: bigint; householdI
   ctx.db.exerciseCheckIn.id.update({ ...row, status: args.status, replyAtMinute: state.minute,
     requestId: args.status === 'needs_help' ? welfareRequest(ctx, home.id) : row.requestId });
   ctx.db.household.id.update({ ...home, checkInStatus: args.status, lastContactAt: ctx.timestamp });
+  if (phase === 'after') synchronizeWelfare(ctx, home.id);
   refreshDecisions(ctx, home.id);
   event(ctx, state.disasterId, 'exercise_reply', `Household ${home.id}: ${phase} simulated ${args.status} reply; assistance resolution remains separate`);
 }

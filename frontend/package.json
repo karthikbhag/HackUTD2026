@@ -8,9 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:scenario": "node --test tests/scenario-demo.test.cjs tests/dashboard-scenario.test.cjs tests/shared-dashboard.test.cjs"
+    "test:scenario": "node --test tests/scenario-demo.test.cjs tests/dashboard-scenario.test.cjs tests/shared-dashboard.test.cjs tests/area-review.test.cjs tests/review-budget.test.cjs"
   },
   "dependencies": {
+    "@google/genai": "^3.0.0",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "next": "16.4.5",

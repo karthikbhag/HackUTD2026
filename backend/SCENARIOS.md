@@ -109,7 +109,7 @@ switching back requires only restarting Next.js with the other database name.
 `npm --prefix backend run build:scenario -- --preset small` stages the tracked
 modern schema-v3 `backend/src/default-scenario.json` fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
 seed it, and run `verify:scenario -- --preset small --database riskreach-small-60`.
-It has ten explicit impact layers and 12 reviewed templates; context remains separate.
+It contains ten explicit impact layers and 12 reviewed templates; context outlines remain distinct.
 The ordinary backend build/seed also still uses this Small fixture.
 
 ## Repeat runs and expected counts
@@ -181,3 +181,7 @@ problems justify scoped server views/summaries, a viewport spatial index, cluste
 or worker adaptation. No live-update simulation, dispatch UI, or benchmarking
 framework was added. The pure exposure helper remains available through `npm run
 exposure`; exposure relations/counts are not persisted or displayed by this path.
+
+## Connected main checkpoint — 2026-11-08
+
+The main page now has a shared scenario desk and authoritative Person 3 decisions. See [SHARED_WORKFLOW.md](SHARED_WORKFLOW.md) for the persistent local Demo database, enrollment and repeatable live checks. Frontend production build now passes on Node 24.22.1; historical worker-port failures above do not describe the current check. Browser acceptance remains separate and pending.

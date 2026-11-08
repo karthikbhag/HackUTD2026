@@ -110,8 +110,10 @@ age, retains exact score reasons and supports critical exposure (default score
 maximum 190). Assignment cancellation releases a unit and permits a new approval;
 completion is retained as completed assistance in this dashboard run.
 
-All households, notices, replies and assignments are synthetic. No real SMS/email,
-AI service, evacuation instruction or physical dispatch is triggered.
+All households, notices, replies and assignments are synthetic. Popup notice/reply
+actions trigger no real SMS/email, AI service, evacuation instruction or physical
+dispatch. Area reviews separately support explicit on-demand Gemini generation
+when configured; they do not run automatically with popup actions.
 
 ## Verification
 

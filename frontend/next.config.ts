@@ -1,5 +1,5 @@
-import path from "node:path";
 import type { NextConfig } from "next";
+import path from "node:path";
 
 // Repository root, so the frontend can import Person 3's pure helpers from backend/src
 // (single source of truth). Turbopack does not resolve files outside its root.

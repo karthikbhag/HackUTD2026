@@ -6,7 +6,8 @@
     "build": "spacetime build --module-path .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:popup:live": "esbuild scripts/verify-dashboard.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-dashboard.mjs && node .test-output/verify-dashboard.mjs",
+    "test:shared:live": "esbuild scripts/verify-shared.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-shared.mjs && node .test-output/verify-shared.mjs",
+    "preparedness": "esbuild scripts/preparedness.ts --bundle --platform=node --format=esm --outfile=.test-output/preparedness.mjs && node .test-output/preparedness.mjs",
     "recommend-teams": "esbuild scripts/recommend-teams.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/recommend-teams.mjs && node .test-output/recommend-teams.mjs",
     "follow-up": "esbuild scripts/follow-up.ts --bundle --platform=node --format=esm --outfile=.test-output/follow-up.mjs && node .test-output/follow-up.mjs",
     "priority": "esbuild scripts/priority.ts --bundle --platform=node --format=esm --outfile=.test-output/priority.mjs && node .test-output/priority.mjs",
@@ -14,7 +15,9 @@
     "generate": "spacetime generate --lang typescript --module-path . --out-dir ../frontend/src/module_bindings --yes",
     "test:live": "esbuild scripts/live-smoke.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/live-smoke.mjs && node .test-output/live-smoke.mjs",
     "build:scenario": "esbuild scripts/build-scenario.ts --bundle --platform=node --format=esm --outfile=.test-output/build-scenario.mjs && node .test-output/build-scenario.mjs",
-    "verify:scenario": "esbuild scripts/verify-scenario.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-scenario.mjs && node .test-output/verify-scenario.mjs"
+    "verify:scenario": "esbuild scripts/verify-scenario.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-scenario.mjs && node .test-output/verify-scenario.mjs",
+    "test:routing:live": "esbuild scripts/verify-routing.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-routing.mjs && node .test-output/verify-routing.mjs",
+    "test:popup:live": "esbuild scripts/verify-dashboard.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-dashboard.mjs && node .test-output/verify-dashboard.mjs"
   },
   "keywords": [],
   "author": "",

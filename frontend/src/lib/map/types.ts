@@ -57,6 +57,8 @@ export interface MapImpactLayer {
   id: string; hotspotId: string; hazard: Hazard; boundary: Coordinate[];
   component: string; severity: string; severityBasis: string; source: string;
   simulated: boolean; updatedAt: string; label: string; limitations: string;
+  /** Backend evidence kind; absent in the fictional UI fixtures. */
+  dataKind?: "simulation" | "forecast" | "report";
 }
 export interface MapData {
   impactLayers?: MapImpactLayer[];

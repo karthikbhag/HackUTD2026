@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.22**
+Current version: **1.27**
 
 ## Instructions for future updates
 
@@ -31,7 +31,22 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 1.22 — 2026-11-08
+## Version 1.27 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Resolved PR #15 against main while preserving shared dashboard notices, replies, safe-confirmation carryover, clock validation and assignment approvals alongside the scenario desk, response-routing backend/worker and on-demand Gemini reviews.
+- Unified the connected map and operational queue on the response connection hook, retained both backend table/reducer contracts, and regenerated the combined TypeScript bindings. Preserved the compile-first scenario builder and combined all scenario/AI test scripts. Fixed the retained routing worker build command to invoke esbuild through Node on Windows.
+- Reconciled documentation and retained both branches' changelog entries; the PR's two entries are now 1.25 and 1.26 after main's 1.24.
+
+### Verification
+
+- All 134 backend tests across 13 files, 27 frontend scenario/adapter/AI tests and nine Python dataset tests passed on Node 24.22.1 and Python 3.12. Backend/frontend typechecks, the standard and staged Small module builds, routing-worker bundle and default Turbopack production build passed. Frontend lint passed with one existing generated-bindings warning.
+- No conflict markers or whitespace errors remain. Interactive acceptance of the combined layout and live multi-client verification of this merge remain pending. No commit, push, real Gemini API call or live database deployment/mutation was made.
+
+## Version 1.26 — 2026-11-08
 
 **Author:** Karthik Bhagavatula
 
@@ -45,7 +60,7 @@ Entry template:
 - The repaired command built and validated the Demo preset successfully on Node 24.22.1: 10,000 households, 56 disasters, 112 zones, 220 teams, 2,000 requests and 93 impact layers. The staged SpacetimeDB module build and backend TypeScript check passed.
 - Node 22.13.1 remains below the SDK's declared supported engine range; this change does not claim SDK compatibility with that version. No database was published, reset or mutated. No commit or push was made.
 
-## Version 1.21 — 2026-11-08
+## Version 1.25 — 2026-11-08
 
 **Author:** Karthik Bhagavatula
 
@@ -67,6 +82,85 @@ Entry template:
 - Real two-client verification passed in a separate disposable Small database (`riskreach-popup-live-check`): shared notices/replies/clock, carried-safe exclusion without erased needs, duplicate/stale rejection, real competing assignment with exactly one winner, completion/team release, reconnect using the same identity, reset/replay and live access revocation. Temporary memberships are revoked in cleanup. The verifier did not mutate or reset the main Demo database.
 - Desktop Brave smoke verification passed using the user's already enrolled browser: `/demo` displayed Connected, 10,000 dataset households, shared clock, live priority queue, area review and the Shared simulation notification popup with an enabled approval button. No notice or assignment was submitted in the main dataset during this check. Some basemap tiles failed to load; overlays, clustering and popup navigation remained usable. Full two-browser mutation, keyboard and narrow-layout acceptance remain pending. All actions remain synthetic; actual AI generation/delivery are unconnected and full-table subscriptions remain in use.
 - No commit, push or cloud deployment was made. Existing local data and browser enrollment were preserved.
+
+## Version 1.24 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a configurable token and request budget for the AI area review in `frontend/src/lib/ai/review-budget.ts`, so the free tier lasts longer and limits can be raised later through `frontend/.env.local` without code changes (0 turns a limit off):
+  - `GEMINI_REVIEW_CACHE_MINUTES` (default 30): a review for identical evidence (same model, area, phase, counts, and sources) is reused from an in-memory server cache with no Gemini call. Identical concurrent requests share one call.
+  - `GEMINI_THINKING_LEVEL` (default `minimal`; `default` keeps the model's own level, needed for models without `minimal` such as `gemini-3.8-flash` per Google's thinking docs).
+  - `GEMINI_REVIEW_MAX_OUTPUT_TOKENS` (default 1,024, minimum 256; includes thinking tokens). A truncated reply is reported as an error rather than shown.
+  - `GEMINI_REVIEW_MAX_PER_MINUTE` (default 5, replacing the fixed 6), `GEMINI_REVIEW_MAX_PER_DAY` (default 50), and `GEMINI_REVIEW_MAX_TOKENS_PER_DAY` (default 100,000), counted per Pacific-time day because Google resets daily quotas at midnight Pacific. Limits apply only when Gemini is actually called; cache hits are free.
+- The route now records Gemini's reported token usage (server log shows prompt, thinking, and output tokens) and returns `cached` and `tokens`. The popup shows the token count or "Reused for unchanged evidence (no new tokens)". After a successful review the button reads **Review is up to date** and is disabled until the area's evidence changes, then offers **Regenerate with new data**.
+- The development-only `GEMINI_REVIEW_SIMULATE_ERROR` check now runs before the cache, so cached reviews do not hide simulated errors.
+- Counters and cache are per server process and reset on restart; they are not shared across multiple deployed instances. Google's project-level quotas still apply (Google's rate-limit page says limits are per project, not per key, and lists per-model free-tier values in AI Studio rather than on the page).
+- Documented the variables in `frontend/.env.example` and the README.
+- Pre-PR review fixes: removed the `temperature: 0.2` setting because Google's text-generation docs say Gemini 3.6+ ignores custom temperature, top_p and top_k and advise removing them; restored the small-text style of the popup's "Geographic membership" note, which lost its `.compact-area-brief > .muted` match when v1.23 wrapped the summary in a container (now `.brief-summary`); updated the README implementation note that still cited the old fixed limit of 6 reviews per minute.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed.
+- `npm run test:scenario`: 25 of 25 passed, including 5 new budget tests (defaults and env overrides, invalid values, per-minute release, daily request/token limits and Pacific-day reset, cache expiry and disabling, in-flight sharing).
+- Live, with the Tampa fixture snapshot through the dev-server route: the first request returned 200 in 2.6 s using 984 tokens; an identical repeat returned in 5 ms from the cache with 0 tokens. A direct comparison with the same short prompt on `gemini-3.6-flash` used 1,413 tokens (827 thinking) and 5.7 s at the model's default level versus 742 tokens (0 thinking) and 2.3 s at `minimal`. One `minimal` comparison attempt first received Gemini 503 (overloaded).
+- Pending: interactive browser check of the token label and the up-to-date/regenerate button states.
+
+## Version 1.23 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Connected Gemini to the area-review popup's review section. `frontend/src/components/map/ai-area-review.tsx` replaces the "AI review · Preview" block in `AreaBrief` with the existing scenario guidance (now labeled **Scenario guidance**) and an explicit **Generate AI Review** button; nothing is generated on open, click, or data update. The section stays mounted while the evidence view is open, so a generated review is not lost.
+- Added `frontend/src/lib/ai/area-review.ts`, a dependency-free contract shared by browser and server: `buildAreaSnapshot` (selected area only: hazard, severity, source, timestamps, simulation flags, up to 8 impact layers with basis/limitations/data kind, household counts by check-in, recorded-need/vulnerability/never-contacted counts, top 8 needs and vulnerability flags, team counts by status, and up to 5 guidance items; no household names, IDs, or coordinates), `parseAreaSnapshot`, the Gemini JSON schema, and `parseAreaReview`, which requires all fields, caps lengths, and rejects any number not present in the snapshot.
+- Added `POST /api/area-review` (`frontend/src/app/api/area-review/route.ts`) and the server-only `frontend/src/lib/ai/generate-area-review.ts`. The route checks same-origin and JSON content type, limits the body to 16 KB, validates the snapshot, returns `not_configured` (503) without a key, and applies a local limit of 6 reviews per minute per server process. Generation uses the existing client and `GEMINI_MODEL` (default `gemini-3.6-flash`, free tier), temperature 0.2, structured JSON output, a 30-second timeout, and a system instruction to use only the snapshot, separate expected conditions from reported impacts, label simulations, and not invent numbers, evacuation orders, safe routes, or confirmed exposure. SDK errors map to `rate_limited` (429), `upstream_error`, `timeout`, or `invalid_response` with safe messages; upstream error text is logged by status only.
+- The UI shows the review with an **AI-generated · model** label, a **Simulation** label when the area or a layer is simulated, snapshot and generation times, and sections for summary, expected conditions, reported impacts, key risks, suggested next steps (employee review required), and limitations. Loading, retry, and error states keep the structured area details visible. Responses are keyed to the area and phase and guarded by a request sequence; a selection change or newer request aborts the old one, so a response cannot appear under another area. A notice appears when area data changes after the snapshot.
+- Added an optional `dataKind` (simulation/forecast/report) to `MapImpactLayer`, populated by the SpacetimeDB adapter so reported layers can be distinguished; fixtures report `unspecified`.
+- Added a development-only `GEMINI_REVIEW_SIMULATE_ERROR` switch (`rate_limit`, `api_error`, `timeout`, `invalid_response`) for testing error states without changing the key; it is ignored in production builds and listed in `frontend/.env.example`.
+- AI output is text only. It does not send notifications, dispatch teams, write to SpacetimeDB, or affect deterministic priority scores. No billing was enabled. Chatbot and AI-drafted notifications remain later work.
+- Added AI review styles to `globals.css`, `tests/area-review.test.cjs` (included in `npm run test:scenario`), and README/map handoff updates.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed with `/api/area-review` as a dynamic route.
+- `npm run test:scenario`: 20 of 20 passed, including 4 new offline tests for snapshot scoping and privacy (no names, IDs, or coordinates), snapshot validation of tampered/oversized input, review validation (missing fields, wrong types, invented numbers), and fingerprint changes.
+- Against the running dev server: an invalid snapshot returned 400, a cross-origin request 403, and GET 405. With the local key, the first two live requests with the Dallas fixture snapshot received Gemini 503 (overloaded), which the route returned as `upstream_error`; the next request returned 200 in about 20 seconds from `gemini-3.6-flash`, passed validation, and separated simulated expected conditions from reported check-ins.
+- Confirmed the key value and the `GEMINI_API_KEY` name do not appear in `.next/static` browser bundles or tracked files.
+- Rebased onto main after the response-routing merge (main v1.21) and Tien Phan's Gemini client entry (v1.22); this entry was renumbered from 1.22 to 1.23. The connected main dashboard README text from main was kept, with the AI review notes added.
+- Pending: interactive browser checks of the button, loading/error/retry states, area-switch cancellation, the stale-data notice, and the not-configured, simulated rate-limit, and API-error paths in the UI.
+
+## Version 1.22 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a reusable server-only Gemini client in `frontend/src/lib/ai/gemini.ts` for the planned AI area review. It reads `GEMINI_API_KEY` and an optional `GEMINI_MODEL` (default `gemini-3.6-flash`, the stable Flash model with a free API tier per Google's model and pricing pages checked on 2026-11-08). It uses the Gemini Developer API with API-key auth, not Vertex AI, and reuses one client unless the key changes. A missing key throws `GeminiNotConfiguredError`; `isGeminiConfigured()` reports presence without exposing the key.
+- `import "server-only"` makes any Client Component import of the client fail the build, so the key cannot be bundled for the browser.
+- Added the `@google/genai` 3.0.0 dependency (`frontend/package.json`, lockfile).
+- Added `frontend/.env.example` with SpacetimeDB and Gemini placeholders. The root `.gitignore` still ignores `.env*` (including `.env.local`) but now allows `.env.example` to be committed.
+- README: local setup notes for the Gemini variables and the free-tier data-use caveat; Person 4 AI review checklist note.
+- No UI, API route, chat, or SpacetimeDB change in this step. No billing was enabled.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed (`/`, `/demo`, `/_not-found`).
+- A temporary Client Component page importing the client failed the build with the `server-only` error, confirming the guard; the page was removed.
+- Offline check with a fake key and no network calls: no key reports not configured and throws `GeminiNotConfiguredError`; with a key the same client instance is reused with `vertexai` false; `GEMINI_MODEL` overrides the model after trimming, and a blank value falls back to the default.
+- Confirmed `frontend/.env.local` is ignored and has never been committed. No live Gemini request has been made yet.
+- Merged with main's v1.19, v1.20 (Aalvee Ahtav) and v1.21 (response-routing merge); this entry was renumbered from 1.19 to 1.21 and then to 1.22 to avoid duplicate versions.
+
+## Version 1.21 — 2026-11-08
+
+### Changes
+
+- Merged main into response routing, preserving the shared connected desk and routing connection alongside StateWatch branding, dashboard popup rehearsal, and the retained connected outreach route. Combined styles and configuration and retained both branches’ history.
+
+### Verification
+
+- Frontend TypeScript, all 16 scenario tests and lint passed (one existing generated-bindings warning). All 127 backend tests, backend typecheck and the production Webpack build passed on Node 24.22.2. The build required network access for the configured Google font. Interactive browser acceptance remains pending.
 
 ## Version 1.20 — 2026-11-08
 
@@ -136,6 +230,51 @@ Entry template:
 - `npm run build` on Next.js 16.4.5 first failed prerendering `/` ("unstable value `Date.now()` in a Client Component") and passed after the clock fix, prerendering `/`, `/demo`, and `/_not-found`.
 - Offline check: one valid plus one malformed layer (simulation flag mismatch) still gives the valid layer's 30 exposure points and reports 1 ignored layer. `npm run test:scenario` passed (6 of 6).
 - Pending: interactive browser checks and two-session verification of Mark contacted and queue updates.
+
+## Version 1.19 — 2026-11-08 (response routing)
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Implemented response-routing configuration, an isolated 20-household/two-team Dallas fixture, and dedicated welfare queues. Existing nationwide fixtures/manual assistance remain available. Unknown routed cases need no fabricated requests or passenger-capacity checks.
+- Added private run/config, visit, route, position and worker-membership tables; authorized views; regenerated bindings; and reducers for settings, fenced leases, planning holds, version-checked publication, pause/resume, availability, movement/dwell/completion and isolated reset. Safe reports atomically cancel future/travelling visits; active checks retain a notice and unrelated assistance stays open. Manual dispatch rejects welfare-reserved teams. Full reset invalidates workers and routing rows.
+- Integrated fresh authoritative post-impact rounds and the shared exercise deadline/clock. Playback preserves elapsed time across pause/settings/holds; active service keeps its start-time duration. Leases have increasing fencing tokens and a separate worker heartbeat; epoch/config/origin/route/sequence checks reject stale work.
+- Added the persistent Node routing worker, deterministic urgent-first insertion heuristic, bounded relocation/swap/reversal, fixed active destinations/service, urgent targets, waiting-time ties, assignment-change preference, uncovered reasons, road-polyline movement and return-to-staging checks. API requests occur on relevant replans/refresh, not movement ticks. Failed solves keep valid old legs stale and freeze invalid destinations.
+- Adapted the original matrix plan to Josh's no-billing requirement: default Google demo-key mode uses supported Compute Routes legs to construct directional estimates and final road routes, with bounded waypoint batches, traffic-unaware estimates, no provider reordering, request limits and explicit errors. Compute Route Matrix returned `BILLING_DISABLED`; no billing settings were changed. Offline fixture routing is explicitly selected and labelled, never silently substituted.
+- Configured the Turbopack workspace root to include the shared routing config; the live development server otherwise returned a module-resolution error despite the webpack build passing. Started and enrolled the persistent no-billing Google demo worker on loopback port 3201 for user testing.
+- Added `/response` with Google map, selected team, ordered stops/ETAs, notices, uncovered cases, settings, playback controls and deterministic scenario actions. Extracted the existing endpoint-scoped connection lifecycle for both page shells. Leaflet keeps household states/team movement and welfare destination grouping; Google geometry stays on the response screen and in short-lived worker memory.
+- Added worker startup/enrollment, demo-key setup and user acceptance instructions to `backend/SHARED_WORKFLOW.md`, plus a disposable offline live verifier. Browser keys accept both the planned variable and the existing `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` name. Secrets were not printed or committed.
+- Upgraded the actual configured local `riskreach-stress-100k` database using its matching Stress bundle with `--delete-data=never`, and initialized shared decision state. Confirmed 100,000 households, 1,970 teams and 20,000 requests remain. The older README Demo database was absent; the initial precheck stopped without publishing there. A first verification assertion incorrectly included query-duration metadata; corrected comparison checks row counts.
+
+### Verification
+
+- Supported Node 24.22.2: all 127 backend tests pass, backend/worker typechecks pass, generated module/Stress builds pass, and frontend typecheck/production webpack build pass. Lint passes with one existing generated-bindings unused-disable warning. Default Turbopack is blocked by this environment's build-process port restriction.
+- Transactional tests cover safe queued/en-route/in-progress behavior, service dwell, duplicate stops/ticks, worker expiry/takeover, origin/config/shift versions, settings/clock holds, unavailable teams, stale reset work and isolated fixture cleanup. Provider tests cover road interpolation, missing edges, narrow masks, billing error parsing, demo-only leg estimates and stripping household metadata from Google requests. Small exact reference and two-team nearest-next comparisons pass; the fixture heuristic covers all 17 non-safe households and meets the urgent-wait comparison. No global-optimality claim is made.
+- Disposable live offline verification passed twice: two published team routes, both teams moving, safe queued/current cancellation, urgent replanning, pause freezing positions and loopback geometry delivery. Temporary memberships were revoked and the test worker stopped. Only this isolated verifier resets test data.
+- Live no-billing Google checks passed Compute Routes (HTTP 200), a two-point directional estimate and final road polylines (two legs, 31 vertices each; endpoint snaps about 15–16 meters). Full-fixture Google quota/road acceptance and interactive browser testing remain for the user. Browser automation was unavailable/not approved; user elected to test the UI themselves. The main worker is now running and enrolled for user testing; no synthetic routing run was automatically started.
+
+## Version 1.18 — 2026-11-08 (shared decisions)
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Restored Person 3's missing authoritative decision integration from the earlier staged source: preparedness helper/adapter, 17 tests and report CLI; private decision/run/catalog/timer state; authorized summary and selected-household/request views; transactional refresh; reviewed run-aware task approval; capped critical exposure and scoring; and selected-fixture reset preserving access/history. These changes were absent from the updated checkout despite the earlier session report. Preserved the current team's map redesign and `/demo` additions.
+- Added a shared synthetic exercise clock per disaster, separately persisted pre/post-impact reply rounds and approved notice text. Enrolled employees can approve a simulated notice, record simulated replies and advance the bounded exercise to impact and its 30-minute deadline. Earlier replies remain in history and cannot confirm post-impact safety. Full dataset reset and direct scenario escalation remain administrator-only.
+- Added overdue fresh post-impact concerns independently of older contact freshness, with reviewable welfare requests for unanswered/needs-help cases. Existing active welfare requests are reused. Safety replies do not silently resolve assistance; recommendations never reserve teams and dispatch still requires explicit employee approval with transactional revalidation. Clock/run checks reject stale/duplicate operations.
+- Connected the redesigned main scenario desk through the existing SDK connection: area-scoped priority ranking/search/25-row pages/overlooked filtering, selected-case score and exposure explanations, sourced preparedness approval and task completion, contact, requests, team eligibility/distance/approximate ETA, assignment lifecycle and shared activity. Dynamic selected-area/household/request subscriptions are cleaned up when selection changes. Both customers and community assistance cases participate under the same decision rules.
+- Kept `/demo` browser-local. The main `/` route now requires database configuration rather than silently substituting demo records. Added a public `.env.example` and ignored local configuration pointing to a newly created persistent loopback database, `riskreach-person3-demo`, containing the 10,000-household Demo preset on port 3100. Started the main Next.js development page on localhost:3000. Browser identity enrollment remains required; no self-enrollment or token-sharing flow was added.
+- Restored modern bundled schema-v3 Small (ten impacts and 12 reviewed templates), generator-v4 Small team regions and reproducibility coverage, while retaining legacy-v1 and generator-v3 compatibility. Windows staging uses dependency junctions. Regenerated TypeScript bindings for all restored and new views/reducers.
+- Installed the two already-declared MarkerCluster packages missing from this checkout. Scoped the CommonJS test lint rule to the existing Node `.cjs` demo tests. Updated the README tracker and backend/map/data handoffs; added `backend/SHARED_WORKFLOW.md` with startup, enrollment, persistent storage, permissions, replay and verification commands.
+
+### Verification
+
+- All 101 backend tests across nine files passed on supported Node 24.22.1 with Python 3.12, including 17 restored preparedness cases and four new shared workflow/authorization/lifecycle cases. The four shared cases passed again after final employee time-skip authorization changes. All nine Python tests (including exact bundled Small reproducibility) and all six existing browser-local demo-state tests passed.
+- Backend/frontend TypeScript checking, module generation/build, staged Demo build, frontend lint and production build passed. Lint retains one existing generated-bindings warning. Initially, missing MarkerCluster packages blocked frontend checking and the existing CommonJS test imports failed lint; installing the declared packages and applying the narrow test-file rule resolved both. The older CSS worker-port build failure did not recur.
+- Published/seeded a new persistent local Demo database without deleting existing data. Tested the complete workflow in a separate disposable Small database with two enrolled SDK clients plus an outsider: suggestion approval/duplicate rejection, separate rounds, employee time skips, fresh overdue welfare review, non-customer assistance, competing dispatch with one winner, completion/team release, the real scheduled refresh, shared reset/replay, stale-run rejection and live revocation all passed. Test memberships are revoked in cleanup; the main Demo dataset was not mutated by the verifier.
+- Interactive browser acceptance and enrollment of the user's actual browser remain separate from these automated checks. Actual AI generation and notification delivery remain pending. Full-table subscriptions remain; fixture correctness and SDK checks are not production throughput or browser-responsiveness guarantees.
+- No commit, push or cloud deployment was made. The older local verification databases on port 3123 were left unchanged.
 
 ## Version 1.17 — 2026-11-07
 
