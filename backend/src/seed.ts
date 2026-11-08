@@ -34,6 +34,10 @@ export function seed(ctx: ReducerCtx<InferSchema<typeof db>>, scenario: Scenario
 /** Same lifecycle for each build's selected fixture; preserves memberships,
  * periodic clock, scenario counter, catalog and durable activity history. */
 export function resetOperationalData(ctx: ReducerCtx<InferSchema<typeof db>>, scenario: Scenario = source) {
+  for (const row of [...ctx.db.responseRun.iter()]) ctx.db.responseRun.id.update({ ...row, status: 'reset', fence: row.fence + 1n, epoch: row.epoch + 1n, leaseUntil: 0n });
+  for (const row of [...ctx.db.welfareVisit.iter()]) ctx.db.welfareVisit.id.delete(row.id);
+  for (const row of [...ctx.db.teamRoute.iter()]) ctx.db.teamRoute.id.delete(row.id);
+  for (const row of [...ctx.db.responseTeamState.iter()]) ctx.db.responseTeamState.teamId.delete(row.teamId);
   for (const row of [...ctx.db.exerciseCheckIn.iter()]) ctx.db.exerciseCheckIn.id.delete(row.id);
   for (const row of [...ctx.db.areaExercise.iter()]) ctx.db.areaExercise.disasterId.delete(row.disasterId);
   for (const row of [...ctx.db.decisionSummary.iter()]) ctx.db.decisionSummary.householdId.delete(row.householdId);

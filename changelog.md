@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.18**
+Current version: **1.19**
 
 ## Instructions for future updates
 
@@ -30,6 +30,29 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.19 — 2026-11-08
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Implemented response-routing configuration, an isolated 20-household/two-team Dallas fixture, and dedicated welfare queues. Existing nationwide fixtures/manual assistance remain available. Unknown routed cases need no fabricated requests or passenger-capacity checks.
+- Added private run/config, visit, route, position and worker-membership tables; authorized views; regenerated bindings; and reducers for settings, fenced leases, planning holds, version-checked publication, pause/resume, availability, movement/dwell/completion and isolated reset. Safe reports atomically cancel future/travelling visits; active checks retain a notice and unrelated assistance stays open. Manual dispatch rejects welfare-reserved teams. Full reset invalidates workers and routing rows.
+- Integrated fresh authoritative post-impact rounds and the shared exercise deadline/clock. Playback preserves elapsed time across pause/settings/holds; active service keeps its start-time duration. Leases have increasing fencing tokens and a separate worker heartbeat; epoch/config/origin/route/sequence checks reject stale work.
+- Added the persistent Node routing worker, deterministic urgent-first insertion heuristic, bounded relocation/swap/reversal, fixed active destinations/service, urgent targets, waiting-time ties, assignment-change preference, uncovered reasons, road-polyline movement and return-to-staging checks. API requests occur on relevant replans/refresh, not movement ticks. Failed solves keep valid old legs stale and freeze invalid destinations.
+- Adapted the original matrix plan to Josh's no-billing requirement: default Google demo-key mode uses supported Compute Routes legs to construct directional estimates and final road routes, with bounded waypoint batches, traffic-unaware estimates, no provider reordering, request limits and explicit errors. Compute Route Matrix returned `BILLING_DISABLED`; no billing settings were changed. Offline fixture routing is explicitly selected and labelled, never silently substituted.
+- Configured the Turbopack workspace root to include the shared routing config; the live development server otherwise returned a module-resolution error despite the webpack build passing. Started and enrolled the persistent no-billing Google demo worker on loopback port 3201 for user testing.
+- Added `/response` with Google map, selected team, ordered stops/ETAs, notices, uncovered cases, settings, playback controls and deterministic scenario actions. Extracted the existing endpoint-scoped connection lifecycle for both page shells. Leaflet keeps household states/team movement and welfare destination grouping; Google geometry stays on the response screen and in short-lived worker memory.
+- Added worker startup/enrollment, demo-key setup and user acceptance instructions to `backend/SHARED_WORKFLOW.md`, plus a disposable offline live verifier. Browser keys accept both the planned variable and the existing `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` name. Secrets were not printed or committed.
+- Upgraded the actual configured local `riskreach-stress-100k` database using its matching Stress bundle with `--delete-data=never`, and initialized shared decision state. Confirmed 100,000 households, 1,970 teams and 20,000 requests remain. The older README Demo database was absent; the initial precheck stopped without publishing there. A first verification assertion incorrectly included query-duration metadata; corrected comparison checks row counts.
+
+### Verification
+
+- Supported Node 24.22.2: all 127 backend tests pass, backend/worker typechecks pass, generated module/Stress builds pass, and frontend typecheck/production webpack build pass. Lint passes with one existing generated-bindings unused-disable warning. Default Turbopack is blocked by this environment's build-process port restriction.
+- Transactional tests cover safe queued/en-route/in-progress behavior, service dwell, duplicate stops/ticks, worker expiry/takeover, origin/config/shift versions, settings/clock holds, unavailable teams, stale reset work and isolated fixture cleanup. Provider tests cover road interpolation, missing edges, narrow masks, billing error parsing, demo-only leg estimates and stripping household metadata from Google requests. Small exact reference and two-team nearest-next comparisons pass; the fixture heuristic covers all 17 non-safe households and meets the urgent-wait comparison. No global-optimality claim is made.
+- Disposable live offline verification passed twice: two published team routes, both teams moving, safe queued/current cancellation, urgent replanning, pause freezing positions and loopback geometry delivery. Temporary memberships were revoked and the test worker stopped. Only this isolated verifier resets test data.
+- Live no-billing Google checks passed Compute Routes (HTTP 200), a two-point directional estimate and final road polylines (two legs, 31 vertices each; endpoint snaps about 15–16 meters). Full-fixture Google quota/road acceptance and interactive browser testing remain for the user. Browser automation was unavailable/not approved; user elected to test the UI themselves. The main worker is now running and enrolled for user testing; no synthetic routing run was automatically started.
 
 ## Version 1.18 — 2026-11-08
 

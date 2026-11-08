@@ -159,3 +159,112 @@ Temporary test memberships are revoked in cleanup. Browser acceptance is a
 separate check: enroll two browser identities and perform the same workflow in
 the main page. SDK and production-build results do not establish visual layout
 or browser interaction quality.
+
+## Response routing demo
+
+The dedicated routing queue is the approved automatic-dispatch simulation exception.
+Manual assistance keeps its existing semantics; reserved welfare teams cannot be
+manually dispatched. Fresh safe reports cancel queued/en-route checks immediately,
+retain in-progress checks with a notice, and leave assistance requests intact.
+
+The current ignored environment selects `riskreach-stress-100k` on loopback port
+3100, rather than the older Demo name above. Its module was upgraded using the
+matching Stress bundle and `--delete-data=never`; existing counts remain 100,000
+households, 1,970 teams and 20,000 requests. Shared decision state was initialized
+without resetting records. Browser enrollment persists. Use the database selected
+in your own environment if it differs from these examples.
+
+### Start the routing worker and response screen
+
+From the repository root on this Mac:
+
+```sh
+export PATH="$HOME/.nvm/versions/node/v24.22.2/bin:$PATH"
+npm --prefix routing-worker start
+```
+
+The persistent Node worker explicitly loads `frontend/.env.local`, uses the shared
+configured database and prints its **public identity**. An administrator enrolls
+that identity in a second terminal (never paste the token file):
+
+```sh
+spacetime call riskreach-stress-100k set_routing_worker '"WORKER_IDENTITY_HEX"' true --server http://127.0.0.1:3100 --no-config
+```
+
+Open `http://localhost:3000/response`. If required, enroll the displayed public
+browser identity through `set_employee` using the existing enrollment instructions.
+Click **Start Dallas routing fixture**, select a team, then **Resume simulation**.
+This adds only 20 fictional households and two local teams alongside nationwide
+rows. Both teams begin at staging. Reset removes only this owned fixture after
+active checks/manual assistance finish. The fixture starts with a clearly
+simulated, explicitly employee-started post-impact round; no messages are sent.
+Ordinary `start_response_demo` instead attaches capable teams to an existing
+compact neighborhood with a fresh authoritative post-impact round.
+
+A missing map/key never hides the stop list or safety notices. Restart Next.js
+if changed environment values are not picked up. The browser accepts either
+`NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` or the existing
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`; the server uses `GOOGLE_MAPS_API_KEY`.
+
+### No-billing Google demo-key mode
+
+Keep Cloud billing **disabled**, as requested. The default worker uses only
+**Compute Routes**, supported by Google's Maps Demo Key. The original approved
+plan assumed Compute Route Matrix; that method returned `BILLING_DISABLED` with
+this key. The implementation now constructs directional travel estimates from
+batched Compute Routes legs, deduplicating identical positions and using at most
+nine intermediate waypoints per request. It uses traffic-unaware driving estimates
+and disables provider waypoint reordering. Larger final routes are split into
+bounded requests while preserving stop order. Service and return time are checked
+again against actual directions. This remains an approximate priority heuristic.
+
+Live checks with the existing key passed a direct Compute Routes call, a two-point
+directional estimate and road polylines (two legs, 31 vertices each, endpoint snaps
+about 15–16 meters). The complete 20-household Google demonstration and browser
+rendering remain for user acceptance. Demo-key quotas may pause requests until the
+next day without charges. No billing settings were changed. Use Google's current
+[demo-key documentation](https://developers.google.com/maps/demo-key) for supported
+features and quota behavior.
+
+At the default start there are 17 non-safe homes plus staging; shared team/staging
+coordinates are deduplicated. The full directional estimate takes about 31 bounded
+Compute Routes requests, plus final team directions. Replans and periodic refreshes
+consume additional requests. The worker limits itself to 120 HTTP attempts/minute,
+retries transient failures at most twice, and waits 15 seconds after a failed solve.
+Demo quotas can be lower and are authoritative. Google-derived geometry exists only
+in process memory, expires after the refresh interval and is served with `no-store`
+on loopback port 3201. It is displayed only on the Google response map. The Leaflet
+dispatcher receives simulated team coordinates and welfare destination grouping.
+
+Worker identity tokens persist privately in ignored `.tmp/routing-worker-token`.
+Leases last 30 wall-clock seconds, are renewed by a separate heartbeat, and carry
+increasing fencing tokens. Planning freezes playback while origin versions are
+reconciled; lease/config/epoch/route checks reject late publications and ticks.
+Only one worker should be started on the default port. Geometry access is a local,
+synthetic-demo endpoint, not a production responder authentication system.
+
+For an explicitly labelled offline rehearsal:
+
+```sh
+ROUTING_PROVIDER=fixture npm --prefix routing-worker start
+```
+
+This mode uses straight-line fixture travel, never a silent fallback after Google
+failure. Stop the first worker before selecting another provider.
+
+### Verification and user acceptance
+
+`npm --prefix backend test` includes routing/provider/reference tests. Worker types
+can be checked with `backend/node_modules/.bin/tsc -p routing-worker/tsconfig.json`.
+`npm --prefix backend run test:routing:live` mutates only the disposable
+`riskreach-response-routing-check` database and runs an explicitly offline worker
+on port 3202; publish the current Small bundle there first. Test memberships are
+revoked and the worker is stopped afterward. Never point that verifier at the main
+Stress database.
+
+On `/response`, verify both team routes/positions, queued-household safe reports,
+current-destination cancellation from the latest position, urgent escalation,
+pause/settings/resume, team unavailability, uncovered reasons, dwell completion
+and return to staging. Confirm the dispatcher continues receiving the same shared
+state. Visual/browser acceptance is performed by the user; the automated live
+check establishes database/worker behavior, not browser layout quality.

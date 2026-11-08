@@ -39,6 +39,22 @@ Use a fixed fictional scenario clock rather than waiting for a real disaster dat
 
 Non-customers can also request or receive assistance. Rank response needs by urgency and need; State Farm customer status determines proactive outreach context rather than emergency assistance priority.
 
+### Response routing — Person 2 handoff
+
+**Status: implementation in progress — Josh Sebastian.** The approved design is documented in [the response routing implementation plan](RESPONSE_ROUTING_PLAN.md). This extends the post-disaster welfare-check workflow with automatic multi-stop routing; the existing employee-approved assistance-request workflow remains available. Automatic routing is an explicit demo exception to the manual dispatch guidance elsewhere in this README.
+
+- **Demo scope:** two simulated welfare-check teams and 20 fictional households in one compact Dallas-area neighborhood. Teams start at a local staging point, perform checks without transporting people, and return within a two-hour simulated shift. Each visit initially takes five simulated minutes; playback initially runs at 10x speed.
+- **Adjustable rules:** central validated configuration plus a per-run settings snapshot/version. Expose visit duration, shift length, playback speed, urgent response target and replan delay as settings; keep fixture size and neighborhood selectable through configuration. Changes must invalidate affected plans rather than leave stale assignments.
+- **Routing:** use Google Compute Routes leg estimates and directions with a deterministic priority-aware heuristic. Prioritize urgent/needs-help households, then maximize unknown households checked within remaining shift time, including service and return travel. Use waiting time to break ties between unknown cases. This is approximate optimization, not a guarantee of a globally optimal route. Keep uncovered households and reasons visible.
+- **Person 2 backend changes:** add run/config state, a dedicated welfare-visit queue, versioned team routes, simulated team state and a fenced worker lease. Keep one current visit per team with multiple queued future stops. Unknown households must not require fabricated assistance requests. Enforce mutual exclusion between welfare routes and existing manual request assignments; passenger-capacity checks do not apply to welfare checks. Add authorized views/reducers and regenerate client bindings.
+- **Live updates:** integrate with the authoritative post-impact check-in/reply lifecycle, not just a presentation toggle or an earlier pre-impact response. A new safe response immediately cancels pending/queued/en-route welfare visits and invalidates the current destination. Preserve in-progress checks until acknowledged/completed; do not automatically resolve unrelated assistance needs. Reject stale optimizer results using planning/config/route versions. Handle urgent changes immediately and batch ordinary changes over five seconds by default.
+- **Worker and simulation:** a persistent server-side Node worker coordinates Google calls and moves both teams along road polylines in the same selected area. It manages visit dwell, pause/resume/reset and configurable speed. Do not call Google on every position tick. Replan from each team's latest position without teleporting or allowing a cancelled stop to reappear.
+- **UI boundary:** retain the Leaflet dispatcher map for household states and simulated team locations. Add a response-team `/response` screen with Google Maps, the selected team's ordered stops, ETAs, cancellation notices and playback controls. No live GPS or production team-lead sign-in is required for this scope.
+- **Credentials:** use ignored `frontend/.env.local` entries `GOOGLE_MAPS_API_KEY` (server-only, Routes API) and `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` (browser/referrer-restricted, Maps JavaScript API). The default implementation supports a free Maps Demo Key without enabling billing; see the current shared workflow for its Compute Routes adaptation and quota limits. Explicitly load server credentials into the separate worker; never commit secrets. This approach does not require Route Optimization API OAuth.
+- **Delivery order:** configurable fixture → transactional queue/cancellation → worker/provider/solver → response-team view → simulation → integrated acceptance. Verify no duplicate dispatch, safe-during-routing cancellation, urgent preemption, stale-result rejection, return-to-staging feasibility, API failure handling and repeatable reset. Preserve the existing shared workflow and nationwide fixtures.
+
+Before implementation, reconcile the detailed plan's file-level references with the current [shared workflow contract](backend/SHARED_WORKFLOW.md), especially fresh post-impact check-ins, the existing simulated clock and request/assignment lifecycle. Reuse that authoritative state rather than introducing a conflicting second scenario clock or customer-response source.
+
 ### What “prediction” means in this project
 
 We will estimate potential exposure from available forecasts, hazard data, or clearly labeled demonstration scenarios. We are not training a new disaster-prediction model during the hackathon.
@@ -184,6 +200,8 @@ Browser verification covers the fixture-backed UI. Integrated browser connection
 - [x] Handle loading, connection errors, empty states, and narrower screens. (verified by user)
 
 ### Backend — Person 2
+
+- [ ] Implement approved response routing. (in progress — Josh Sebastian; queue, lease, worker, provider, response UI and isolated fixture implemented; automated offline live acceptance passes, full Google/browser acceptance pending)
 
 - [x] Set up and verify the SpacetimeDB module and local development workflow.
 - [x] Implement tables, indexes, and generated client bindings. (team-wide contract sign-off pending)

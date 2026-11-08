@@ -35,21 +35,35 @@ import {
 
 // Import all reducer arg schemas
 import AdvanceExerciseClockReducer from "./advance_exercise_clock_reducer";
+import AdvanceResponseSimulationReducer from "./advance_response_simulation_reducer";
 import ApproveExerciseNoticeReducer from "./approve_exercise_notice_reducer";
 import ApprovePreparednessReducer from "./approve_preparedness_reducer";
 import AssignTeamReducer from "./assign_team_reducer";
+import ClaimRoutingLeaseReducer from "./claim_routing_lease_reducer";
 import CreateRequestReducer from "./create_request_reducer";
 import CreateTaskReducer from "./create_task_reducer";
 import EscalateScenarioReducer from "./escalate_scenario_reducer";
+import HoldResponsePlanningReducer from "./hold_response_planning_reducer";
+import PauseResponseDemoReducer from "./pause_response_demo_reducer";
+import PublishResponsePlanReducer from "./publish_response_plan_reducer";
 import RecordExerciseReplyReducer from "./record_exercise_reply_reducer";
 import RecordOutreachReducer from "./record_outreach_reducer";
 import RefreshDecisionSnapshotReducer from "./refresh_decision_snapshot_reducer";
+import RenewRoutingLeaseReducer from "./renew_routing_lease_reducer";
 import ResetDemoReducer from "./reset_demo_reducer";
+import ResetResponseDemoReducer from "./reset_response_demo_reducer";
 import ResolveRequestReducer from "./resolve_request_reducer";
+import ResponsePlanningFailedReducer from "./response_planning_failed_reducer";
+import ResumeResponseDemoReducer from "./resume_response_demo_reducer";
 import SeedDemoReducer from "./seed_demo_reducer";
+import SeedResponseRoutingDemoReducer from "./seed_response_routing_demo_reducer";
 import SetEmployeeReducer from "./set_employee_reducer";
+import SetResponseTeamAvailabilityReducer from "./set_response_team_availability_reducer";
+import SetRoutingWorkerReducer from "./set_routing_worker_reducer";
+import StartResponseDemoReducer from "./start_response_demo_reducer";
 import UpdateAssignmentReducer from "./update_assignment_reducer";
 import UpdateCheckInReducer from "./update_check_in_reducer";
+import UpdateResponseSettingsReducer from "./update_response_settings_reducer";
 import UpdateTaskReducer from "./update_task_reducer";
 
 // Import all procedure arg schemas
@@ -65,10 +79,16 @@ import HouseholdDecisionsRow from "./household_decisions_table";
 import HouseholdsRow from "./households_table";
 import ImpactLayersRow from "./impact_layers_table";
 import RequestsRow from "./requests_table";
+import ResponseRunsRow from "./response_runs_table";
+import ResponseTeamStatesRow from "./response_team_states_table";
+import RoutingHouseholdsRow from "./routing_households_table";
+import RoutingTeamsRow from "./routing_teams_table";
 import ScenarioInfoRow from "./scenario_info_table";
 import TasksRow from "./tasks_table";
 import TeamRecommendationsRow from "./team_recommendations_table";
+import TeamRoutesRow from "./team_routes_table";
 import TeamsRow from "./teams_table";
+import WelfareVisitsRow from "./welfare_visits_table";
 import ZonesRow from "./zones_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -145,6 +165,34 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, RequestsRow),
+  responseRuns: __table({
+    name: 'response_runs',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ResponseRunsRow),
+  responseTeamStates: __table({
+    name: 'response_team_states',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ResponseTeamStatesRow),
+  routingHouseholds: __table({
+    name: 'routing_households',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RoutingHouseholdsRow),
+  routingTeams: __table({
+    name: 'routing_teams',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RoutingTeamsRow),
   scenarioInfo: __table({
     name: 'scenario_info',
     indexes: [
@@ -166,6 +214,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, TeamRecommendationsRow),
+  teamRoutes: __table({
+    name: 'team_routes',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TeamRoutesRow),
   teams: __table({
     name: 'teams',
     indexes: [
@@ -173,6 +228,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, TeamsRow),
+  welfareVisits: __table({
+    name: 'welfare_visits',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, WelfareVisitsRow),
   zones: __table({
     name: 'zones',
     indexes: [
@@ -185,21 +247,35 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("advance_exercise_clock", AdvanceExerciseClockReducer),
+  __reducerSchema("advance_response_simulation", AdvanceResponseSimulationReducer),
   __reducerSchema("approve_exercise_notice", ApproveExerciseNoticeReducer),
   __reducerSchema("approve_preparedness", ApprovePreparednessReducer),
   __reducerSchema("assign_team", AssignTeamReducer),
+  __reducerSchema("claim_routing_lease", ClaimRoutingLeaseReducer),
   __reducerSchema("create_request", CreateRequestReducer),
   __reducerSchema("create_task", CreateTaskReducer),
   __reducerSchema("escalate_scenario", EscalateScenarioReducer),
+  __reducerSchema("hold_response_planning", HoldResponsePlanningReducer),
+  __reducerSchema("pause_response_demo", PauseResponseDemoReducer),
+  __reducerSchema("publish_response_plan", PublishResponsePlanReducer),
   __reducerSchema("record_exercise_reply", RecordExerciseReplyReducer),
   __reducerSchema("record_outreach", RecordOutreachReducer),
   __reducerSchema("refresh_decision_snapshot", RefreshDecisionSnapshotReducer),
+  __reducerSchema("renew_routing_lease", RenewRoutingLeaseReducer),
   __reducerSchema("reset_demo", ResetDemoReducer),
+  __reducerSchema("reset_response_demo", ResetResponseDemoReducer),
   __reducerSchema("resolve_request", ResolveRequestReducer),
+  __reducerSchema("response_planning_failed", ResponsePlanningFailedReducer),
+  __reducerSchema("resume_response_demo", ResumeResponseDemoReducer),
   __reducerSchema("seed_demo", SeedDemoReducer),
+  __reducerSchema("seed_response_routing_demo", SeedResponseRoutingDemoReducer),
   __reducerSchema("set_employee", SetEmployeeReducer),
+  __reducerSchema("set_response_team_availability", SetResponseTeamAvailabilityReducer),
+  __reducerSchema("set_routing_worker", SetRoutingWorkerReducer),
+  __reducerSchema("start_response_demo", StartResponseDemoReducer),
   __reducerSchema("update_assignment", UpdateAssignmentReducer),
   __reducerSchema("update_check_in", UpdateCheckInReducer),
+  __reducerSchema("update_response_settings", UpdateResponseSettingsReducer),
   __reducerSchema("update_task", UpdateTaskReducer),
 );
 
