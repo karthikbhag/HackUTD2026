@@ -102,7 +102,8 @@ export function toMapData(rows: OperationalRows): MapData {
     if (!hotspotId || !Object.prototype.hasOwnProperty.call(hazards, row.hazardType)) throw new Error("Impact layer has no hotspot.");
     return { id: row.id, hotspotId, hazard: row.hazardType as Hazard, boundary: boundary(row.geometry),
       component: row.component, severity: row.severity, severityBasis: row.severityBasis, source: row.source,
-      simulated: row.isSimulated, updatedAt: row.updatedAt.toDate().toISOString(), label: row.label, limitations: row.limitations };
+      simulated: row.isSimulated, updatedAt: row.updatedAt.toDate().toISOString(), label: row.label, limitations: row.limitations,
+      ...(row.dataKind === "simulation" || row.dataKind === "forecast" || row.dataKind === "report" ? { dataKind: row.dataKind } : {}) };
   });
   return result;
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.22**
+Current version: **1.23**
 
 ## Instructions for future updates
 
@@ -30,6 +30,30 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.23 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Connected Gemini to the area-review popup's review section. `frontend/src/components/map/ai-area-review.tsx` replaces the "AI review · Preview" block in `AreaBrief` with the existing scenario guidance (now labeled **Scenario guidance**) and an explicit **Generate AI Review** button; nothing is generated on open, click, or data update. The section stays mounted while the evidence view is open, so a generated review is not lost.
+- Added `frontend/src/lib/ai/area-review.ts`, a dependency-free contract shared by browser and server: `buildAreaSnapshot` (selected area only: hazard, severity, source, timestamps, simulation flags, up to 8 impact layers with basis/limitations/data kind, household counts by check-in, recorded-need/vulnerability/never-contacted counts, top 8 needs and vulnerability flags, team counts by status, and up to 5 guidance items; no household names, IDs, or coordinates), `parseAreaSnapshot`, the Gemini JSON schema, and `parseAreaReview`, which requires all fields, caps lengths, and rejects any number not present in the snapshot.
+- Added `POST /api/area-review` (`frontend/src/app/api/area-review/route.ts`) and the server-only `frontend/src/lib/ai/generate-area-review.ts`. The route checks same-origin and JSON content type, limits the body to 16 KB, validates the snapshot, returns `not_configured` (503) without a key, and applies a local limit of 6 reviews per minute per server process. Generation uses the existing client and `GEMINI_MODEL` (default `gemini-3.6-flash`, free tier), temperature 0.2, structured JSON output, a 30-second timeout, and a system instruction to use only the snapshot, separate expected conditions from reported impacts, label simulations, and not invent numbers, evacuation orders, safe routes, or confirmed exposure. SDK errors map to `rate_limited` (429), `upstream_error`, `timeout`, or `invalid_response` with safe messages; upstream error text is logged by status only.
+- The UI shows the review with an **AI-generated · model** label, a **Simulation** label when the area or a layer is simulated, snapshot and generation times, and sections for summary, expected conditions, reported impacts, key risks, suggested next steps (employee review required), and limitations. Loading, retry, and error states keep the structured area details visible. Responses are keyed to the area and phase and guarded by a request sequence; a selection change or newer request aborts the old one, so a response cannot appear under another area. A notice appears when area data changes after the snapshot.
+- Added an optional `dataKind` (simulation/forecast/report) to `MapImpactLayer`, populated by the SpacetimeDB adapter so reported layers can be distinguished; fixtures report `unspecified`.
+- Added a development-only `GEMINI_REVIEW_SIMULATE_ERROR` switch (`rate_limit`, `api_error`, `timeout`, `invalid_response`) for testing error states without changing the key; it is ignored in production builds and listed in `frontend/.env.example`.
+- AI output is text only. It does not send notifications, dispatch teams, write to SpacetimeDB, or affect deterministic priority scores. No billing was enabled. Chatbot and AI-drafted notifications remain later work.
+- Added AI review styles to `globals.css`, `tests/area-review.test.cjs` (included in `npm run test:scenario`), and README/map handoff updates.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed with `/api/area-review` as a dynamic route.
+- `npm run test:scenario`: 20 of 20 passed, including 4 new offline tests for snapshot scoping and privacy (no names, IDs, or coordinates), snapshot validation of tampered/oversized input, review validation (missing fields, wrong types, invented numbers), and fingerprint changes.
+- Against the running dev server: an invalid snapshot returned 400, a cross-origin request 403, and GET 405. With the local key, the first two live requests with the Dallas fixture snapshot received Gemini 503 (overloaded), which the route returned as `upstream_error`; the next request returned 200 in about 20 seconds from `gemini-3.6-flash`, passed validation, and separated simulated expected conditions from reported check-ins.
+- Confirmed the key value and the `GEMINI_API_KEY` name do not appear in `.next/static` browser bundles or tracked files.
+- Rebased onto main after the response-routing merge (main v1.21) and Tien Phan's Gemini client entry (v1.22); this entry was renumbered from 1.22 to 1.23. The connected main dashboard README text from main was kept, with the AI review notes added.
+- Pending: interactive browser checks of the button, loading/error/retry states, area-switch cancellation, the stale-data notice, and the not-configured, simulated rate-limit, and API-error paths in the UI.
 
 ## Version 1.22 — 2026-11-08
 
