@@ -173,12 +173,22 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     for (const zone of data.zones) {
       const color = hazards[zone.hazard].color;
       const polygon = L.polygon(zone.contextBoundary ?? zone.boundary, { color, fill: false, weight: currentSelection.current?.kind === "zone" && currentSelection.current.id === zone.id ? 4 : 1, dashArray: "5 5" }).addTo(geometry);
+      const info = tooltip("i");
+      info.setAttribute("aria-hidden", "true");
+      L.marker(polygon.getBounds().getCenter(), { icon: L.divIcon({ className: "area-info-marker", html: info, iconSize: [26, 26], iconAnchor: [13, 13] }), title: `Review ${zone.name} · ${zone.severity} severity`, alt: `Review ${zone.name}` })
+        .bindTooltip(tooltip(`${zone.name} · ${zone.severity} · Select to open area details and scenario desk`))
+        .on("click", () => {
+          onSelect({ kind: "zone", id: zone.id });
+          const desk = document.getElementById("scenario-desk");
+          desk?.focus({ preventScroll: true });
+          desk?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+        }).addTo(geometry);
       polygons.set(zone.id, polygon);
       polygon.bindTooltip(tooltip(`${zone.name} · Geographic context only`));
       polygon.on("click", () => onSelect({ kind: "zone", id: zone.id }));
     }
     for (const layer of data.impactLayers ?? []) {
-      L.polygon(layer.boundary, { color: hazards[layer.hazard].color, fillOpacity: layer.severity === "high" ? 0.24 : 0.12, weight: layer.severity === "high" ? 2 : 1 })
+      L.polygon(layer.boundary, { color: hazards[layer.hazard].color, fillOpacity: layer.severity === "critical" || layer.severity === "extreme" ? 0.34 : layer.severity === "high" ? 0.24 : 0.12, weight: layer.severity === "critical" || layer.severity === "extreme" ? 4 : layer.severity === "high" ? 2 : 1 })
         .bindTooltip(tooltip(`${layer.label} · ${layer.severity} · ${layer.severityBasis}`))
         .on("click", () => onSelect({ kind: "zone", id: layer.hotspotId })).addTo(geometry);
     }

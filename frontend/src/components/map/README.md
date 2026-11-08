@@ -1,6 +1,6 @@
 # Map integration handoff
 
-Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional read-only SpacetimeDB connection. It does not perform operational mutations.
+Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional read-only SpacetimeDB connection. It does not perform operational mutations. The scenario desk rehearses notification approval, check-in replies, time skips, and welfare-check assignments in fixture demo mode using browser-local state only.
 
 For the isolated 10,000/100,000-household flow, use the [local scenario runbook](../../../../backend/SCENARIOS.md).
 
@@ -36,9 +36,10 @@ Legacy Small has no explicit footprints. Counts are never labeled as affected.
 
 ## Components
 
-- `MapDashboard`: owns hazard visibility, selection, and before/after display state.
+- `MapDashboard`: State Farm themed readiness overview; owns hazard visibility, selection, before/after display state, and household/team/guidance browsing. Summary counts derive from visible records. The default household review list includes non-safe check-ins or reported needs, ordered by urgent/needs-help/unknown/safe status; this is not the pending backend priority score. Quick actions navigate these read-only views. Household and team browsing pages 50 records at a time; changing hotspots resets the keyed detail panel. Dataset totals and filtered membership counts remain distinct from hazard exposure.
+- `DashboardIcon`: shared code-native outline icons for summary metrics and workspace navigation.
 - `DisasterMap`: browser-only Leaflet map, independently selectable polygons, household circles, and team markers.
-- `DetailPanel`: zone guidance, household and team details, source/time labels, and accessible record selection.
+- `DetailPanel`: selected-record inspector within the review panel; zone guidance, household and team details, source/time labels, and accessible record selection.
 - `src/lib/map/types.ts`: frontend view models, separate from generated database bindings.
 - `src/lib/map/demo-data.ts`: disposable fictional UI fixtures for six continental U.S. hotspots. These are not Person 3's authoritative dataset or exposure calculations.
 
@@ -72,3 +73,11 @@ The read-only connection is implemented in `connected-dashboard.tsx`. Extend tha
 Leaflet 1.9.4 with OpenStreetMap standard raster tiles and visible attribution. No API key is needed. Browsers need internet access to load the basemap. Tile failure displays a connection warning; polygons and the hotspot list still work. Review the provider's usage policy before public deployment: https://operations.osmfoundation.org/policies/tiles/.
 
 The initial/reset views include Alaska and Hawaii; the large presets supply hotspots there. The minimum zoom is the US fit zoom for the current canvas dimensions and overlay padding; maxBounds is recalculated for the viewport and zoom to keep its center within the US extent without shifting padded region fits. Sidebars are outside the canvas, so their widths are not subtracted again. Status and tile-warning overlays reserve bottom padding. Resizing refits the last selected region, cluster, or overview until the user navigates. Geometry and the cluster index remain mounted across selection changes. Browser acceptance and production build limitations are recorded in the scenario runbook.
+
+## Scenario desk rehearsal
+
+Open `/demo` to rehearse independently of any configured database connection. Select an area using its map information icon or the hotspot picker, then open the scenario desk below the map. In fixture mode, approve a preparation notice, simulate customer replies, skip two hours to impact, approve a fresh check-in, and skip 30 minutes to reveal unanswered cases. Help requests can receive an employee-approved simulated welfare-check unit immediately; unanswered cases require the deadline. A safe pre-impact reply remains history and does not answer the post-impact check-in. Matching uses an available local welfare-check team with positive capacity; duplicate local assignments are prevented. Resetting or switching areas clears the rehearsal.
+
+AI area reviews are explicitly labeled source-based previews; no AI provider is connected. Fixture impact bands are invented and do not establish measured household exposure. Connected mode shows evidence and read-only details without enabling rehearsal actions. Nothing is delivered, dispatched, persisted, or synchronized by this local demo.
+
+Run `npm run test:scenario` from `frontend/` to verify round separation, follow-up timing, urgent-help dispatch eligibility, safe-response exclusion, duplicate assignments, and reset behavior.
