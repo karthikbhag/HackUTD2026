@@ -98,7 +98,9 @@ The live test creates three temporary client identities, authorizes two through 
 
 ## Remaining integration
 
-Person 3 task 4 now provides configurable [priority scoring and reason breakdowns](PRIORITY.md), verified across Small/Demo/Stress. The pure helper and offline report do not change database schema, reducers, seed/reset, or live UI behavior. Overdue flags, authenticated live score integration, and remaining recommendations still need implementation.
+Person 3 task 5 now provides [overdue-contact and overlooked-case detection](FOLLOW_UP.md), including independent concern reasons, configurable thresholds, flag-clearing behavior, and offline reports across all presets. Live authorized flags, time-driven recomputation, subscriptions, and queue filtering still require integration.
+
+Person 3 task 4 now provides configurable [priority scoring and reason breakdowns](PRIORITY.md), verified across Small/Demo/Stress. The pure helper and offline report do not change database schema, reducers, seed/reset, or live UI behavior. Authenticated live score/flag integration and remaining recommendations still need implementation.
 
 Person 3 task 3 now provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). It supports overlapping v3 impact layers and unique household counts, with full Small/Demo/Stress verification. It does not change the deployed schema, legacy seed/reset data, or current converter's v1/v2 contract. Persisted layers/exposure and live rendering remain integration work.
 

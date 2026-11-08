@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **2.0**
+Current version: **2.1**
 
 ## Instructions for future updates
 
@@ -30,6 +30,26 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 2.1 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 5 with `backend/src/follow-up.ts`, a deterministic helper distinguishing contact freshness, remaining follow-up concerns, and overlooked cases. Cases are overlooked only when a qualifying concern and overdue/missing contact coexist.
+- Added independent reasons for unresolved requests, needs-help/urgent check-ins, unconfirmed high-risk exposure, and optional vulnerable exposure. Preserves request/layer IDs, priority explanations, and unique household totals; overlapping reason counts remain separate.
+- Added configurable labeled demo thresholds: six hours normally, one hour for urgent check-ins or active request urgency 4/5; never-contacted cases are immediately contact-overdue. Fresh contact clears the overlooked flag without resolving assistance. Request resolution and safe check-ins remove only their relevant concerns; assignment does not hide unresolved requests.
+- Reused priority validation and ordering while keeping flag eligibility independent of priority weights and customer status. Extracted shared pure schema-v3 fixture input normalization without changing scoring behavior.
+- Added an offline full/summary follow-up report command and `backend/FOLLOW_UP.md` covering exact threshold semantics, transitions, concern counts, assumptions, and integration responsibilities. Updated README progress and handoffs.
+
+### Verification
+
+- All 59 backend tests passed, including 17 new follow-up cases and all 42 existing regressions. All nine Python generator/geometry tests, backend TypeScript checking, and Spacetime module build passed on Node 24.22.1.
+- Verified microsecond boundary behavior, urgent/standard thresholds, never-contacted cases, fresh-contact clearing, request resolution, independent concerns, safe check-ins, assignment/in-progress independence, configurable exposure/vulnerability policy, priority-weight independence, clock advancement, counts, customer neutrality, stable order, bigint IDs, and invalid inputs.
+- Evaluated every household in Small (60), Demo (10,000), and Stress (100,000); for each preset verified an unresolved seeded case loses its overlooked flag after contact while retaining its assistance need.
+- Ran the Stress summary report: 69,433 households retain follow-up concerns and 57,997 are flagged overlooked under demo defaults; saved the first 25 overlooked rows with complete counts/assumptions to an ignored local report. These are synthetic scenario results, not operational findings or backend performance benchmarks.
+- No schema, seed/reset, reducer, binding, or frontend behavior changes were made. Flags remain derived snapshots; persisted/live authorized flags, timer-driven recomputation, subscriptions, and queue filtering are pending integration. No commit, push, publish, or database mutation was made.
 
 ## Version 2.0 — 2026-11-07
 
