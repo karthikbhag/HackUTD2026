@@ -6,8 +6,8 @@ import "leaflet.markercluster";
 import { hazards, type MapData, type MapHousehold, type Selection } from "@/lib/map/types";
 import { HOUSEHOLD_ZOOM } from "@/lib/map/presentation";
 
-// Include Alaska and Hawaii, matching the national scenario coverage.
-const US_BOUNDS = L.latLngBounds([[18, -171], [72, -65]]);
+// Contiguous US overview is also the responsive zoom-out limit.
+const US_BOUNDS = L.latLngBounds([[24, -125], [50, -66]]);
 function tooltip(text: string) {
   const element = document.createElement("span");
   element.textContent = text;
@@ -23,7 +23,7 @@ function fitOptions(instance: L.Map): L.FitBoundsOptions {
 }
 function setUSPanBounds(instance: L.Map, zoom = instance.getZoom() ?? instance.getMinZoom()) {
   // Keep the viewport center within the US, including when its aspect ratio
-  // requires showing some surrounding geography to fit Alaska and Hawaii.
+  // requires showing some surrounding geography to fit the contiguous US.
   const half = instance.getSize().divideBy(2);
   const northWest = instance.project(US_BOUNDS.getNorthWest(), zoom).subtract(half);
   const southEast = instance.project(US_BOUNDS.getSouthEast(), zoom).add(half);
@@ -64,6 +64,7 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
   const container = useRef<HTMLDivElement>(null);
   const overlays = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
+  const disposeLayers = useRef<(() => void) | null>(null);
   const fittedView = useRef<{ bounds: L.LatLngBounds; maxZoom?: number } | null>({ bounds: US_BOUNDS });
   const currentSelection = useRef(selection);
   const currentData = useRef(data);
@@ -116,7 +117,15 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     const resize = new ResizeObserver(resizeView);
     resize.observe(container.current);
     if (overlays.current) resize.observe(overlays.current);
-    return () => { cancelAnimationFrame(boundsFrame); resize.disconnect(); instance.remove(); map.current = null; };
+    return () => {
+      cancelAnimationFrame(boundsFrame);
+      resize.disconnect();
+      // React cleans up this effect before the layer effect. Remove paths while
+      // their canvas context still exists, then let Leaflet cancel its redraw.
+      disposeLayers.current?.();
+      instance.remove();
+      map.current = null;
+    };
   }, []);
   // Index all filtered locations once. MarkerCluster manages visible layers and
   // spatial groups at every zoom, so counts do not depend on viewport clipping.
@@ -211,7 +220,22 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
     };
     instance.on("zoomend", refreshTeams);
     refreshTeams();
-    return () => { instance.off("zoomend", refreshTeams); geometry.remove(); teams.remove(); group.clearLayers(); group.remove(); clusters.current = null; markers.clear(); polygons.clear(); };
+    let disposed = false;
+    const dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      instance.off("zoomend", refreshTeams);
+      geometry.remove();
+      teams.remove();
+      group.clearLayers();
+      group.remove();
+      clusters.current = null;
+      markers.clear();
+      polygons.clear();
+      if (disposeLayers.current === dispose) disposeLayers.current = null;
+    };
+    disposeLayers.current = dispose;
+    return dispose;
   }, [data, onSelect, onReview]);
   useEffect(() => {
     const previous = currentSelection.current;
