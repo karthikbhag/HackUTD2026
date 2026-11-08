@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.4 — 2026-11-07.** Person 3's repeatable generator supports Small (60 households), Demo (10,000), and Stress (100,000). Demo/Stress cover all 50 states with 56 hotspots and 112 zones; validation and regression tests pass offline. Person 1's browser-verified map dashboard still uses its temporary fixtures. Dataset integration, SpacetimeDB, remaining decision logic, and dashboard production build verification remain pending; the existing Turbopack worker-port restriction is unchanged.
+**Current checkpoint: v1.5 — 2026-11-07.** Person 3's generator now adds hazard-specific synthetic impact layers and sourced preparedness recommendation templates to all presets. Small has 10 impact layers; Demo/Stress each have 93, with the same 60/10,000/100,000 households and 12 recommendation templates. Geometry, data-integrity, and compatibility tests pass offline. Person 1's dashboard still uses temporary fixtures. Dataset/map integration, SpacetimeDB, household exposure, remaining decision logic, and production build verification remain pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -188,7 +188,7 @@ Browser verification covers the fixture-backed UI. Live backend connection check
 ### Data and decision logic — Person 3
 
 - [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Completed by Karthik Bhagavatula: [generator and data handoff](data/scenarios/README.md), with repeatable 60/10,000/100,000-household presets; Demo/Stress cover 50 states and 56 hotspots. Validated offline; database seeding, map aggregation, scoped subscriptions, and replacement of Person 1's temporary UI fixtures remain pending integration.
-- [ ] Define hazard-specific impact geometry, source labels, and preparedness recommendations.
+- [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Completed by Karthik Bhagavatula: schema v3 separates geographic context from synthetic impact layers and links 12 sourced employee-review templates; polygon/data validation passes. Map rendering and household-specific action generation remain pending.
 - [ ] Determine affected households from the scenario zones.
 - [ ] Implement priority scores and readable reasons.
 - [ ] Implement overdue-contact/overlooked-case detection.
@@ -235,9 +235,9 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.4
+### Current checkpoint — v1.5
 
-The frontend includes the Person 1 map dashboard with temporary fictional UI data, a canvas-fitted national overview, and selection highlights scoped by entity kind and ID. Person 3's portable fixtures, configurable seeded generator, validation, regression tests, and scale handoff are available in [data/scenarios](data/scenarios/README.md). Backend code, generated bindings, live subscriptions, fixture integration, decision logic, and operational controls remain pending. See [changelog v1.4](changelog.md#version-14--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
+The frontend includes the Person 1 map dashboard with temporary fictional UI data. Person 3's portable fixtures, configurable seeded generator, synthetic hazard layers, preparedness catalog, validation, and handoff are available in [data/scenarios](data/scenarios/README.md). Backend code, generated bindings, live subscriptions, fixture/impact rendering integration, exposure/decision logic, and operational controls remain pending. See [changelog v1.5](changelog.md#version-15--2026-11-07) and the [map integration handoff](frontend/src/components/map/README.md).
 
 ### Local setup
 

@@ -6,6 +6,7 @@ import copy
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
+from impacts import add_impacts
 
 NOW = "2026-11-07T12:00:00Z"
 SOURCE = "RiskReach authored synthetic fixture; no live forecasts or observations"
@@ -108,7 +109,7 @@ HAZARD_STATES = {
 }
 
 
-def generate(preset="small", seed=2026):
+def generate_base(preset="small", seed=2026):
     if preset == "small":
         return generate_small()  # Preserve the original fixture exactly.
     if preset not in PRESETS:
@@ -181,6 +182,10 @@ def generate(preset="small", seed=2026):
             "team_count": team_count,
         })
     return data
+
+
+def generate(preset="small", seed=2026):
+    return add_impacts(generate_base(preset, seed), preset, seed)
 
 
 if __name__ == "__main__":

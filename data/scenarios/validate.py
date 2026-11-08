@@ -6,6 +6,7 @@ import math
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+from geometry import validate_polygon, contains_point
 
 
 def validate(data):
@@ -14,8 +15,9 @@ def validate(data):
             raise ValueError(message)
 
     hazards = {"tornado", "earthquake", "hurricane", "wildfire", "blizzard", "flood"}
-    version = data["schema_version"]
-    require(version in {1, 2}, "Unsupported fixture schema")
+    schema_version = data["schema_version"]
+    require(schema_version in {1, 2, 3}, "Unsupported fixture schema")
+    version = (1 if data["generation"]["preset"] == "small" else 2) if schema_version == 3 else schema_version
     require(data["is_simulated"] is True, "Scenario must be labeled synthetic")
     reference = datetime.fromisoformat(data["reference_time"])
     collections = {}
@@ -110,7 +112,7 @@ def validate(data):
         require(sum(h["is_dense_demo"] for h in hotspots) == 6, "Missing dense hotspots")
         require(data["generation"]["preset"] in {"demo", "stress"}, "Unknown preset")
         require(type(data["generation"]["seed"]) is int, "Invalid seed")
-        require(data["generation"]["generator_version"] == 2, "Unknown generator version")
+        require(data["generation"]["generator_version"] == (3 if schema_version == 3 else 2), "Unknown generator version")
         require(len(households) == {"demo": 10000, "stress": 100000}[data["generation"]["preset"]], "Incorrect preset size")
         for hotspot in hotspots:
             require(hotspot["disaster_id"] in disasters, "Dangling hotspot disaster")
@@ -140,6 +142,50 @@ def validate(data):
             require({r["need_type"] for r in local_requests} <= available_capabilities, "No local capable available team")
     if version == 1:
         require(len(teams) == 12, "Expected twelve teams")
+    if schema_version == 3:
+        expected = {
+            "tornado": {"damage_corridor"}, "earthquake": {"shaking_outer", "shaking_inner"},
+            "hurricane": {"wind", "surge"}, "wildfire": {"fire_perimeter", "smoke"},
+            "blizzard": {"snow_wind", "isolation"}, "flood": {"inundation"},
+        }
+        recommendations = {r["id"]: r for r in data["preparedness_recommendations"]}
+        require(len(recommendations) == len(data["preparedness_recommendations"]) == 12, "Expected 12 unique recommendations")
+        for hazard in hazards:
+            require(sum(r["hazard_type"] == hazard for r in recommendations.values()) == 2, "Missing hazard recommendations")
+        for r in recommendations.values():
+            require(r["phase"] == "preparedness" and r["requires_human_review"] is True, "Missing recommendation review requirement")
+            require(r["title"] and r["description"] and r["source_label"], "Missing recommendation content")
+            require(r["guidance_url"].startswith(("https://www.weather.gov/", "https://www.osha.gov/", "https://www.airnow.gov/")), "Missing guidance source")
+            require(r["guidance_checked_on"] == "2026-11-07", "Missing guidance review date")
+        layers = data["impact_layers"]
+        require(len({l["id"] for l in layers}) == len(layers), "Duplicate impact IDs")
+        grouped_layers = defaultdict(list)
+        for layer in layers:
+            disaster = disasters[layer["disaster_id"]]
+            require(layer["hazard_type"] == disaster["type"], "Layer hazard mismatch")
+            region = zones[layer["context_zone_id"]]
+            require(region["level"] == "region" and region["disaster_id"] == disaster["id"], "Layer context mismatch")
+            require(layer["data_kind"] == "simulation" and layer["is_simulated"] is True, "Missing impact simulation label")
+            require(layer["label"].startswith("SIMULATION:") and layer["source"] and layer["limitations"], "Missing impact provenance")
+            require(layer["severity"] in {"moderate", "high"} and layer["severity_basis"], "Missing impact severity")
+            require(datetime.fromisoformat(layer["updated_at"]) == reference, "Stale impact timestamp")
+            validate_polygon(layer["geometry"])
+            require(all(contains(region,*p) for p in layer["geometry"]["coordinates"][0]), "Impact outside context")
+            require(len(layer["recommendation_ids"]) == len(set(layer["recommendation_ids"])) == 2, "Missing layer recommendation links")
+            require(all(recommendations[k]["hazard_type"] == disaster["type"] for k in layer["recommendation_ids"]), "Wrong hazard recommendation")
+            grouped_layers[disaster["id"]].append(layer)
+        for disaster in disasters.values():
+            rows = grouped_layers[disaster["id"]]
+            require({l["component"] for l in rows} == expected[disaster["type"]] and len(rows) == len(expected[disaster["type"]]), "Missing or duplicate hazard components")
+            if disaster["type"] == "earthquake":
+                by_component = {l["component"]: l for l in rows}
+                outer = by_component["shaking_outer"]
+                inner = by_component["shaking_inner"]
+                require(outer["severity"] == "moderate" and inner["severity"] == "high", "Incorrect shaking severity ordering")
+                require(all(contains_point(outer["geometry"], p) for p in inner["geometry"]["coordinates"][0]), "Inner shaking zone outside outer zone")
+        require(all(z["boundary_role"] == "geographic_context" for z in zones.values()), "Context zones must be distinguished from impact")
+        collections["impact_layers"] = {l["id"]: l for l in layers}
+        collections["preparedness_recommendations"] = recommendations
     return {name: len(rows) for name, rows in collections.items()}
 
 
