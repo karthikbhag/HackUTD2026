@@ -55,7 +55,7 @@ export interface AreaReviewResult {
   /** Gemini tokens used when this review was generated (0 if unknown). */
   tokens: number;
 }
-export type AreaReviewErrorCode = "not_configured" | "invalid_request" | "rate_limited" | "upstream_error" | "timeout" | "invalid_response" | "forbidden";
+export type AreaReviewErrorCode = "not_configured" | "invalid_request" | "rate_limited" | "upstream_error" | "timeout" | "invalid_response" | "forbidden" | "limit_reached";
 export interface AreaReviewError { error: { code: AreaReviewErrorCode; message: string; retryAfterSeconds?: number } }
 
 const clip = (value: string, max: number = LIMITS.text) => value.length > max ? `${value.slice(0, max - 1)}…` : value;
@@ -145,9 +145,9 @@ export const AREA_REVIEW_JSON_SCHEMA = {
 
 const NUMBER = /\d[\d,]*(?:\.\d+)?/g;
 const normalize = (token: string) => String(Number(token.replaceAll(",", "")));
-/** Every number that appears anywhere in the snapshot, normalized ("07" and "7" match). */
-function allowedNumbers(snapshot: AreaSnapshot): Set<string> {
-  return new Set((JSON.stringify(snapshot).match(NUMBER) ?? []).map(normalize));
+/** Every number that appears anywhere in the evidence, normalized ("07" and "7" match). */
+function allowedNumbers(evidence: unknown): Set<string> {
+  return new Set((JSON.stringify(evidence).match(NUMBER) ?? []).map(normalize));
 }
 
 /**
@@ -168,9 +168,14 @@ export function parseAreaReview(value: unknown, snapshot: AreaSnapshot): { revie
     keyRisks: list("keyRisks") ?? [], nextSteps: list("nextSteps") ?? [], limitations: list("limitations") ?? [],
   };
   for (const key of ["expectedConditions", "reportedImpacts", "keyRisks", "nextSteps", "limitations"] as const) if (list(key) === null) return { error: `Response field ${key} is invalid.` };
-  const allowed = allowedNumbers(snapshot);
   const text = [review.summary, ...review.expectedConditions, ...review.reportedImpacts, ...review.keyRisks, ...review.nextSteps, ...review.limitations].join("\n");
-  const unsupported = [...new Set((text.match(NUMBER) ?? []).map(normalize))].filter(token => !allowed.has(token));
+  const unsupported = unsupportedNumbers(text, snapshot);
   if (unsupported.length) return { error: `Response included numbers not in the evidence (${unsupported.slice(0, 3).join(", ")}).` };
   return { review };
+}
+
+/** Numbers in AI text that do not appear anywhere in the evidence (shared by reviews, follow-ups, and the assistant). */
+export function unsupportedNumbers(text: string, evidence: unknown): string[] {
+  const allowed = allowedNumbers(evidence);
+  return [...new Set((text.match(NUMBER) ?? []).map(normalize))].filter(token => !allowed.has(token));
 }

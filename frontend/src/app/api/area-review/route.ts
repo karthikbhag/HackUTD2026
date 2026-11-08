@@ -6,7 +6,7 @@
 import { geminiModel, isGeminiConfigured } from "@/lib/ai/gemini";
 import { AreaReviewFailure, generateAreaReview, simulatedFailure } from "@/lib/ai/generate-area-review";
 import { parseAreaSnapshot, snapshotFingerprint, type AreaReviewError, type AreaReviewErrorCode, type AreaReviewResult, type AreaSnapshot } from "@/lib/ai/area-review";
-import { getCachedReview, reserveReview, setCachedReview, shareInFlight, type CachedReview } from "@/lib/ai/review-budget";
+import { getCachedReview, reserveGeminiCall, setCachedReview, shareInFlight, type CachedReview } from "@/lib/ai/review-budget";
 
 const MAX_BODY_BYTES = 16_000;
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   try {
     const { promise, joined } = shareInFlight(key, async () => {
       // Budget is checked only when Gemini will actually be called (not for cache hits or joined requests).
-      const denied = reserveReview();
+      const denied = reserveGeminiCall();
       if (denied) throw new AreaReviewFailure("rate_limited", denied.message, 429, denied.retryAfterSeconds);
       const { review, model, tokens } = await generateAreaReview(snapshot);
       const value: CachedReview = { review, model, tokens, generatedAt: new Date().toISOString() };
