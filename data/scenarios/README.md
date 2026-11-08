@@ -103,6 +103,8 @@ The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection]
 
 ## Backend integration
 
+Person 3 task 7 adds a separate [team recommendation fixture adapter and report](../../backend/TEAM_RECOMMENDATIONS.md). It shares the existing source need mapping and preserves the one-person party-size and numeric capacity demo assumptions; live/core matching requires explicit people counts. It does not require display-only team region metadata or change the full import converter's validation.
+
 `backend/src/scenario.ts` adapts the portable source to `backend/src/schema.ts`; `backend/src/seed.ts` is used by both administrator-only `seed_demo` and controlled `reset_demo`. The default bundles the checked-in Small JSON; staged preset builds select a large v3 fixture without replacing it. v3 impact layers retain source IDs, mapped disaster/context IDs and shifted timestamps in a separate authorized table/view. Source JSON/generator conventions are preserved, including source IDs, simulation labels, vulnerabilities, national framing, v2 hotspot summaries, and optional team regions. The backend stores the fields its current schema supports; it does not add these metadata fields to tables.
 
 - IDs: sorted source IDs receive positive bigint IDs within each collection, independent of row order. Foreign keys use the same maps. This crosswalk is stable within a fixture, not across different presets. Request IDs are actually allocated by SpacetimeDB on insert (`0n`) to avoid reusing historical request IDs across resets; source request IDs are provenance in JSON, not runtime primary keys. Tasks and activities also use database IDs.

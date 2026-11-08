@@ -8,11 +8,15 @@ export type Scenario = Omit<typeof rawSource, 'zones' | 'response_teams' | 'impa
   impact_layers?: (ImpactLayer & { context_zone_id: string; severity_basis: string; limitations: string })[];
 };
 export const source = rawSource as unknown as Scenario;
-const needs: Record<string, string> = {
+const needs = {
   shelter_support: 'shelter', welfare_check: 'welfare_check', evacuation_assistance: 'evacuation',
   smoke_support: 'fire_smoke_support', winter_weather_support: 'winter_weather_support',
   supply_delivery: 'water', // Explicit demo assumption: generic supplies become water, not a new need enum.
-};
+} as const;
+export function scenarioNeed(value: string) {
+  require(Object.prototype.hasOwnProperty.call(needs, value), `need ${value}`);
+  return needs[value as keyof typeof needs];
+}
 const hazards = ['tornado', 'earthquake', 'hurricane', 'wildfire', 'blizzard', 'flood'];
 function require(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Invalid scenario: ${message}`);
@@ -53,7 +57,7 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
   };
   const maps = { disasters: ids(data.disasters), zones: ids(data.zones), households: ids(data.households), teams: ids(data.response_teams), requests: ids(data.help_requests) };
   const fk = (map: Map<string, bigint>, id: string) => { const value = map.get(id); require(value !== undefined, `foreign key ${id}`); return value; };
-  const capability = (value: string) => { require(Object.prototype.hasOwnProperty.call(needs, value), `need ${value}`); return needs[value]; };
+  const capability = scenarioNeed;
   const disasters = data.disasters.map(row => {
     require(row.is_simulated === true && !!row.source && !!row.name, 'disaster source');
     return { id: fk(maps.disasters, row.id), name: row.name, type: choice(row.type, hazards), phase: choice(row.phase, ['preparedness']), source: row.source, isSimulated: true, updatedAt: stamp(row.updated_at) };
