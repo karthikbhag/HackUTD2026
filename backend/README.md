@@ -98,6 +98,8 @@ The live test creates three temporary client identities, authorizes two through 
 
 ## Remaining integration
 
+Person 3 task 3 now provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). It supports overlapping v3 impact layers and unique household counts, with full Small/Demo/Stress verification. It does not change the deployed schema, legacy seed/reset data, or current converter's v1/v2 contract. Persisted layers/exposure and live rendering remain integration work.
+
 See [Person 2 plan](PLAN.md). Person 3 supplied the portable datasets now used by seed/reset and still owns final hazard geometry/exposure, transparent priority scores/reasons, overdue-contact rules, and suitable-team recommendations. The fixture has one hotspot per hazard, 12 metro/neighborhood zones, 60 fictional households, 12 requests, 18 outreach tasks, and 12 teams; it is not a real hazard feed. The map and read-only subscription integration are implemented; Person 4's operational UI controls and integrated browser acceptance checks remain pending. OIDC login UX, production deployment, and team-wide contract sign-off remain pending.
 
 ## Person 3 dataset import

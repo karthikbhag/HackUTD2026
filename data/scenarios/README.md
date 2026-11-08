@@ -63,7 +63,8 @@ qualitative severity/basis, label, authored source, simulation kind, timestamp,
 limitations, and recommendation references. Severity is an exercise assumption,
 not MMI, EF rating, wind speed, water depth, or AQI. Different components can
 overlap; preserve their IDs rather than replacing one with another. Later exposure
-logic must handle overlaps without counting one household twice in aggregate totals.
+logic handles overlaps without counting one household twice in aggregate totals;
+see the [TypeScript exposure helper and offline report](../../backend/EXPOSURE.md).
 
 Geometries are simple one-ring polygons without holes or dateline crossings.
 Sizes and orientation are illustrative coordinate offsets, not physical models.
@@ -91,7 +92,7 @@ do not imply advance prediction. Coordinates are not residents or safe routes.
 
 Use hotspot summaries or clusters nationally, and load individual households for the selected area or viewport. Scope Spacetime subscriptions to needed data and index the relevant zone/location fields. Seed in controlled batches appropriate to the eventual module. These are integration plans: map clustering, scoped subscriptions, and batched seeding are not implemented here.
 
-The presets verify fixture generation and integrity only. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration; generating 100,000 rows does not prove application performance. Priority, exposure, preparedness suggestions, recommendations, escalation, and database reset remain subsequent work.
+The presets verify fixture integrity and the TypeScript exposure helper is tested against all three sizes. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration. Persisted exposure integration, priority rules, household-specific preparedness suggestions, and team recommendations remain subsequent work. Existing legacy Small seed/reset and escalation reducers do not yet use v3 impact layers.
 
 ## Backend integration
 
@@ -107,4 +108,4 @@ The presets verify fixture generation and integrity only. Backend throughput, su
 
 The adapter rejects duplicate/empty IDs, broken references/hierarchy, unsupported enums/geometry, malformed/future timestamps, invalid coordinates, and invalid resources before insertion. Reducer authorization/transaction rules still govern seed/reset. Regression tests exercise actual seeding, dispatch/completion, repeated reset/history/access, map compatibility, damaged copies, and generated Demo/Stress conversion. The existing Python tests retain generator integrity coverage.
 
-Limitations: larger presets are not wired to a selectable/batched database importer and have no database/subscription/browser benchmarks. The current frontend displays neighborhoods only (48/60 Small households); the other 12 are stored in authorized views. Teams with active regional assignments are omitted from neighborhood map markers, lists, and counts; only teams without active assignments use proximity grouping. Assignment destinations are looked up across all backend households. Team region metadata and national framing remain in source rather than schema. Polygon rectangles, decision rules, prioritization, exposure, clustering, scoped subscriptions, and browser workflow checks remain future work.
+Limitations: larger presets are not wired to a selectable/batched database importer and have no database/subscription/browser benchmarks. The current frontend displays neighborhoods only (48/60 Small households); the other 12 are stored in authorized views. Teams with active regional assignments are omitted from neighborhood map markers, lists, and counts; only teams without active assignments use proximity grouping. Assignment destinations are looked up across all backend households. Team region metadata and national framing remain in source rather than schema. The converter/seed still accept legacy v1/v2 only; schema v3 hazard layers and calculated exposure remain outside persisted tables. New impact rendering, decision rules, prioritization, clustering, scoped subscriptions, and browser workflow checks remain future work.

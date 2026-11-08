@@ -1,7 +1,6 @@
 # Changelog
 
-Current version: **1.5**
-Current version: **1.8**
+Current version: **1.9**
 
 ## Instructions for future updates
 
@@ -32,24 +31,27 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 1.5 — 2026-11-07
+## Version 1.9 — 2026-11-07
 
 **Author:** Karthik Bhagavatula
 
 ### Changes
 
-- Completed Person 3 task 2 with synthetic hazard-specific impact layers: tornado damage corridors; nested earthquake shaking footprints; separate hurricane wind/surge areas; wildfire fire/smoke areas; blizzard snow/wind and isolation areas; and irregular flood inundation corridors.
-- Introduced fixture schema/generator v3 for all generated presets. Small contains 10 impact layers; Demo and Stress each contain 93. Geographic context rectangles are now explicitly distinguished from impact footprints, preserving existing household coordinates, record IDs, memberships, teams, and requests.
-- Added 12 reusable employee-review preparedness recommendation templates linked to layers, informed by current NWS, OSHA, and AirNow public guidance. Recorded source URLs and review date; agencies are not presented as sources of the synthetic geometry.
-- Added per-layer qualitative severity/basis, simulation kind/label, authored source, timestamp, contextual links, and modeling limitations. The geometry is not fitted to terrain, coastlines, real wind, hydrology, or seismic conditions.
-- Added simple-polygon QA and expanded metadata/reference validation and regression tests. Updated the dataset handoff, schema compatibility notes, and Person 3 checklist. Kept the original tracked v1 fixture unchanged and retained v1/v2 validation support.
+- Completed Person 3 task 3 with `backend/src/exposure.ts`, a deterministic SDK-independent TypeScript helper accepting source string IDs or backend bigint IDs. Calculates household exposure from explicit impact geometry, independent of geographic membership, customer status, or check-in status.
+- Retains every matching layer/component and hazard with severity and source/timestamp/simulation evidence. Returns per-household maximum qualitative severity and unique overall/per-disaster/per-hazard counts; individual layer counts remain separate.
+- Added boundary-inclusive polygon checks, geometry/input validation, a one-degree spatial candidate grid, bounding-box rejection, and a bounded broad-layer fallback. Supports concavity and either ring orientation; rejects holes, MultiPolygons, and dateline-spanning geometries.
+- Added an offline schema-v3 exposure report command and documented source/backend ID mapping, result semantics, recomputation, supported geometry, and persistence handoff in `backend/EXPOSURE.md`. Reports and local verification tooling remain ignored.
+- Corrected the existing v2 scenario conversion test to explicitly generate v2 base data now that the public generator emits v3. Existing production seed/schema/reducers and generated bindings are unchanged; no v3 persistence support is implied.
+- Updated Person 3's checklist and current checkpoint. Consolidated duplicate current-version/checkpoint headers and grouped the two historical v1.5 author records without dropping their content.
 
 ### Verification
 
-- Generated and validated Small (60 households), Demo (10,000), and Stress (100,000) via CLI, including all impact layers and 12 linked recommendation templates per preset.
-- Nine regression tests passed, including legacy v1/v2 compatibility, unchanged base records, seeded repeatability, full Stress validation, component coverage, nested shaking zones, and invalid polygon rejection. Fifteen damaged-fixture mutation cases were rejected, including false live-source labels, missing components, cross-hazard recommendation links, missing human review, and open polygons.
-- Geometry QA checks coordinate ranges, closure, unique vertices, nonzero area, self-intersections, regional bounds, and inner/outer earthquake containment. Tested a valid concave polygon and boundary-inclusive point checks for fixture QA.
-- This is offline data/geometry verification. Household exposure calculation, map rendering of new impact layers, Spacetime persistence, household-specific action suggestions, prioritization, team matching, escalation, and reset remain pending. No live hazard integration or real-world prediction is claimed.
+- Backend TypeScript checking, Spacetime module build, and all 28 backend tests passed on SDK-supported Node 24.22.1, including 10 new exposure tests and the 18 existing workflow/conversion/map regressions. All nine Python generator/geometry tests passed.
+- Compared every Small, Demo, and Stress household against an independent winding-number oracle over all source layers. Verified edge/vertex inclusion, concave exclusions, reversed rings, negative coordinates, cross-hazard overlap, unique counts, input-order invariance, bigint IDs, invalid inputs, grid edges, and broad-layer fallback.
+- Ran the offline Stress report: 82,184 of 100,000 unique households exposed; 187,353 spatial candidates versus 9,300,000 possible household-layer pairs. A local helper-only run took approximately 134 ms, excluding fixture generation/parsing, report writing, database work, and rendering. These are synthetic local measurements, not backend performance guarantees.
+- Installed locked local dependencies for verification using Windows trust certificates and a checksum-verified portable Node runtime in ignored scratch storage; no system runtime/configuration changes were made.
+- Exposure results are derived snapshots, not persisted or subscribed records. Current seed/reset still load legacy v1, and the existing converter accepts v1/v2 only. Persisted impact/exposure integration, map rendering, live update verification, prioritization, and subsequent Person 3 logic remain pending.
+
 ## Version 1.8 — 2026-11-07
 
 **Author:** Josh Sebastian
@@ -111,6 +113,25 @@ Entry template:
 - `npm --prefix frontend ci` accepted the merged manifest/lockfile. Frontend production build was attempted normally and with escalation; both failed at the existing Turbopack CSS worker port restriction (`Operation not permitted`). Integrated browser rendering, reconnect/unmount behavior in a browser, and full workflow acceptance checks remain unverified.
 - Checks ran on Node 24.20.0, below SDK 2.14.1’s declared minimum patch; supported-Node verification remains pending. The historical development dependency findings were not re-audited in this update.
 - `git diff --check` passed. README/changelog conflicts were resolved at this checkpoint; the integration was subsequently recorded in merge commit `1f36906`.
+
+## Version 1.5 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 2 with synthetic hazard-specific impact layers: tornado damage corridors; nested earthquake shaking footprints; separate hurricane wind/surge areas; wildfire fire/smoke areas; blizzard snow/wind and isolation areas; and irregular flood inundation corridors.
+- Introduced fixture schema/generator v3 for all generated presets. Small contains 10 impact layers; Demo and Stress each contain 93. Geographic context rectangles are now explicitly distinguished from impact footprints, preserving existing household coordinates, record IDs, memberships, teams, and requests.
+- Added 12 reusable employee-review preparedness recommendation templates linked to layers, informed by current NWS, OSHA, and AirNow public guidance. Recorded source URLs and review date; agencies are not presented as sources of the synthetic geometry.
+- Added per-layer qualitative severity/basis, simulation kind/label, authored source, timestamp, contextual links, and modeling limitations. The geometry is not fitted to terrain, coastlines, real wind, hydrology, or seismic conditions.
+- Added simple-polygon QA and expanded metadata/reference validation and regression tests. Updated the dataset handoff, schema compatibility notes, and Person 3 checklist. Kept the original tracked v1 fixture unchanged and retained v1/v2 validation support.
+
+### Verification
+
+- Generated and validated Small (60 households), Demo (10,000), and Stress (100,000) via CLI, including all impact layers and 12 linked recommendation templates per preset.
+- Nine regression tests passed, including legacy v1/v2 compatibility, unchanged base records, seeded repeatability, full Stress validation, component coverage, nested shaking zones, and invalid polygon rejection. Fifteen damaged-fixture mutation cases were rejected, including false live-source labels, missing components, cross-hazard recommendation links, missing human review, and open polygons.
+- Geometry QA checks coordinate ranges, closure, unique vertices, nonzero area, self-intersections, regional bounds, and inner/outer earthquake containment. Tested a valid concave polygon and boundary-inclusive point checks for fixture QA.
+- This is offline data/geometry verification. Household exposure calculation, map rendering of new impact layers, Spacetime persistence, household-specific action suggestions, prioritization, team matching, escalation, and reset remain pending. No live hazard integration or real-world prediction is claimed.
 
 ## Version 1.5 — 2026-11-07
 
