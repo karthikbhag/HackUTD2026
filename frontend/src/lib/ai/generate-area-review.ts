@@ -59,7 +59,7 @@ export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ revi
       contents: [{ role: "user", parts: [{ text: `Area evidence snapshot (JSON):\n${JSON.stringify(snapshot)}` }] }],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.2,
+        // No temperature: Google's text-generation docs say Gemini 3.6+ ignores custom temperature/top_p/top_k.
         responseMimeType: "application/json",
         responseJsonSchema: AREA_REVIEW_JSON_SCHEMA,
         // Thinking tokens are billed and count toward maxOutputTokens; MINIMAL keeps them low.

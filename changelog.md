@@ -46,6 +46,7 @@ Entry template:
 - The development-only `GEMINI_REVIEW_SIMULATE_ERROR` check now runs before the cache, so cached reviews do not hide simulated errors.
 - Counters and cache are per server process and reset on restart; they are not shared across multiple deployed instances. Google's project-level quotas still apply (Google's rate-limit page says limits are per project, not per key, and lists per-model free-tier values in AI Studio rather than on the page).
 - Documented the variables in `frontend/.env.example` and the README.
+- Pre-PR review fixes: removed the `temperature: 0.2` setting because Google's text-generation docs say Gemini 3.6+ ignores custom temperature, top_p and top_k and advise removing them; restored the small-text style of the popup's "Geographic membership" note, which lost its `.compact-area-brief > .muted` match when v1.23 wrapped the summary in a container (now `.brief-summary`); updated the README implementation note that still cited the old fixed limit of 6 reviews per minute.
 
 ### Verification
 

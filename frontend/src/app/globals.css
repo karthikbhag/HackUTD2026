@@ -287,7 +287,7 @@ dl { font-size: 12px; margin-bottom: 0; } dt { color: var(--muted); margin-top: 
 .compact-area-brief .brief-facts { margin: 12px 0; gap: 10px; }
 .compact-area-brief .brief-facts dt { margin-top: 0; font-size: 10px; }
 .compact-area-brief .brief-facts dd { font-size: 12px; }
-.compact-area-brief > .muted { font-size: 10px; line-height: 1.5; }
+.compact-area-brief > .muted, .compact-area-brief > .brief-summary > .muted { font-size: 10px; line-height: 1.5; }
 .brief-evidence-toggle { margin-top: 10px; padding: 0; font-size: 11px; }
 .compact-evidence { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .compact-evidence h4 { margin: 12px 0 8px; font-size: 14px; }

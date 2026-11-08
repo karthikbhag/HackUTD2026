@@ -21,7 +21,7 @@ export function AreaBrief({ data, zone, phase = "before" }: { data: MapData; zon
       {layers.length > 1 && <div className="brief-page-controls"><button disabled={currentIndex === 0} onClick={() => setIndex(currentIndex - 1)}>Previous</button><span>Shape {currentIndex + 1} of {layers.length}</span><button disabled={currentIndex + 1 >= layers.length} onClick={() => setIndex(currentIndex + 1)}>Next</button></div>}
     </section>}
     {/* Kept mounted while viewing evidence so a generated AI review is not lost. */}
-    <div hidden={evidence}>
+    <div className="brief-summary" hidden={evidence}>
       <p className="brief-lead">{highest ? `Highest supplied impact: ${highest.severity} · ${highest.label}.` : 'No explicit footprint supplied. Context boundaries do not establish exposure.'}</p>
       <AiAreaReview data={data} zone={zone} phase={phase}/>
       <dl className="brief-facts"><div><dt>Impact shapes</dt><dd>{layers.length} supplied</dd></div><div><dt>Outreach context</dt><dd>{households.length.toLocaleString()} customers</dd></div></dl>
