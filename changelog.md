@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.14**
+Current version: **1.15**
 
 ## Instructions for future updates
 
@@ -30,6 +30,26 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.15 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 7 with `backend/src/team-recommendations.ts`, a deterministic SDK-independent snapshot helper matching the existing dispatch contract: open/unassigned requests; available teams; no active assignment; exact capability; and sufficient people capacity under one active assignment per team.
+- Added bounded top-K ranking by raw Haversine distance with deterministic ID ties, configurable constant-speed approximate ETA (default 30 km/h), employee-approval labels, request blockers, unique eligibility/exclusion totals, and optional per-team exclusion reasons. No routing, reservation, or automatic dispatch is performed.
+- Added a fixture adapter and selected-request report CLI. Shared the existing source need-name mapping with the backend converter without changing conversion behavior. Kept source IDs and documented the existing one-person party-size / numeric source-capacity / supply-to-water demo assumptions. Dispatch-only adaptation does not require display-region metadata, addressing generated Small v3's missing team-region field without weakening the full converter.
+- Documented eligibility, snapshot freshness, concurrency/revalidation, capacity units, ETA limitations, and live integration in `backend/TEAM_RECOMMENDATIONS.md`; updated progress and handoffs. Preserved the merged large-dataset display work and the current 1.x changelog sequence.
+
+### Verification
+
+- All 80 backend tests passed, including 18 new recommendation cases and the existing 62 regressions. All nine Python generator/geometry tests, backend TypeScript checking, and Spacetime module build passed on Node 24.22.1 with Python 3.12 selected explicitly for fixture tests.
+- Verified capabilities/capacity, all unavailable statuses, active-assignment conflicts despite spare capacity, request blockers, completed/cancelled release, exclusion reason counts, stable top-K ties, zero/dateline/antipodal distances, speed/limit validation, immutable snapshots, customer neutrality, bigint IDs, invalid references/data, and every request in Small/Demo/Stress.
+- Datastore-harness checks assigned recommended teams through the actual reducer, confirmed identical default distance/ETA values, rejected reuse while active, and verified release on cancellation/completion. No live database was mutated by these tests.
+- Ran the selected Stress request CLI: 138 of 1,970 teams eligible, 1,832 excluded, top five retained. Closest synthetic distance was approximately 0.542 km with a 1.084-minute assumed-speed ETA. Reason counts can overlap and are not summed into unique totals; these are synthetic results, not operational travel or throughput claims.
+- An initial full-suite attempt used an older `python3` executable and failed three existing large-fixture tests; rerunning with installed Python 3.12 satisfied the documented prerequisite. No generator or existing display-converter validation changes were needed.
+- The merged checkout does not contain the previous task-6 preparedness helper files; this independent task does not restore them or mark that checklist item complete. Live authorized recommendation views, selection UI, and browser verification remain pending. No commit, push, publish, or operational dispatch was made.
 
 ## Version 1.14 — 2026-11-07
 
