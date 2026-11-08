@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.15**
+Current version: **1.16**
 
 ## Instructions for future updates
 
@@ -30,6 +30,21 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.16 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Merged main's team-recommendation implementation into PR #10 and resolved the README checkpoint conflict while preserving both map and recommendation progress.
+- Restored selected household visibility after rebuilding the cluster index on live data updates or responsive minimum-zoom changes. Reused the same reveal behavior for explicit selection; refreshes preserve the current map center and zoom instead of navigating back to the selected record.
+
+### Verification
+
+- Frontend TypeScript checking and targeted map-component lint passed.
+- Extended the temporary actual Leaflet/MarkerCluster DOM harness to assert selected overlapping-household visibility across repeated data refreshes and resize, unchanged center/zoom on refresh, and preservation of a user's pan away from the selected record. Existing navigation, overlay, membership-count, cluster expansion, and spiderfying checks passed.
+- Full visual/browser acceptance remains pending. The production build on Node 24.22.2 still fails because Turbopack cannot bind its CSS worker port (operation not permitted), including the elevated retry.
 
 ## Version 1.15 — 2026-11-07
 
@@ -61,10 +76,17 @@ Entry template:
 - Reconciled README and scenario handoffs to distinguish implemented footprint persistence/display from pending exposure/score/flag persistence and queue integration.
 - Kept release numbering in the requested 1.x series. Main's priority/follow-up entries, originally labeled 2.0/2.1, are retained below as 1.12/1.13 with their original authors and content; feature entries 1.10/1.11 and earlier history remain intact.
 
+- Updated Leaflet navigation to fit selected region/context bounds with padding for map overlays and the actual canvas size. Recalculates the national minimum zoom and US pan limits on resize, including Alaska and Hawaii; sidebars outside the canvas are not subtracted twice.
+- Replaced fixed national summaries and unclustered household circles with Leaflet MarkerCluster groups over all filtered household locations. Numbered circles count their underlying locations, split on zoom, fit member bounds on click, and reveal overlapping locations by spiderfying. Filtering rebuilds the cluster index; individual points and clusters use the hazard-filter palette, with proportional color segments for mixed-hazard clusters.
+- Corrected point navigation to center the selected location without a delayed northward bounds pan or a second cluster navigation overriding the selection. Preserved selection styling, tooltips, response-team interactions, and existing map layout; updated map guidance and integration notes.
+
 ### Verification
 
 - All 62 backend tests passed on Node 24.22.2, covering both upstream priority/follow-up logic and the feature branch's large-fixture regressions. Backend/frontend typechecks and the SpacetimeDB module build passed.
-- Frontend lint passed with the existing generated-bindings warning. No runtime code conflict required resolution; helper implementations remain unchanged from main. Browser interaction and the known production-build limitation remain as previously recorded.
+- Frontend lint passed with the existing generated-bindings warning. No runtime code conflict required resolution; helper implementations remain unchanged from main. Full interactive browser acceptance and the production-build limitation remain outstanding.
+
+- Frontend TypeScript checking and targeted map-component lint passed. A temporary DOM harness exercised actual Leaflet/MarkerCluster behavior at mobile and desktop canvas sizes, all fixture regions plus Alaska/Hawaii, overlay padding, responsive minimum zoom, US pan bounds, exact membership counts, cluster expansion, coincident-point spiderfying, and point selection. The point-navigation regression also checked that the selected location stayed centered after a delay.
+- The production build was retried but remains blocked by a Turbopack CSS-worker local-port permission error, including after an elevated retry. The user is performing browser verification; final visual/mobile/sidebar acceptance and large-dataset interactive performance are not claimed by the DOM checks.
 
 ## Version 1.13 — 2026-11-07
 

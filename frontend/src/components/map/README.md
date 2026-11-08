@@ -24,10 +24,12 @@ destination grouping, including regional destinations; missing destinations are
 omitted. Only unassigned teams use nearest-centroid display grouping. No dispatch
 or exposure recommendation is inferred.
 
-Dataset totals, neighborhood/regional membership, hazard-filter matches and drawn
-household marker counts are separate. National hotspot circles summarize membership;
-at zoom 9+, Canvas household markers and team markers are limited to a padded
-viewport. Details use the complete filtered model and household lists page 50 rows.
+Dataset totals, neighborhood/regional membership, and hazard-filter matches are
+separate. Leaflet MarkerCluster indexes all filtered household locations, merges
+crowded circles with exact location counts, and splits them as users zoom in.
+Cluster clicks fit their member bounds; coincident locations spiderfy at maximum
+zoom. Individual circles use the same hazard colors as the filters and clusters, retaining selection and tooltips. Team
+markers remain visible at zoom 9+. Details use the complete filtered model and household lists page 50 rows.
 Context outlines and explicit synthetic hazard footprints are separate layers;
 footprint details retain overlapping components, provenance and severity basis.
 Legacy Small has no explicit footprints. Counts are never labeled as affected.
@@ -69,4 +71,4 @@ The read-only connection is implemented in `connected-dashboard.tsx`. Extend tha
 
 Leaflet 1.9.4 with OpenStreetMap standard raster tiles and visible attribution. No API key is needed. Browsers need internet access to load the basemap. Tile failure displays a connection warning; polygons and the hotspot list still work. Review the provider's usage policy before public deployment: https://operations.osmfoundation.org/policies/tiles/.
 
-The initial/reset views include Alaska and Hawaii; the large presets supply hotspots there. Resizing refits overview until the user navigates. Geometry remains mounted across selection changes; viewport records refresh on settled navigation. Browser acceptance and production build limitations are recorded in the scenario runbook.
+The initial/reset views include Alaska and Hawaii; the large presets supply hotspots there. The minimum zoom is the US fit zoom for the current canvas dimensions and overlay padding; maxBounds is recalculated for the viewport and zoom to keep its center within the US extent without shifting padded region fits. Sidebars are outside the canvas, so their widths are not subtracted again. Status and tile-warning overlays reserve bottom padding. Resizing refits the last selected region, cluster, or overview until the user navigates. Geometry and the cluster index remain mounted across selection changes. Browser acceptance and production build limitations are recorded in the scenario runbook.
