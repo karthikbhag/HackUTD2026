@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.16**
+Current version: **1.17**
 
 ## Instructions for future updates
 
@@ -30,6 +30,27 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.17 — 2026-11-07
+
+**Author:** Aalvee Ahtav
+
+### Changes
+
+- Applied the selected State Farm themed readiness-overview concept: white surfaces, red pill controls, charcoal headings, centered hero, red outline icons, and responsive two-column map/review layout.
+- Replaced the permanent hazard sidebar with accessible filter chips and an expandable hotspot list. Kept map selection, reset, geographic-context/footprint legend, phase guidance, household/team details, simulation/source labels, and shared workflow composition.
+- Added visible-record summary counts, household review by check-in status, household/team/guidance navigation, and working quick actions. No priority score, activity events, outreach, or dispatch operations are fabricated; existing backend integration remains read-only.
+- Reconciled the redesign with the pulled v1.14 large-scenario changes, retaining footprint layers, regional membership, dataset/filter/drawn count distinctions, keyed detail pagination, and bounded household/team browsing. Preserved all upstream changelog entries and renumbered the local redesign entry to 1.17 to follow the pulled 1.x release convention. Reconciled the v1.16 clustering styles, map hint, selection-refresh behavior, and team-recommendation progress with the redesign.
+- Desaturated basemap tiles independently of hazard overlays. Added responsive layouts and reduced-motion-aware navigation. Preserved the existing README edits while documenting this UI checkpoint.
+
+### Verification
+
+- Rechecked the v1.16 conflict resolution with frontend type checking, full lint (zero errors; existing generated-bindings warning), conflict-marker scan, and Git whitespace checks. Interactive browser and production build checks were not rerun for this reconciliation.
+- Frontend type checking passed. ESLint passed with no errors and the existing unused-disable warning in generated bindings.
+- Static React rendering checks passed for the fixture summary, six hazard controls, household review, empty data, loading, connection error, and connected states.
+- Production build failed at the previously documented Turbopack CSS worker-port permission restriction, including an elevated retry.
+- After conflict reconciliation, frontend type checking and lint passed. Static rendering verified merged dataset/regional counts, hotspot grouping, household/team pagination (including last-page clamping), regional record selection, footprint details, and empty/loading/error states. Backend regression tests could not run in this checkout because Vitest is not installed.
+- Interactive browser, responsive visual, and connected-backend checks remain pending for the redesigned interface.
 
 ## Version 1.16 — 2026-11-07
 

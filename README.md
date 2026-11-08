@@ -14,22 +14,30 @@ This is a hackathon prototype using synthetic households and simulated response 
 
 ## Before and after a disaster
 
-### Before: prepare and reach people early
+The following describes the intended end-to-end workflow. The map and read-only subscriptions are implemented. Open `/demo` for a browser-local rehearsal of preparation notices, fresh post-disaster check-ins, time skips, and employee-approved welfare-check assignments. Area reviews show source-based preview text; AI generation, actual notification delivery, and persisted/shared operational UI actions remain pending.
 
-- Display forecasted or scenario-based impact areas for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, including severity, source, and update time.
-- Identify potentially affected households and customers inside those areas.
-- Flag people who may need extra assistance using simulated vulnerability information.
-- Recommend hazard-appropriate preparation tasks: contact households, share preparedness information, identify shelter options, and position teams or supplies.
-- Track outreach so employees can see who was contacted, who confirmed safety, and who remains unaccounted for.
+### Before: identify risk, explain it, and check on customers
 
-### After: coordinate assistance and follow through
+1. **Receive a simulated hazard scenario.** Supply the disaster type, location, severity, expected impact time, and geographic footprint. Use fictional weather/hazard data so the demonstration can reliably show tornadoes and other disasters without waiting for real events.
+2. **Show impact shapes on the map.** Use hazard-specific shapes for different impact areas, with severity labels and a legend identifying the most affected area. Keep geographic context boundaries distinct from hazard footprints; overlapping hazards remain individually inspectable.
+3. **Open an area review.** An employee selects a shape or its information icon to see the underlying scenario data and an AI-generated summary of what is happening or expected to happen. Ground the summary in the supplied severity, timing, location, and exposure evidence; label it as a simulation and distinguish expected conditions from reported impact.
+4. **Prioritize outreach from high to low.** Identify State Farm customers inside the impact footprint and explain outreach priority using hazard severity, household exposure, known assistance needs, time until impact, and contact history. Use transparent scoring; AI summarizes the evidence and drafts messages for employee review.
+5. **Approve a preparation notification.** Recommend relevant hazard information and protective actions for employee approval. For a high-risk scenario with an evacuation instruction, include the affected area, timing, and evacuation guidance from the scenario's emergency-authority advisory. Severity alone must not invent an evacuation order. MVP notifications are simulated and recorded; actual delivery is a separate integration.
+6. **Record customer responses.** Let customers confirm **safe**, report **not safe / need help**, or leave the check-in awaiting a response. Show the latest response, its time, and the outreach attempt so employees can see who still needs follow-up.
 
-- Show reported impact, damage, household check-ins, and help requests.
-- Rank unresolved needs and flag high-risk households that have not responded.
-- Recommend available teams based on urgency, proximity, capacity, and resources.
-- Allow an employee to assign a team, update progress, and record assistance.
-- Coordinate needs such as food, water, temporary shelter, welfare checks, evacuation assistance, fire/smoke support, winter-weather support, or referrals. Track claims support as a separate follow-up need.
-- Keep all employee dashboards synchronized as assignments and statuses change.
+### Simulated time: advance the scenario deliberately
+
+Use a fixed fictional scenario clock rather than waiting for a real disaster date. An explicit employee-controlled time skip advances from preparation to post-disaster conditions. A second, shorter time skip advances past a configurable response deadline to demonstrate follow-up. Display the simulated time, elapsed interval, and deadline; record phase changes and contact attempts so the demonstration can be reset and replayed. Changing the existing before/after presentation toggle alone does not advance time or mutate the scenario.
+
+### After: check again, follow up, and dispatch help
+
+1. **Send a new safety check-in.** After the first time skip, let the employee approve another notification to customers in the affected area asking whether they are safe or need help. Reuse the response choices, but update the message for post-disaster conditions. Preserve earlier responses as history; a pre-disaster “safe” response does not answer the new check-in.
+2. **Update the shared dashboard.** Show safe, not-safe/needs-help, and awaiting-response households with the latest check-in time. Keep safety responses separate from assistance requests: confirming safety does not automatically resolve an existing need.
+3. **Advance past the follow-up deadline.** After the shorter time skip, flag customers who have not answered the post-disaster check-in and customers who explicitly requested help. No response indicates unknown safety, not confirmed injury. Urgent help requests can be reviewed immediately without waiting for the deadline.
+4. **Recommend and approve a response unit.** Create or review a help request or welfare-check request, recommend an available team with matching capabilities and capacity, and let an employee approve dispatch. Explain priority and show approximate distance/ETA; prevent duplicate active assignments.
+5. **Track assistance through completion.** Synchronize team status, assignment progress, household updates, and activity history across employee dashboards. Record the outcome and release the team when its assignment is completed or cancelled.
+
+Non-customers can also request or receive assistance. Rank response needs by urgency and need; State Farm customer status determines proactive outreach context rather than emergency assistance priority.
 
 ### What “prediction” means in this project
 
@@ -46,10 +54,11 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 | Feature | Required behavior | Completion evidence |
 | --- | --- | --- |
 | Disaster map | Display a pannable and zoomable nationwide U.S. map with hazard-specific impact zones, households, and response teams | Selecting a neighborhood/zone shows its disaster type, severity, source, and affected households |
-| Before/after views | Switch between preparedness and response information for the same scenario | Each view exposes the relevant needs and actions |
+| Before/after views and simulated time | Show preparedness/response information and explicitly advance a fictional scenario clock through impact and a follow-up deadline | Time skips update scenario phase and follow-up eligibility; the display toggle alone does not advance time |
+| Area review | Select an impact shape or information icon to inspect severity, timing, evidence, and an AI-generated scenario summary | The most affected area is identifiable; the summary distinguishes expected conditions from reported impact |
 | Household details | Show customer/community status, check-in status, needs, and last contact | An employee can update a household and see the result |
 | Prioritization | Rank unresolved cases and explain the contributing factors | Increased risk or a new urgent request changes the queue |
-| Preparedness actions | Suggest and track outreach and preparation tasks | An employee can record a completed outreach action |
+| Preparedness actions and safety check-ins | Draft employee-approved simulated notifications before and after impact; record safe, needs-help, and pending/no-response outcomes per check-in | Prior responses remain in history; post-disaster outreach creates a fresh check-in and deadline |
 | Post-disaster assistance | Record help requests and suggest a suitable available team | A request can move from open to assigned to resolved |
 | Dispatch | Assign a team and show estimated distance/travel time | The team and request both reflect the assignment |
 | Shared live state | Store core operational data and changes in SpacetimeDB | Two browser sessions show the same updates without refresh |
@@ -59,7 +68,6 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 ### Stretch goals — only after the MVP works
 
 - Live weather or hazard feed ingestion with a documented fallback for each supported disaster type.
-- AI-generated summaries of prioritized needs and recommended actions.
 - Real road routing, travel times, and road-closure awareness.
 - Public help-request form and mobile responder view.
 - Shelter/resource inventory, damage photos, and claims follow-up.
@@ -77,7 +85,8 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 | Core backend | SpacetimeDB module written in TypeScript | Tables, validated changes, assignments, prioritization, activity history |
 | Live synchronization | Generated client bindings and SpacetimeDB subscriptions | Share operational updates between employee sessions |
 | Scenario data | Seeded fictional households, teams, and hazard zones distributed across the U.S., with concentrated high-risk neighborhoods for all six disaster types | Repeatable demo independent of outside feeds |
-| Optional external services | Forecast/hazard providers, routing provider, or AI provider | Integrate only after the core workflow is stable |
+| AI area review (planned) | AI provider consuming structured scenario evidence | Summarize selected impact areas and draft outreach for employee approval; keep deterministic ranking independent of the provider |
+| Optional external services | Live forecast/hazard providers, routing provider, or notification delivery service | Extend the simulated workflow after the core integration is stable |
 
 Spacetime must power the application's primary functionality for its main track. The database will hold disaster zones, households, requests, teams, tasks, and assignments. Employee actions will invoke server-side functions, and subscriptions will propagate committed changes to other dashboards. The main workflow must not depend on browser-only mock state.
 
@@ -102,7 +111,7 @@ For the nationwide map, use a simple geographic hierarchy: national overview, br
 
 Keep statuses separate so “safe” does not incorrectly imply all assistance needs are resolved:
 
-- Household check-in: `unknown`, `safe`, `needs_help`, `urgent`.
+- Household check-in: `unknown`, `safe`, `needs_help`, `urgent`. In the planned notification flow, “not safe / need help” maps to `needs_help` (or `urgent` when explicitly reported). “No response” is derived from an unanswered check-in whose deadline has passed; retain `unknown` safety rather than treating silence as a response. Track notification attempts, phase, responses, and deadlines separately so pre-disaster replies do not satisfy post-disaster check-ins. This per-check-in history is a planned contract extension, not a claim about the current household table.
 - Request: `open`, `assigned`, `in_progress`, `resolved`.
 - Team: `available`, `assigned`, `responding`, `unavailable`.
 - Assignment: `assigned`, `in_progress`, `completed`, `cancelled`.
@@ -114,7 +123,7 @@ Start with a transparent rules-based ranking. Consider disaster type, explicit u
 
 Recommend teams from those with suitable capabilities and remaining capacity, then compare proximity. For the initial demo, straight-line distance and an assumed speed can produce an **approximate** travel time; label it clearly. Do not present that line as a verified safe road route. Prevent duplicate active assignments and reject attempts to assign an unavailable team. Assignment completion or cancellation must update team availability consistently.
 
-An optional AI feature can summarize structured evidence and suggest next steps for employee review. The MVP ranking does not require an LLM, and a rules-based score should not be described as a trained predictive model.
+The planned AI area review summarizes structured scenario evidence and drafts next steps or notification text for employee review. Show the evidence, scenario timestamp, and simulation label alongside the summary. If generation is unavailable, retain the structured area details and identify the summary as unavailable. The ranking remains deterministic and does not require an LLM; a rules-based score should not be described as a trained predictive model.
 
 ## Four-person work split
 
@@ -145,7 +154,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.16 — 2026-11-07.** Isolated Small/Demo/Stress builds and v3 footprint persistence feed the authorized subscription/map pipeline. Hazard-colored household clustering, padded navigation, responsive US view limits, paged lists, and selected-household visibility across data refreshes are implemented. Person 3's team recommender filters by capability, capacity, availability, and active assignments, then ranks by straight-line distance with labeled approximate ETAs. Priority/follow-up/team recommendations remain pure helpers/offline reports; live score/flag/recommendation views and queue/dispatch controls are pending. Map DOM checks pass; final browser acceptance and production build verification remain pending. See the [scenario runbook](backend/SCENARIOS.md) and [team handoff](backend/TEAM_RECOMMENDATIONS.md).
+**Current checkpoint: v1.17 — 2026-11-07.** The State Farm themed readiness overview is reconciled with v1.16: isolated Small/Demo/Stress builds, persisted v3 footprints, hazard-colored household clustering, padded navigation, responsive US view limits, selected-household visibility across data refreshes, and paged lists are retained. The redesign adds visible-record summary metrics and read-only household/team/guidance navigation; review order uses check-in status. Person 3's team recommender filters by capability, capacity, availability, and active assignments, then ranks by straight-line distance with labeled approximate ETAs. Priority/follow-up/team recommendations remain pure helpers/offline reports; live score/flag/recommendation views and queue/dispatch controls are pending. Interactive browser acceptance and production build verification remain pending. See [changelog v1.17](changelog.md#version-117--2026-11-07), the [scenario runbook](backend/SCENARIOS.md), and [team handoff](backend/TEAM_RECOMMENDATIONS.md).
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -196,18 +205,21 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Live persistence, scheduled recomputation, and queue filtering remain pending integration.
 - [ ] Implement preparedness action suggestions.
 - [x] Implement capability/capacity-aware team recommendations and approximate distance/ETA. Karthik Bhagavatula supplied the [pure snapshot helper and offline report](backend/TEAM_RECOMMENDATIONS.md), with exact eligibility/exclusion reasons, top-K distance ranking, configurable approximate ETA, all-preset checks, and actual dispatch/release harness tests. Employee approval and reducer revalidation remain required; live/UI integration is pending.
-- [ ] Implement reproducible multi-hazard scenario escalation and reset behavior.
+- [ ] Implement reproducible multi-hazard scenario escalation and reset behavior. (backend escalation/reset verified; Person 3 impact-layer and decision-logic integration remain pending)
 
 ### Workflow, integration, and delivery — Person 4
 
 - [x] Connect the map to optional read-only SpacetimeDB subscriptions. (adapter datastore/live SDK checks passed; integrated browser verification pending)
 - [ ] Connect operational action controls to the shared SpacetimeDB connection.
 - [ ] Build priority queue and overlooked-case filtering.
-- [ ] Build preparedness/outreach action controls.
+- [ ] Build preparedness/outreach action controls, including employee-approved simulated notifications and separate pre/post-disaster safety check-ins.
+- [ ] Connect AI-generated reviews grounded in scenario evidence. (selectable area information icons and explicitly labeled source-based previews are implemented)
+- [ ] Integrate a persisted/shared simulated scenario clock, impact time skip, follow-up deadline, and shorter follow-up time skip. (browser-local rehearsal implemented at `/demo`)
+- [ ] Route explicit help requests and overdue unanswered check-ins into persisted employee-reviewed assistance/welfare-check dispatch. (browser-local welfare-check rehearsal implemented; operational integration pending)
 - [ ] Build help-request and assignment controls.
 - [ ] Show synchronized assignment progress and activity history.
 - [ ] Run the acceptance checks below and record outcomes.
-- [ ] Write setup instructions with actual commands, environment variables, and versions.
+- [x] Write setup instructions with actual commands, environment variables, and versions. See Local setup below and the [backend setup/contract](backend/README.md); production build and integrated browser verification remain pending.
 - [ ] Prepare the demo script, pitch, screenshots, and submission materials.
 - [ ] Verify repository visibility meets the sponsor's public-source requirement.
 
@@ -223,22 +235,27 @@ The full browser acceptance checks below remain pending UI integration. Backend 
 6. **Completion:** Resolve a request and complete its assignment. It leaves the unresolved queue, and team availability updates correctly.
 7. **No one overlooked:** A seeded overdue household appears in the follow-up queue. Recording contact or resolving the relevant need changes the flag appropriately.
 8. **Community assistance:** A non-customer request follows the same assistance workflow and is ranked by need.
-9. **Repeatable demo:** Reset and replay the multi-hazard scenario successfully. Simulated data, approximate travel times, and source timestamps remain clearly labeled.
+9. **Repeatable demo:** Reset and replay the multi-hazard scenario successfully, including the simulated clock, check-ins, and deadlines. Simulated data, approximate travel times, and source timestamps remain clearly labeled.
+10. **Area review:** Select a hazard shape or information icon. The review shows its severity, timing, evidence, and labeled AI summary; generation failure leaves structured details available.
+11. **Two-stage check-in:** Record a pre-disaster safe response, skip past impact, and send a fresh post-disaster notification. The earlier response remains in history and does not mark the new check-in answered.
+12. **Follow-up and dispatch:** Seed safe, needs-help, and unanswered post-disaster check-ins. Skip past the deadline; safe responders are excluded from no-response follow-up, while help requests and overdue unanswered cases are available for employee-reviewed dispatch. An urgent request is actionable before the skip.
 
 ## Judge demonstration — target 2–3 minutes
 
-1. Show the nationwide pre-disaster map, filter to a supported disaster type, pan/zoom into a high-risk hotspot, and review potentially affected households and hazard-specific preparation tasks.
-2. Record proactive outreach and show the change in a second employee session.
-3. Escalate one hazard scenario and switch to post-disaster response.
-4. Inspect an urgent case, explain its priority, and assign a suitable team.
-5. Show live assignment progress, record assistance, and resolve the request.
-6. Show an overdue household and a community assistance case to demonstrate follow-through.
+1. Show the simulated pre-disaster map, identify the highest-severity impact shape, and open its information icon for the AI area review and supporting evidence.
+2. Review high-to-low outreach priority and approve a simulated preparation notification to affected State Farm customers. Include scenario evacuation guidance where applicable; show safe, needs-help, and awaiting-response examples in a second employee session.
+3. Skip the scenario clock past impact and approve a new post-disaster safety check-in. Show that the earlier safe response remains history and the new request awaits a fresh reply.
+4. Record safe and needs-help responses, then take the shorter time skip past the response deadline to reveal unanswered check-ins.
+5. Review an assistance or welfare-check request, approve a suitable response unit, and show synchronized assignment progress and completion. Explain that urgent requests need not wait for a time skip.
+6. Show a community assistance case, then reset the scenario clock and records to demonstrate repeatability.
 
 Pitch: **RiskReach helps State Farm employees prepare before disasters, coordinate assistance afterward, and track unresolved needs so no one is overlooked.**
 
 ## Development and change tracking
 
-### Current checkpoint — v1.15
+### Current checkpoint — v1.17
+
+The State Farm themed readiness overview retains the large-dataset map pipeline, geographic membership semantics, and paged record browsing. Summary metrics derive from visible records; household review uses check-in status. Operational mutations and activity history remain pending.
 
 Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
 seed, verify and switch between separate Small/Demo/Stress databases. The default
@@ -250,7 +267,7 @@ Person 3's [exposure](backend/EXPOSURE.md), [priority scoring](backend/PRIORITY.
 
 ### Local setup
 
-Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. Lint retains one existing generated-bindings warning. The frontend production build still encounters the Turbopack CSS worker-port permission failure, including an elevated retry. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
+Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. The latest exposure checkpoint additionally records 28 passing backend tests, backend typecheck/build, and nine passing Python tests on SDK-supported Node.js 24.22.1. Lint retains one existing generated-bindings warning. The frontend production build still encounters the Turbopack CSS worker-port permission failure, including an elevated retry. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
 
 ```sh
 # Optional, if you use nvm:
