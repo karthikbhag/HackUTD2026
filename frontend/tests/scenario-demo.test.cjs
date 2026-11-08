@@ -57,3 +57,15 @@ test('reset removes both rounds, assignments, history, and simulated elapsed tim
   assert.deepEqual(initial.assignments, {});
   assert.deepEqual(initial.events, []);
 });
+
+
+test('preparation accepts only safety confirmations and keeps silence as an absent reply', () => {
+  const pending = apply(send);
+  assert.equal(reduce(pending, reply('a', 'needs_help')), pending);
+  const answered = reduce(pending, reply('a', 'safe'));
+  assert.equal(answered.before.replies.a, 'safe');
+  assert.equal(answered.before.replies.b, undefined);
+  const after = reduce(reduce(answered, impact), send);
+  assert.deepEqual(after.after.replies, {});
+  assert.equal(reduce(after, reply('a', 'needs_help')).after.replies.a, 'needs_help');
+});

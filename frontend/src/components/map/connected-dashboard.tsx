@@ -5,10 +5,11 @@ import { DbConnection, tables } from "@/module_bindings";
 import { toMapData } from "@/lib/map/backend-data";
 import type { DataStatus, MapData } from "@/lib/map/types";
 import { MapDashboard } from "./map-dashboard";
+import { OutreachDashboard } from "./outreach-dashboard";
 
 const empty: MapData = { zones: [], households: [], teams: [] };
 
-export function ConnectedDashboard({ uri, database }: { uri: string; database: string }) {
+export function ConnectedDashboard({ uri, database, areaId }: { uri: string; database: string; areaId?: string }) {
   const [state, setState] = useState<{ data: MapData; status: DataStatus; errorMessage?: string; identity?: string }>({ data: empty, status: "loading" });
   useEffect(() => {
     let disposed = false;
@@ -76,6 +77,7 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
     return () => { disposed = true; };
   }, [uri, database]);
 
+  if (areaId !== undefined) return <OutreachDashboard {...state} areaId={areaId}/>;
   return <MapDashboard {...state} workflowPanel={<div className="guidance">
     <h3>Shared operational map</h3>
     <p>Database: <strong>{database}</strong> · {uri}</p>
