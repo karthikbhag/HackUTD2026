@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { DbConnection, tables } from "@/module_bindings";
-import { toMapData } from "@/lib/map/backend-data";
+import { toMapData, type OperationalRows } from "@/lib/map/backend-data";
 import type { DataStatus, MapData } from "@/lib/map/types";
 import { MapDashboard } from "./map-dashboard";
+import { OperationalWorkflow } from "@/components/workflow/operational-workflow";
+import { ConnectionLink } from "@/components/workflow/actions";
 
 const empty: MapData = { zones: [], households: [], teams: [] };
 
 export function ConnectedDashboard({ uri, database }: { uri: string; database: string }) {
-  const [state, setState] = useState<{ data: MapData; status: DataStatus; errorMessage?: string; identity?: string }>({ data: empty, status: "loading" });
+  const [state, setState] = useState<{ data: MapData; rows?: OperationalRows; status: DataStatus; errorMessage?: string; identity?: string }>({ data: empty, status: "loading" });
+  // Person 4: reducer calls reuse this single connection; no second identity is opened.
+  const [link] = useState(() => new ConnectionLink());
   useEffect(() => {
     let disposed = false;
     let ready = false;
@@ -35,16 +39,18 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
         .onDisconnect((_ctx, error) => fail(error ?? new Error("Operational connection closed.")))
         .build();
       const connection = conn;
+      const detach = link.attach(connection);
       const refresh = () => {
         if (disposed || !ready) return;
         try {
-          const data = toMapData({
+          const rows: OperationalRows = {
             disasters: [...connection.db.disasters.iter()], zones: [...connection.db.zones.iter()],
             households: [...connection.db.households.iter()], requests: [...connection.db.requests.iter()],
             teams: [...connection.db.teams.iter()], tasks: [...connection.db.tasks.iter()],
             assignments: [...connection.db.assignments.iter()], impactLayers: [...connection.db.impactLayers.iter()],
-          });
-          setState({ data, status: "connected", identity });
+          };
+          // Raw rows also feed Person 4's queue, which needs request urgency and microsecond timestamps.
+          setState({ data: toMapData(rows), rows, status: "connected", identity });
         } catch (error) {
           // Keep listening: a later valid transaction can repair malformed data.
           if (!disposed) setState({ data: empty, status: "error", identity, errorMessage: error instanceof Error ? error.message : String(error) });
@@ -70,18 +76,13 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
           table.removeOnInsert(changed); table.removeOnDelete(changed); table.removeOnUpdate(changed);
         }
         subscription.unsubscribe();
+        detach();
         connection.disconnect();
       };
     } catch (error) { fail(error); conn?.disconnect(); }
     return () => { disposed = true; };
-  }, [uri, database]);
+  }, [uri, database, link]);
 
-  return <MapDashboard {...state} workflowPanel={<div className="guidance">
-    <h3>Shared operational map</h3>
-    <p>Database: <strong>{database}</strong> · {uri}</p>
-    <p>Read-only subscribed data. Check-in, outreach, and dispatch controls remain pending.</p>
-    {state.identity && <p>Employee identity: <code style={{ overflowWrap: "anywhere" }}>{state.identity}</code></p>}
-    {state.status === "connected" && !state.data.zones.length && <p>No visible scenario data. An administrator must enroll this identity; an enrolled employee may also see an empty database until it is seeded.</p>}
-    <small>Scenario polygons and preparedness tasks are synthetic integration fixtures. Team grouping is for display and does not recommend dispatch.</small>
-  </div>} />;
+  const { rows, ...dashboard } = state;
+  return <MapDashboard {...dashboard} workflowPanel={({ selection, onSelect }) => <OperationalWorkflow data={state.data} rows={rows} status={state.status} identity={state.identity} actions={link.actions} database={database} uri={uri} selection={selection} onSelect={onSelect} />} />;
 }

@@ -56,6 +56,8 @@ The read-only connection is implemented in `connected-dashboard.tsx`. Extend tha
 />
 ```
 
+`workflowPanel` may also be a function `({ selection, onSelect }) => ReactNode`. The dashboard still owns selection state; Person 4's priority queue uses this to highlight a household on the map. Passing a plain node still works.
+
 `status` accepts `demo`, `loading`, `connected`, or `error`. Use `connected` only after subscriptions are applied. Only fixture mode should use `demo`. Keep operational reducers, priority queues, and dispatch controls in Person 4's components. `workflowPanel` provides a composition point for those controls. The before/after toggle still changes presentation only; it does not mutate backend phase or escalate hazards.
 
 ## Persons 2 and 3: data assumptions to reconcile
