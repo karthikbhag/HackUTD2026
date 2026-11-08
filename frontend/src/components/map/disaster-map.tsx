@@ -49,6 +49,15 @@ function householdIcon(row: MapHousehold, selected = false, zones: MapData["zone
   element.style.backgroundColor = zone ? hazards[zone.hazard].color : "#b74943";
   return L.divIcon({ className: "household-marker", html: element, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 }
+// Rebuilding an index can hide a selected marker again. Reveal it at the
+// current view without navigating away from a user's subsequent pan or zoom.
+function revealHousehold(group: L.MarkerClusterGroup | null, marker?: L.Marker) {
+  if (!group || !marker) return;
+  const parent = group.getVisibleParent(marker);
+  if (!parent) return;
+  if (parent instanceof L.MarkerCluster) parent.spiderfy();
+  marker.openTooltip();
+}
 interface Props { data: MapData; selection: Selection; onSelect: (selection: Selection) => void; overviewVersion: number }
 export default function DisasterMap({ data, selection, onSelect, overviewVersion }: Props) {
   const container = useRef<HTMLDivElement>(null);
@@ -99,6 +108,8 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
         fitMapBounds(instance, target.bounds, target.maxZoom);
         fittedView.current = target;
       } else if (instance.options.maxBounds) instance.panInsideBounds(instance.options.maxBounds, { animate: false });
+      const selected = currentSelection.current;
+      if (selected?.kind === "household") revealHousehold(clusters.current, householdMarkers.current.get(selected.id));
     };
     resizeView();
     const resize = new ResizeObserver(resizeView);
@@ -179,6 +190,8 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
       markers.set(row.id, marker);
     }
     group.addLayers([...markers.values()]);
+    const selected = currentSelection.current;
+    if (selected?.kind === "household") revealHousehold(group, markers.get(selected.id));
     for (const row of data.teams) {
       L.marker(row.position, { icon: L.divIcon({ className: "team-marker", html: "+", iconSize: [24, 24], iconAnchor: [12, 12] }), title: row.name, alt: row.name })
         .bindTooltip(tooltip(row.name)).on("click", () => onSelect({ kind: "team", id: row.id })).addTo(teams);
@@ -215,20 +228,14 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
       if (row) {
         const zoom = Math.max(12, instance.getZoom());
         if (Number.isFinite(instance.getZoom())) instance.stop();
-              setUSPanBounds(instance, zoom);
+        setUSPanBounds(instance, zoom);
         instance.setView(row.position, zoom, { animate: false });
         setUSPanBounds(instance);
         fittedView.current = null;
         if (selection.kind === "household") {
           const marker = householdMarkers.current.get(row.id);
           marker?.setIcon(householdIcon(row as MapHousehold, true, records.zones));
-          if (marker) {
-            // Reveal a clustered selection without a second navigation that
-            // could override the explicitly selected location.
-            const parent = clusters.current?.getVisibleParent(marker);
-            if (parent instanceof L.MarkerCluster) parent.spiderfy();
-            marker.openTooltip();
-          }
+          revealHousehold(clusters.current, marker);
         }
       }
     }

@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.14 — 2026-11-07.** Isolated Small/Demo/Stress builds and v3 footprint persistence feed the authorized subscription/map pipeline. Regional households, distinct dataset/filter counts, hazard-colored household clustering, padded region/point navigation, responsive US view limits and paged lists are implemented. Map DOM regression checks pass; final browser acceptance remains pending. Person 3's priority and follow-up helpers are also available as pure calculations/offline reports. Persisted exposure/score/flag integration and queue rendering remain pending; browser/build limitations are recorded in the [scenario runbook](backend/SCENARIOS.md).
+**Current checkpoint: v1.16 — 2026-11-07.** Isolated Small/Demo/Stress builds and v3 footprint persistence feed the authorized subscription/map pipeline. Hazard-colored household clustering, padded navigation, responsive US view limits, paged lists, and selected-household visibility across data refreshes are implemented. Person 3's team recommender filters by capability, capacity, availability, and active assignments, then ranks by straight-line distance with labeled approximate ETAs. Priority/follow-up/team recommendations remain pure helpers/offline reports; live score/flag/recommendation views and queue/dispatch controls are pending. Map DOM checks pass; final browser acceptance and production build verification remain pending. See the [scenario runbook](backend/SCENARIOS.md) and [team handoff](backend/TEAM_RECOMMENDATIONS.md).
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -195,7 +195,7 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted/live scores and queue rendering remain pending integration.
 - [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Live persistence, scheduled recomputation, and queue filtering remain pending integration.
 - [ ] Implement preparedness action suggestions.
-- [ ] Implement capability/capacity-aware team recommendations and approximate distance/ETA.
+- [x] Implement capability/capacity-aware team recommendations and approximate distance/ETA. Karthik Bhagavatula supplied the [pure snapshot helper and offline report](backend/TEAM_RECOMMENDATIONS.md), with exact eligibility/exclusion reasons, top-K distance ranking, configurable approximate ETA, all-preset checks, and actual dispatch/release harness tests. Employee approval and reducer revalidation remain required; live/UI integration is pending.
 - [ ] Implement reproducible multi-hazard scenario escalation and reset behavior.
 
 ### Workflow, integration, and delivery — Person 4
@@ -238,7 +238,7 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.14
+### Current checkpoint — v1.15
 
 Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
 seed, verify and switch between separate Small/Demo/Stress databases. The default
