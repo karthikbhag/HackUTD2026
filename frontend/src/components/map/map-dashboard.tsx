@@ -7,6 +7,7 @@ import { filterHazards, householdCounts, PAGE_SIZE } from "@/lib/map/presentatio
 import { DetailPanel } from "./detail-panel";
 import { DashboardIcon } from "./dashboard-icon";
 import { AreaReviewDialog } from "./area-review-dialog";
+import { ConnectedActionDialog } from "./connected-action-dialog";
 import { NotificationDialog } from "./notification-dialog";
 import { areaIdFor, confirmedSafe, dashboardHouseholdStatus, dashboardScenarioReducer, initialDashboardScenario, needsAttention, responseEligible, roundFor, type DashboardAction, type DashboardScenario } from "@/lib/map/dashboard-scenario";
 import { hazards, type DataStatus, type Hazard, type MapData, type MapZone, type Phase, type Selection } from "@/lib/map/types";
@@ -31,7 +32,7 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
   const [notificationId, setNotificationId] = useState<string | null>(null);
   // Tabs choose the view; the explicit dashboard controls advance the demo clock.
   const [phase, setPhase] = useState<Phase>("before");
-  const [selection, setSelection] = useState<Selection>(null);
+  const [selection, setSelection] = useState<Selection>(() => { const id = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("area"); return id ? {kind: "zone", id} : null; });
   const [overviewVersion, setOverviewVersion] = useState(0);
   // Filter related markers with their zones so hidden hazards leave no orphan markers.
   const filtered = useMemo(() => filterHazards(data, enabled), [data, enabled]);
@@ -128,14 +129,13 @@ export function MapDashboard({ data, status = "demo", errorMessage, workflowPane
           {view === "teams" && <div className="review-list">{visible.teams.slice(pageStart, pageStart + PAGE_SIZE).map(team => <button className="review-row" key={team.id} onClick={() => setSelection({ kind: "team", id: team.id })}><DashboardIcon kind="teams" /><span className="review-row-copy"><strong>{team.name}</strong><small>{team.capabilities.join(" · ")}</small></span><span className={`check-in ${team.status}`}>{team.status}</span></button>)}{!visible.teams.length && <p className="empty-state">No teams recorded in the visible zones.</p>}</div>}
           {(view === "households" || view === "teams") && <div className="list-pagination"><button disabled={currentPage === 0} onClick={() => setBrowsePage(currentPage - 1)}>Previous</button><span>{browseCount ? pageStart + 1 : 0}–{Math.min(pageStart + PAGE_SIZE, browseCount)} of {browseCount.toLocaleString()}</span><button disabled={pageStart + PAGE_SIZE >= browseCount} onClick={() => setBrowsePage(currentPage + 1)}>Next</button></div>}
           {view === "preparation" && <div className="review-list">{visible.zones.map(zone => <button className="review-row" key={zone.id} onClick={() => setSelection({ kind: "zone", id: zone.id })}><DashboardIcon kind="tasks" /><span className="review-row-copy"><strong>{zone.name}</strong><small>{hazards[zone.hazard].label} · {phase === "before" ? "Preparedness" : "Response"}</small></span><span aria-hidden="true">→</span></button>)}{!visible.zones.length && <p className="empty-state">Enable a hazard to explore area guidance.</p>}</div>}
-          <div className="review-note"><DashboardIcon kind="phone" /><div><h3>Keep the connection going.</h3><p>{demo ? "Open an area alert to send a notification, review replies, or approve a response unit." : "Review household needs and contact history before planning your next step."}</p><small>{demo ? "Demo actions stay on this dashboard and reset on reload." : "Open the shared scenario desk below for outreach and employee-reviewed dispatch."}</small></div></div>
+          <div className="review-note"><DashboardIcon kind="phone" /><div><h3>Keep the connection going.</h3><p>{demo ? "Open an area alert to send a notification, review replies, or approve a response unit." : "Review household needs and contact history before planning your next step."}</p><small>{demo ? "Demo actions stay on this dashboard and reset on reload." : "Review an area and choose Take action for outreach and employee-reviewed dispatch."}</small></div></div>
         </aside>}
       </div>
     </div>
-    {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={demo ? () => { setReviewId(null); setNotificationId(popupZone.id); } : renderWorkspace ? () => { setSelection({ kind: "zone", id: popupZone.id }); setReviewId(null); document.getElementById("scenario-desk")?.scrollIntoView({ block: "start", behavior: "smooth" }); } : undefined}/>}
+    {popupZone && <AreaReviewDialog key={popupZone.id} data={visible} zone={popupZone} phase={phase} demo={demo} onClose={() => setReviewId(null)} onTakeAction={demo ? () => { setReviewId(null); setNotificationId(popupZone.id); } : renderWorkspace ? () => { setSelection({ kind: "zone", id: popupZone.id }); setReviewId(null); setNotificationId(popupZone.id); } : undefined}/>}
+    {!demo && notificationZone && renderWorkspace && <ConnectedActionDialog key={notificationZone.id} name={notificationZone.name} onClose={() => setNotificationId(null)}>{renderWorkspace(data, notificationZone, effectiveSelection, setSelection)}</ConnectedActionDialog>}
     {demo && notificationZone && <NotificationDialog key={`${notificationZone.id}-${phase}`} data={filtered} zone={notificationZone} phase={phase} state={scenario} dispatch={dispatch} onClose={() => setNotificationId(null)}/>}
-    {!demo && <div id="scenario-desk" tabIndex={-1}>{reviewZone && renderWorkspace ? <div key={reviewZone.id}>{renderWorkspace(visible, reviewZone, effectiveSelection, setSelection)}</div> : null}</div>}
-    <nav className="quick-actions" aria-label="Quick actions"><button onClick={() => openView("overview")}><DashboardIcon kind="phone" />Review follow-ups <span aria-hidden="true">→</span></button><button onClick={() => openView("teams")}><DashboardIcon kind="teams" />View teams <span aria-hidden="true">→</span></button><button onClick={() => openView("preparation")}><DashboardIcon kind="tasks" />{phase === "before" ? "Preparedness guidance" : "Response guidance"} <span aria-hidden="true">→</span></button><button onClick={() => { setSelection(null); setOverviewVersion(value => value + 1); }}><DashboardIcon kind="map" />National overview <span aria-hidden="true">→</span></button></nav>
     {workflowPanel && <section className="workflow-panel" aria-label="Operational workflow">{typeof workflowPanel === "function" ? workflowPanel({ selection: effectiveSelection, onSelect: setSelection }) : workflowPanel}</section>}
     <footer className="app-footer"><span>StateWatch · HackUTD prototype</span><span>{status === "demo" ? "Fictional scenario data · No live hazard feed or customer records" : "Operational data supplied by shared integration"} · Employee review required</span></footer>
   </main>;
