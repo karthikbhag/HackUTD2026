@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.21**
+Current version: **1.22**
 
 ## Instructions for future updates
 
@@ -31,7 +31,7 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 1.21 — 2026-11-08
+## Version 1.22 — 2026-11-08
 
 **Author:** Tien Phan
 
@@ -50,7 +50,17 @@ Entry template:
 - A temporary Client Component page importing the client failed the build with the `server-only` error, confirming the guard; the page was removed.
 - Offline check with a fake key and no network calls: no key reports not configured and throws `GeminiNotConfiguredError`; with a key the same client instance is reused with `vertexai` false; `GEMINI_MODEL` overrides the model after trimming, and a blank value falls back to the default.
 - Confirmed `frontend/.env.local` is ignored and has never been committed. No live Gemini request has been made yet.
-- Merged with main's v1.19 and v1.20 (Aalvee Ahtav); this entry was renumbered from 1.19 to 1.21 to avoid a duplicate version.
+- Merged with main's v1.19, v1.20 (Aalvee Ahtav) and v1.21 (response-routing merge); this entry was renumbered from 1.19 to 1.21 and then to 1.22 to avoid duplicate versions.
+
+## Version 1.21 — 2026-11-08
+
+### Changes
+
+- Merged main into response routing, preserving the shared connected desk and routing connection alongside StateWatch branding, dashboard popup rehearsal, and the retained connected outreach route. Combined styles and configuration and retained both branches’ history.
+
+### Verification
+
+- Frontend TypeScript, all 16 scenario tests and lint passed (one existing generated-bindings warning). All 127 backend tests, backend typecheck and the production Webpack build passed on Node 24.22.2. The build required network access for the configured Google font. Interactive browser acceptance remains pending.
 
 ## Version 1.20 — 2026-11-08
 
@@ -120,6 +130,51 @@ Entry template:
 - `npm run build` on Next.js 16.4.5 first failed prerendering `/` ("unstable value `Date.now()` in a Client Component") and passed after the clock fix, prerendering `/`, `/demo`, and `/_not-found`.
 - Offline check: one valid plus one malformed layer (simulation flag mismatch) still gives the valid layer's 30 exposure points and reports 1 ignored layer. `npm run test:scenario` passed (6 of 6).
 - Pending: interactive browser checks and two-session verification of Mark contacted and queue updates.
+
+## Version 1.19 — 2026-11-08 (response routing)
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Implemented response-routing configuration, an isolated 20-household/two-team Dallas fixture, and dedicated welfare queues. Existing nationwide fixtures/manual assistance remain available. Unknown routed cases need no fabricated requests or passenger-capacity checks.
+- Added private run/config, visit, route, position and worker-membership tables; authorized views; regenerated bindings; and reducers for settings, fenced leases, planning holds, version-checked publication, pause/resume, availability, movement/dwell/completion and isolated reset. Safe reports atomically cancel future/travelling visits; active checks retain a notice and unrelated assistance stays open. Manual dispatch rejects welfare-reserved teams. Full reset invalidates workers and routing rows.
+- Integrated fresh authoritative post-impact rounds and the shared exercise deadline/clock. Playback preserves elapsed time across pause/settings/holds; active service keeps its start-time duration. Leases have increasing fencing tokens and a separate worker heartbeat; epoch/config/origin/route/sequence checks reject stale work.
+- Added the persistent Node routing worker, deterministic urgent-first insertion heuristic, bounded relocation/swap/reversal, fixed active destinations/service, urgent targets, waiting-time ties, assignment-change preference, uncovered reasons, road-polyline movement and return-to-staging checks. API requests occur on relevant replans/refresh, not movement ticks. Failed solves keep valid old legs stale and freeze invalid destinations.
+- Adapted the original matrix plan to Josh's no-billing requirement: default Google demo-key mode uses supported Compute Routes legs to construct directional estimates and final road routes, with bounded waypoint batches, traffic-unaware estimates, no provider reordering, request limits and explicit errors. Compute Route Matrix returned `BILLING_DISABLED`; no billing settings were changed. Offline fixture routing is explicitly selected and labelled, never silently substituted.
+- Configured the Turbopack workspace root to include the shared routing config; the live development server otherwise returned a module-resolution error despite the webpack build passing. Started and enrolled the persistent no-billing Google demo worker on loopback port 3201 for user testing.
+- Added `/response` with Google map, selected team, ordered stops/ETAs, notices, uncovered cases, settings, playback controls and deterministic scenario actions. Extracted the existing endpoint-scoped connection lifecycle for both page shells. Leaflet keeps household states/team movement and welfare destination grouping; Google geometry stays on the response screen and in short-lived worker memory.
+- Added worker startup/enrollment, demo-key setup and user acceptance instructions to `backend/SHARED_WORKFLOW.md`, plus a disposable offline live verifier. Browser keys accept both the planned variable and the existing `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` name. Secrets were not printed or committed.
+- Upgraded the actual configured local `riskreach-stress-100k` database using its matching Stress bundle with `--delete-data=never`, and initialized shared decision state. Confirmed 100,000 households, 1,970 teams and 20,000 requests remain. The older README Demo database was absent; the initial precheck stopped without publishing there. A first verification assertion incorrectly included query-duration metadata; corrected comparison checks row counts.
+
+### Verification
+
+- Supported Node 24.22.2: all 127 backend tests pass, backend/worker typechecks pass, generated module/Stress builds pass, and frontend typecheck/production webpack build pass. Lint passes with one existing generated-bindings unused-disable warning. Default Turbopack is blocked by this environment's build-process port restriction.
+- Transactional tests cover safe queued/en-route/in-progress behavior, service dwell, duplicate stops/ticks, worker expiry/takeover, origin/config/shift versions, settings/clock holds, unavailable teams, stale reset work and isolated fixture cleanup. Provider tests cover road interpolation, missing edges, narrow masks, billing error parsing, demo-only leg estimates and stripping household metadata from Google requests. Small exact reference and two-team nearest-next comparisons pass; the fixture heuristic covers all 17 non-safe households and meets the urgent-wait comparison. No global-optimality claim is made.
+- Disposable live offline verification passed twice: two published team routes, both teams moving, safe queued/current cancellation, urgent replanning, pause freezing positions and loopback geometry delivery. Temporary memberships were revoked and the test worker stopped. Only this isolated verifier resets test data.
+- Live no-billing Google checks passed Compute Routes (HTTP 200), a two-point directional estimate and final road polylines (two legs, 31 vertices each; endpoint snaps about 15–16 meters). Full-fixture Google quota/road acceptance and interactive browser testing remain for the user. Browser automation was unavailable/not approved; user elected to test the UI themselves. The main worker is now running and enrolled for user testing; no synthetic routing run was automatically started.
+
+## Version 1.18 — 2026-11-08 (shared decisions)
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Restored Person 3's missing authoritative decision integration from the earlier staged source: preparedness helper/adapter, 17 tests and report CLI; private decision/run/catalog/timer state; authorized summary and selected-household/request views; transactional refresh; reviewed run-aware task approval; capped critical exposure and scoring; and selected-fixture reset preserving access/history. These changes were absent from the updated checkout despite the earlier session report. Preserved the current team's map redesign and `/demo` additions.
+- Added a shared synthetic exercise clock per disaster, separately persisted pre/post-impact reply rounds and approved notice text. Enrolled employees can approve a simulated notice, record simulated replies and advance the bounded exercise to impact and its 30-minute deadline. Earlier replies remain in history and cannot confirm post-impact safety. Full dataset reset and direct scenario escalation remain administrator-only.
+- Added overdue fresh post-impact concerns independently of older contact freshness, with reviewable welfare requests for unanswered/needs-help cases. Existing active welfare requests are reused. Safety replies do not silently resolve assistance; recommendations never reserve teams and dispatch still requires explicit employee approval with transactional revalidation. Clock/run checks reject stale/duplicate operations.
+- Connected the redesigned main scenario desk through the existing SDK connection: area-scoped priority ranking/search/25-row pages/overlooked filtering, selected-case score and exposure explanations, sourced preparedness approval and task completion, contact, requests, team eligibility/distance/approximate ETA, assignment lifecycle and shared activity. Dynamic selected-area/household/request subscriptions are cleaned up when selection changes. Both customers and community assistance cases participate under the same decision rules.
+- Kept `/demo` browser-local. The main `/` route now requires database configuration rather than silently substituting demo records. Added a public `.env.example` and ignored local configuration pointing to a newly created persistent loopback database, `riskreach-person3-demo`, containing the 10,000-household Demo preset on port 3100. Started the main Next.js development page on localhost:3000. Browser identity enrollment remains required; no self-enrollment or token-sharing flow was added.
+- Restored modern bundled schema-v3 Small (ten impacts and 12 reviewed templates), generator-v4 Small team regions and reproducibility coverage, while retaining legacy-v1 and generator-v3 compatibility. Windows staging uses dependency junctions. Regenerated TypeScript bindings for all restored and new views/reducers.
+- Installed the two already-declared MarkerCluster packages missing from this checkout. Scoped the CommonJS test lint rule to the existing Node `.cjs` demo tests. Updated the README tracker and backend/map/data handoffs; added `backend/SHARED_WORKFLOW.md` with startup, enrollment, persistent storage, permissions, replay and verification commands.
+
+### Verification
+
+- All 101 backend tests across nine files passed on supported Node 24.22.1 with Python 3.12, including 17 restored preparedness cases and four new shared workflow/authorization/lifecycle cases. The four shared cases passed again after final employee time-skip authorization changes. All nine Python tests (including exact bundled Small reproducibility) and all six existing browser-local demo-state tests passed.
+- Backend/frontend TypeScript checking, module generation/build, staged Demo build, frontend lint and production build passed. Lint retains one existing generated-bindings warning. Initially, missing MarkerCluster packages blocked frontend checking and the existing CommonJS test imports failed lint; installing the declared packages and applying the narrow test-file rule resolved both. The older CSS worker-port build failure did not recur.
+- Published/seeded a new persistent local Demo database without deleting existing data. Tested the complete workflow in a separate disposable Small database with two enrolled SDK clients plus an outsider: suggestion approval/duplicate rejection, separate rounds, employee time skips, fresh overdue welfare review, non-customer assistance, competing dispatch with one winner, completion/team release, the real scheduled refresh, shared reset/replay, stale-run rejection and live revocation all passed. Test memberships are revoked in cleanup; the main Demo dataset was not mutated by the verifier.
+- Interactive browser acceptance and enrollment of the user's actual browser remain separate from these automated checks. Actual AI generation and notification delivery remain pending. Full-table subscriptions remain; fixture correctness and SDK checks are not production throughput or browser-responsiveness guarantees.
+- No commit, push or cloud deployment was made. The older local verification databases on port 3123 were left unchanged.
 
 ## Version 1.17 — 2026-11-07
 

@@ -1,6 +1,13 @@
+import { responseRun, welfareVisit, teamRoute, responseTeamState } from './schema';
+import { seedRoutingFixture, createRun, runOf, workerRun, configOf, minuteOf, synchronizeWelfare, terminal } from './response-routing';
 import { t, SenderError, type InferSchema, type ReducerCtx } from 'spacetimedb/server';
 import db, { disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer } from './schema';
-import { seed } from './seed';
+import { seed, resetOperationalData } from './seed';
+import { ScheduleAt } from 'spacetimedb';
+import { decisionSummary, scenarioState, decisionTick } from './schema';
+import { refreshDecisions, householdDecision, requestRecommendations } from './decisions';
+import { areaExercise, exerciseCheckIn } from './schema';
+import { advanceExercise, sendExerciseNotice, replyToExercise } from './exercise';
 export default db;
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
 function requireEmployee(ctx: Ctx, admin = false) {
@@ -18,6 +25,7 @@ const active = (status: string) => status === 'assigned' || status === 'in_progr
 // The publisher is the initial administrator; no client can self-enroll.
 export const init = db.init(ctx => {
   ctx.db.employee.insert({ identity: ctx.sender, admin: true });
+  ctx.db.decisionTick.insert({ scheduledId: 0n, scheduledAt: ScheduleAt.interval(60_000_000n) });
 });
 export const setEmployee = db.reducer({ identity: t.identity(), enabled: t.bool() }, (ctx, { identity, enabled }) => {
   requireEmployee(ctx, true);
@@ -38,16 +46,8 @@ export const resetDemo = db.reducer({ confirmation: t.string() }, (ctx, { confir
   requireEmployee(ctx, true);
   if (confirmation !== 'RESET SYNTHETIC DEMO') throw new SenderError('Reset confirmation required');
   // Membership is deliberately preserved. Snapshot before deleting iterator rows.
-  for (const row of [...ctx.db.assignment.iter()]) ctx.db.assignment.id.delete(row.id);
-  for (const row of [...ctx.db.helpRequest.iter()]) ctx.db.helpRequest.id.delete(row.id);
-  for (const row of [...ctx.db.preparednessTask.iter()]) ctx.db.preparednessTask.id.delete(row.id);
-  for (const row of [...ctx.db.household.iter()]) ctx.db.household.id.delete(row.id);
-  for (const row of [...ctx.db.responseTeam.iter()]) ctx.db.responseTeam.id.delete(row.id);
-  for (const row of [...ctx.db.impactLayer.iter()]) ctx.db.impactLayer.id.delete(row.id);
-  for (const row of [...ctx.db.zone.iter()]) ctx.db.zone.id.delete(row.id);
-  for (const row of [...ctx.db.disaster.iter()]) ctx.db.disaster.id.delete(row.id);
   // Preserve durable history across resets.
-  seed(ctx);
+  resetOperationalData(ctx);
   event(ctx, 'disaster', 1n, 'reset', 'Synthetic scenario reset; memberships and history preserved');
 });
 export const updateCheckIn = db.reducer({ householdId: t.u64(), status: t.string() }, (ctx, { householdId, status }) => {
@@ -56,6 +56,8 @@ export const updateCheckIn = db.reducer({ householdId: t.u64(), status: t.string
   const row = ctx.db.household.id.find(householdId);
   if (!row) throw new SenderError('Household not found');
   ctx.db.household.id.update({ ...row, checkInStatus: status });
+  synchronizeWelfare(ctx, householdId);
+  refreshDecisions(ctx, householdId);
   event(ctx, 'household', householdId, 'check_in', status);
 });
 export const recordOutreach = db.reducer({ householdId: t.u64() }, (ctx, { householdId }) => {
@@ -63,6 +65,7 @@ export const recordOutreach = db.reducer({ householdId: t.u64() }, (ctx, { house
   const row = ctx.db.household.id.find(householdId);
   if (!row) throw new SenderError('Household not found');
   ctx.db.household.id.update({ ...row, lastContactAt: ctx.timestamp });
+  refreshDecisions(ctx, householdId);
   event(ctx, 'household', householdId, 'contacted', 'Simulated outreach recorded');
 });
 export const createTask = db.reducer({ zoneId: t.u64(), householdId: t.option(t.u64()), actionType: t.string() }, (ctx, args) => {
@@ -70,7 +73,8 @@ export const createTask = db.reducer({ zoneId: t.u64(), householdId: t.option(t.
   check(args.actionType, ['outreach', 'preparedness_information', 'shelter_options', 'position_supplies', 'shelter_in_place', 'infrastructure_check', 'evacuation_preparation', 'smoke_protection', 'winter_preparation', 'flood_preparation']);
   if (!ctx.db.zone.id.find(args.zoneId)) throw new SenderError('Zone not found');
   if (args.householdId !== undefined && ctx.db.household.id.find(args.householdId)?.zoneId !== args.zoneId) throw new SenderError('Household is not in zone');
-  const row = ctx.db.preparednessTask.insert({ ...args, householdId: args.householdId, id: 0n, status: 'pending', createdAt: ctx.timestamp, completedAt: undefined });
+  const row = ctx.db.preparednessTask.insert({ ...args, householdId: args.householdId, id: 0n, status: 'pending', createdAt: ctx.timestamp, completedAt: undefined,
+    scenarioRunId: ctx.db.scenarioState.id.find(1)?.runId ?? 0n, recommendationId: '' });
   event(ctx, 'task', row.id, 'created', args.actionType);
 });
 export const updateTask = db.reducer({ taskId: t.u64(), status: t.string() }, (ctx, { taskId, status }) => {
@@ -84,6 +88,7 @@ export const updateTask = db.reducer({ taskId: t.u64(), status: t.string() }, (c
     const home = ctx.db.household.id.find(row.householdId);
     if (!home) throw new SenderError('Household not found');
     ctx.db.household.id.update({ ...home, lastContactAt: ctx.timestamp });
+    refreshDecisions(ctx, row.householdId);
   }
   event(ctx, 'task', taskId, status, row.actionType);
 });
@@ -93,6 +98,7 @@ export const createRequest = db.reducer({ householdId: t.u64(), needType: t.stri
   if (!ctx.db.household.id.find(args.householdId)) throw new SenderError('Household not found');
   if (args.urgency < 1 || args.urgency > 5 || args.people < 1) throw new SenderError('Urgency must be 1–5 and people positive');
   const row = ctx.db.helpRequest.insert({ ...args, id: 0n, status: 'open', createdAt: ctx.timestamp, resolvedAt: undefined });
+  refreshDecisions(ctx, args.householdId);
   event(ctx, 'request', row.id, 'created', args.needType);
 });
 export const resolveRequest = db.reducer({ requestId: t.u64() }, (ctx, { requestId }) => {
@@ -100,6 +106,7 @@ export const resolveRequest = db.reducer({ requestId: t.u64() }, (ctx, { request
   const row = ctx.db.helpRequest.id.find(requestId);
   if (!row || row.status !== 'open') throw new SenderError('Only an unassigned open request can be resolved directly; complete its assignment otherwise');
   ctx.db.helpRequest.id.update({ ...row, status: 'resolved', resolvedAt: ctx.timestamp });
+  refreshDecisions(ctx, row.householdId);
   event(ctx, 'request', requestId, 'resolved', 'Assistance recorded without dispatch');
 });
 export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (ctx, { requestId, teamId }) => {
@@ -107,6 +114,7 @@ export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (c
   const request = ctx.db.helpRequest.id.find(requestId);
   const team = ctx.db.responseTeam.id.find(teamId);
   if (!request || request.status !== 'open') throw new SenderError('Request is not open');
+  if (ctx.db.responseTeamState.teamId.find(teamId)) throw new SenderError('Team reserved for welfare routing');
   if (!team || team.status !== 'available') throw new SenderError('Team is unavailable');
   if ([...ctx.db.assignment.requestId.filter(requestId)].some(a => active(a.status)) || [...ctx.db.assignment.teamId.filter(teamId)].some(a => active(a.status))) throw new SenderError('Active assignment already exists');
   if (!team.capabilities.includes(request.needType) || team.capacity < request.people) throw new SenderError('Team capability or capacity insufficient');
@@ -118,6 +126,7 @@ export const assignTeam = db.reducer({ requestId: t.u64(), teamId: t.u64() }, (c
   const row = ctx.db.assignment.insert({ id: 0n, requestId, teamId, status: 'assigned', estimatedDistance: distance, estimatedEta: distance / 30 * 60, createdAt: ctx.timestamp, completedAt: undefined });
   ctx.db.helpRequest.id.update({ ...request, status: 'assigned' });
   ctx.db.responseTeam.id.update({ ...team, status: 'assigned' });
+  refreshDecisions(ctx, request.householdId);
   event(ctx, 'assignment', row.id, 'assigned', 'Human-selected dispatch; approximate straight-line km / 30 km/h ETA');
 });
 export const updateAssignment = db.reducer({ assignmentId: t.u64(), status: t.string() }, (ctx, { assignmentId, status }) => {
@@ -132,15 +141,21 @@ export const updateAssignment = db.reducer({ assignmentId: t.u64(), status: t.st
   ctx.db.assignment.id.update({ ...row, status, completedAt: finished ? ctx.timestamp : undefined });
   ctx.db.helpRequest.id.update({ ...request, status: status === 'completed' ? 'resolved' : status === 'cancelled' ? 'open' : 'in_progress', resolvedAt: status === 'completed' ? ctx.timestamp : undefined });
   ctx.db.responseTeam.id.update({ ...team, status: finished ? 'available' : 'responding' });
+  refreshDecisions(ctx, request.householdId);
   event(ctx, 'assignment', assignmentId, status, 'Assignment, request, and team updated atomically');
 });
-export const escalateScenario = db.reducer({ disasterId: t.u64() }, (ctx, { disasterId }) => {
-  requireEmployee(ctx, true);
+function escalateSynthetic(ctx: Ctx, disasterId: bigint) {
   const row = ctx.db.disaster.id.find(disasterId);
   if (!row || !row.isSimulated) throw new SenderError('Synthetic scenario not found');
   ctx.db.disaster.id.update({ ...row, phase: 'response', updatedAt: ctx.timestamp });
   for (const area of ctx.db.zone.disasterId.filter(row.id)) ctx.db.zone.id.update({ ...area, riskLevel: Math.min(5, area.riskLevel + 1), updatedAt: ctx.timestamp });
+  for (const layer of ctx.db.impactLayer.disasterId.filter(row.id)) ctx.db.impactLayer.id.update({ ...layer,
+    severity: layer.severity === 'moderate' ? 'high' : 'critical', updatedAt: ctx.timestamp });
+  refreshDecisions(ctx);
   event(ctx, 'disaster', row.id, 'escalated', 'Selected simulated hazard severity increased');
+}
+export const escalateScenario = db.reducer({ disasterId: t.u64() }, (ctx, { disasterId }) => {
+  requireEmployee(ctx, true); escalateSynthetic(ctx, disasterId);
 });
 
 // Private tables are exposed only through caller-authorized subscription views.
@@ -153,3 +168,214 @@ export const assignments = db.view({ public: true }, t.array(assignment.rowType)
 export const tasks = db.view({ public: true }, t.array(preparednessTask.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.preparednessTask.iter()] : []);
 export const activities = db.view({ public: true }, t.array(activityEvent.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.activityEvent.iter()] : []);
 export const impactLayers = db.view({ public: true }, t.array(impactLayer.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.impactLayer.iter()] : []);
+
+export const decisions = db.view({ public: true }, t.array(decisionSummary.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.decisionSummary.iter()] : []);
+const Info = t.object('ScenarioInfoRow', { id: t.u8(), runId: t.u64(), scenarioId: t.string(), startedAt: t.timestamp(), evaluatedAt: t.timestamp(), canManageScenario: t.bool() });
+export const scenarioInfo = db.view({ public: true }, t.array(Info), ctx => {
+  const user = ctx.db.employee.identity.find(ctx.sender), row = ctx.db.scenarioState.id.find(1);
+  return user && row ? [{ ...row, canManageScenario: user.admin }] : [];
+});
+const Detail = t.object('HouseholdDecisionRow', { householdId: t.u64(), payload: t.string() });
+export const householdDecisions = db.view({ public: true }, { householdId: t.u64() }, t.array(Detail), (ctx, { householdId }) => {
+  if (!ctx.db.employee.identity.find(ctx.sender)) return [];
+  const result = householdDecision(ctx, householdId); return result ? [result] : [];
+});
+const TeamDetail = t.object('RequestRecommendationRow', { requestId: t.u64(), payload: t.string() });
+export const teamRecommendations = db.view({ public: true }, { requestId: t.u64() }, t.array(TeamDetail), (ctx, { requestId }) => {
+  if (!ctx.db.employee.identity.find(ctx.sender) || !ctx.db.helpRequest.id.find(requestId)) return [];
+  return [requestRecommendations(ctx, requestId)];
+});
+export const refreshDecisionSnapshot = db.reducer(ctx => { requireEmployee(ctx); refreshDecisions(ctx); });
+export const refreshDecisionClock = db.reducer({ onSchedule: decisionTick }, { timer: decisionTick.rowType }, ctx => {
+  if (!ctx.sender.equals(ctx.identity)) throw new SenderError('Scheduled refresh is internal only');
+  refreshDecisions(ctx);
+});
+export const approvePreparedness = db.reducer({ householdId: t.u64(), recommendationId: t.string(), expectedRunId: t.u64() }, (ctx, args) => {
+  requireEmployee(ctx);
+  const state = ctx.db.scenarioState.id.find(1);
+  if (!state || state.runId !== args.expectedRunId) throw new SenderError('Scenario changed; refresh suggestions');
+  const detail = householdDecision(ctx, args.householdId);
+  const payload = detail ? JSON.parse(detail.payload) : null;
+  if (!payload?.preparation.suggestions.some((s: { recommendationId: string }) => s.recommendationId === args.recommendationId)) throw new SenderError('Suggestion no longer eligible or task already exists');
+  const home = ctx.db.household.id.find(args.householdId)!;
+  const row = ctx.db.preparednessTask.insert({ id: 0n, zoneId: home.zoneId, householdId: home.id, actionType: 'preparedness_information', status: 'pending',
+    createdAt: ctx.timestamp, completedAt: undefined, scenarioRunId: state.runId, recommendationId: args.recommendationId });
+  event(ctx, 'task', row.id, 'suggestion_approved', args.recommendationId);
+});
+const ExerciseArgs = { disasterId: t.u64(), expectedRunId: t.u64(), expectedMinute: t.i32() };
+export const approveExerciseNotice = db.reducer({ ...ExerciseArgs, message: t.string() }, (ctx, args) => {
+  requireEmployee(ctx); sendExerciseNotice(ctx, args);
+});
+export const advanceExerciseClock = db.reducer(ExerciseArgs, (ctx, args) => {
+  requireEmployee(ctx);
+  if (advanceExercise(ctx, args)) escalateSynthetic(ctx, args.disasterId);
+});
+export const recordExerciseReply = db.reducer({ ...ExerciseArgs, householdId: t.u64(), status: t.string() }, (ctx, args) => {
+  requireEmployee(ctx); replyToExercise(ctx, args);
+});
+export const exercises = db.view({ public: true }, t.array(areaExercise.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.areaExercise.iter()] : []);
+export const exerciseReplies = db.view({ public: true }, { disasterId: t.u64() }, t.array(exerciseCheckIn.rowType), (ctx, { disasterId }) =>
+  ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.exerciseCheckIn.disasterId.filter(disasterId)] : []);
+
+// Welfare routing uses its own queue; no fabricated assistance requests.
+export const setRoutingWorker = db.reducer({ identity: t.identity(), enabled: t.bool() }, (ctx, args) => {
+  requireEmployee(ctx, true);
+  if (args.enabled && !ctx.db.routingWorker.identity.find(args.identity)) ctx.db.routingWorker.insert({ identity: args.identity });
+  if (!args.enabled) ctx.db.routingWorker.identity.delete(args.identity);
+});
+export const startResponseDemo = db.reducer({ zoneId: t.u64(), teamIds: t.array(t.u64()), stagingLatitude: t.f64(), stagingLongitude: t.f64() }, (ctx, args) => { requireEmployee(ctx); createRun(ctx, args); });
+export const claimRoutingLease = db.reducer({ runId: t.u64() }, (ctx, { runId }) => {
+  if (!ctx.db.routingWorker.identity.find(ctx.sender)) throw new SenderError('Routing worker authorization required');
+  const run = runOf(ctx, runId), now = ctx.timestamp.microsSinceUnixEpoch;
+  if (run.leaseUntil > now) throw new SenderError('Run already leased; renew the existing lease');
+  ctx.db.responseRun.id.update({ ...run, leaseOwner: ctx.sender, leaseUntil: now + 30000000n, fence: run.fence + 1n });
+});
+export const renewRoutingLease = db.reducer({ runId: t.u64(), fence: t.u64() }, (ctx, args) => {
+  const run = workerRun(ctx, args.runId, args.fence);
+  ctx.db.responseRun.id.update({ ...run, leaseUntil: ctx.timestamp.microsSinceUnixEpoch + 30000000n, holdUntil: run.holdUntil > ctx.timestamp.microsSinceUnixEpoch ? ctx.timestamp.microsSinceUnixEpoch + 30000000n : run.holdUntil });
+});
+export const updateResponseSettings = db.reducer({ runId: t.u64(), config: t.string() }, (ctx, args) => {
+  requireEmployee(ctx, true);
+  const run = runOf(ctx, args.runId), config = configOf(args.config), previous = configOf(run.config);
+  if (config.householdCount !== previous.householdCount || config.teamCount !== previous.teamCount) throw new SenderError('Fixture size changes require reset');
+  ctx.db.responseRun.id.update({ ...run, elapsedMinutes: minuteOf(ctx, run), anchorMicros: ctx.timestamp.microsSinceUnixEpoch, config: JSON.stringify(config), configVersion: run.configVersion + 1, epoch: run.epoch + 1n });
+});
+export const pauseResponseDemo = db.reducer({ runId: t.u64() }, (ctx, { runId }) => {
+  requireEmployee(ctx); const run = runOf(ctx, runId);
+  ctx.db.responseRun.id.update({ ...run, elapsedMinutes: minuteOf(ctx, run), anchorMicros: ctx.timestamp.microsSinceUnixEpoch, status: 'paused' });
+});
+export const resumeResponseDemo = db.reducer({ runId: t.u64() }, (ctx, { runId }) => {
+  requireEmployee(ctx); const run = runOf(ctx, runId);
+  if (run.status !== 'paused') throw new SenderError('Run is not paused');
+  ctx.db.responseRun.id.update({ ...run, anchorMicros: ctx.timestamp.microsSinceUnixEpoch, status: 'running' });
+});
+export const resetResponseDemo = db.reducer({ runId: t.u64() }, (ctx, { runId }) => {
+  requireEmployee(ctx); const run = runOf(ctx, runId);
+  if ([...ctx.db.welfareVisit.runId.filter(runId)].some(v => v.state === 'in_progress')) throw new SenderError('Complete active checks before reset');
+  for (const visit of [...ctx.db.welfareVisit.runId.filter(runId)]) if (!terminal(visit.state)) ctx.db.welfareVisit.id.update({ ...visit, state: 'cancelled', teamId: undefined, notice: 'Run reset' });
+  if (run.ownsFixture) {
+    for (const home of [...ctx.db.household.zoneId.filter(run.zoneId)]) {
+      for (const request of [...ctx.db.helpRequest.householdId.filter(home.id)]) {
+        const assignments = [...ctx.db.assignment.requestId.filter(request.id)];
+        if (assignments.some(a => active(a.status))) throw new SenderError('Complete manual assistance before fixture reset');
+        for (const assignment of assignments) ctx.db.assignment.id.delete(assignment.id);
+        ctx.db.helpRequest.id.delete(request.id);
+      }
+      for (const round of [...ctx.db.exerciseCheckIn.householdId.filter(home.id)]) ctx.db.exerciseCheckIn.id.delete(round.id);
+      for (const task of [...ctx.db.preparednessTask.byHousehold.filter(home.id)]) ctx.db.preparednessTask.id.delete(task.id);
+      ctx.db.decisionSummary.householdId.delete(home.id);
+      ctx.db.household.id.delete(home.id);
+    }
+    ctx.db.areaExercise.disasterId.delete(run.disasterId);
+    ctx.db.zone.id.delete(run.zoneId); ctx.db.disaster.id.delete(run.disasterId);
+  }
+  for (const team of [...ctx.db.responseTeamState.runId.filter(runId)]) {
+    ctx.db.responseTeamState.teamId.delete(team.teamId);
+    if (run.ownsFixture) ctx.db.responseTeam.id.delete(team.teamId);
+  }
+  ctx.db.responseRun.id.update({ ...run, status: 'reset', epoch: run.epoch + 1n, fence: run.fence + 1n, leaseUntil: 0n });
+});
+const ProposedRoute = t.object('ProposedResponseRoute', { teamId: t.u64(), positionVersion: t.u64(), visitIds: t.array(t.u64()), arrivalMinutes: t.array(t.f64()), returnMinute: t.f64() });
+export const publishResponsePlan = db.reducer({ runId: t.u64(), fence: t.u64(), epoch: t.u64(), configVersion: t.u32(), routes: t.array(ProposedRoute), provider: t.string(), uncovered: t.option(t.array(t.object('UncoveredVisit', { visitId: t.u64(), reason: t.string() }))) }, (ctx, args) => {
+  const run = workerRun(ctx, args.runId, args.fence), config = configOf(run.config), now = minuteOf(ctx, run);
+  if (run.epoch !== args.epoch || run.configVersion !== args.configVersion) throw new SenderError('Stale response plan');
+  const seen = new Set<bigint>(), teams = new Set<bigint>();
+  for (const route of args.routes) {
+    const state = ctx.db.responseTeamState.teamId.find(route.teamId), team = ctx.db.responseTeam.id.find(route.teamId);
+    if (teams.has(route.teamId) || !state || state.runId !== run.id || !state.available || state.positionVersion !== route.positionVersion || !team || team.status !== 'available' || !team.capabilities.includes('welfare_check') || [...ctx.db.assignment.teamId.filter(route.teamId)].some(a => active(a.status))) throw new SenderError('Team/origin changed');
+    teams.add(route.teamId);
+    if (route.visitIds.length !== route.arrivalMinutes.length || !Number.isFinite(route.returnMinute) || route.returnMinute < now || route.returnMinute > config.shiftMinutes) throw new SenderError('Invalid shift timing');
+    let earliest = now, unknownSeen = false;
+    route.visitIds.forEach((id, i) => {
+      const visit = ctx.db.welfareVisit.id.find(id), home = visit && ctx.db.household.id.find(visit.householdId);
+      if (!visit || visit.runId !== run.id || terminal(visit.state) || !home || home.checkInStatus === 'safe' && visit.state !== 'in_progress' || seen.has(id)) throw new SenderError('Ineligible or duplicate visit');
+      if (visit.state === 'in_progress' && (visit.teamId !== route.teamId || i !== 0)) throw new SenderError('Active service must remain first');
+      if (unknownSeen && visit.priority === 'urgent') throw new SenderError('Urgent stop must precede unknown stops');
+      unknownSeen ||= visit.priority === 'unknown' && visit.state !== 'in_progress'; seen.add(id);
+      const arrival = route.arrivalMinutes[i];
+      if (!Number.isFinite(arrival) || arrival < earliest) throw new SenderError('Invalid visit timing');
+      earliest = visit.state === 'in_progress' ? Math.max(now, (visit.startedMinute ?? now) + visit.serviceMinutes) : arrival + config.visitMinutes;
+    });
+    if (route.returnMinute < earliest) throw new SenderError('Return precedes service completion');
+  }
+  for (const visit of ctx.db.welfareVisit.runId.filter(run.id)) if (visit.state === 'in_progress' && !seen.has(visit.id)) throw new SenderError('Cannot drop active service');
+  for (const visit of [...ctx.db.welfareVisit.runId.filter(run.id)]) if (!terminal(visit.state) && visit.state !== 'in_progress') ctx.db.welfareVisit.id.update({ ...visit, state: 'pending', teamId: undefined, notice: seen.has(visit.id) ? '' : `Unassigned: ${args.uncovered?.find(u => u.visitId === visit.id)?.reason.slice(0, 200) ?? 'no feasible route published'}` });
+  for (const old of [...ctx.db.teamRoute.runId.filter(run.id)]) ctx.db.teamRoute.id.delete(old.id);
+  for (const state of [...ctx.db.responseTeamState.runId.filter(run.id)]) if (state.mode !== 'in_progress') ctx.db.responseTeamState.teamId.update({ ...state, currentVisitId: undefined, mode: 'holding' });
+  for (const route of args.routes) {
+    ctx.db.teamRoute.insert({ id: 0n, runId: run.id, teamId: route.teamId, version: run.planVersion + 1n, planningEpoch: run.epoch, visitIds: route.visitIds, returnMinute: route.returnMinute, status: 'ready', provider: args.provider, error: '' });
+    route.visitIds.forEach((id, sequence) => { const visit = ctx.db.welfareVisit.id.find(id)!; ctx.db.welfareVisit.id.update({ ...visit, teamId: route.teamId, sequence, arrivalMinute: route.arrivalMinutes[sequence], serviceMinutes: visit.state === 'in_progress' ? visit.serviceMinutes : config.visitMinutes, state: visit.state === 'in_progress' ? visit.state : 'queued', notice: visit.state === 'in_progress' ? visit.notice : visit.priority === 'urgent' && route.arrivalMinutes[sequence] - visit.eligibleSince > config.urgentTargetMinutes ? 'Urgent arrival target cannot be met; dispatcher escalation required' : '' }); });
+  }
+  ctx.db.responseRun.id.update({ ...run, planVersion: run.planVersion + 1n, planningError: '', holdUntil: 0n, elapsedMinutes: now, anchorMicros: ctx.timestamp.microsSinceUnixEpoch });
+});
+export const responseRuns = db.view({ public: true }, t.array(responseRun.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) || ctx.db.routingWorker.identity.find(ctx.sender) ? [...ctx.db.responseRun.iter()] : []);
+export const welfareVisits = db.view({ public: true }, t.array(welfareVisit.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) || ctx.db.routingWorker.identity.find(ctx.sender) ? [...ctx.db.welfareVisit.iter()] : []);
+export const teamRoutes = db.view({ public: true }, t.array(teamRoute.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) || ctx.db.routingWorker.identity.find(ctx.sender) ? [...ctx.db.teamRoute.iter()] : []);
+export const responseTeamStates = db.view({ public: true }, t.array(responseTeamState.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) || ctx.db.routingWorker.identity.find(ctx.sender) ? [...ctx.db.responseTeamState.iter()] : []);
+export const advanceResponseSimulation = db.reducer({ runId: t.u64(), fence: t.u64(), teamId: t.u64(), routeVersion: t.u64(), sequence: t.u64(), latitude: t.f64(), longitude: t.f64(), action: t.string(), outcome: t.string() }, (ctx, args) => {
+  const run = workerRun(ctx, args.runId, args.fence), state = ctx.db.responseTeamState.teamId.find(args.teamId);
+  const route = [...ctx.db.teamRoute.runId.filter(run.id)].find(r => r.teamId === args.teamId);
+  if (run.status !== 'running' || !state || !state.available || state.runId !== run.id || !route || route.version !== args.routeVersion || args.sequence <= state.tickSequence) throw new SenderError('Stale simulation update');
+  if (!Number.isFinite(args.latitude) || Math.abs(args.latitude) > 90 || !Number.isFinite(args.longitude) || Math.abs(args.longitude) > 180) throw new SenderError('Invalid position');
+  check(args.action, ['move', 'arrive', 'complete', 'return', 'return_move']);
+  if (run.holdUntil > ctx.timestamp.microsSinceUnixEpoch && args.action !== 'complete') throw new SenderError('Planning hold');
+  const now = minuteOf(ctx, run), next = route.visitIds.map(id => ctx.db.welfareVisit.id.find(id)).find(v => v && !terminal(v.state));
+  if (route.planningEpoch !== run.epoch && next?.state !== 'in_progress') throw new SenderError('Plan invalidated; hold position');
+  let currentVisitId = state.currentVisitId, mode = state.mode;
+  if (args.action === 'return' || args.action === 'return_move') {
+    if (next || args.action === 'return' && now < route.returnMinute) throw new SenderError('Return not due');
+    mode = args.action === 'return' ? 'idle' : 'returning'; currentVisitId = undefined;
+  } else {
+    if (!next || next.teamId !== args.teamId) throw new SenderError('No current destination');
+    // Invalidation freezes travel until a current-epoch plan replaces it.
+    if (next.state !== 'in_progress' && ctx.db.household.id.find(next.householdId)?.checkInStatus === 'safe') throw new SenderError('Destination cancelled');
+    if (args.action === 'arrive') {
+      if (!['queued','en_route'].includes(next.state) || now < next.arrivalMinute) throw new SenderError('Arrival not due');
+      ctx.db.welfareVisit.id.update({ ...next, state: 'in_progress', startedMinute: now }); mode = 'in_progress'; currentVisitId = next.id;
+    } else if (args.action === 'complete') {
+      if (next.state !== 'in_progress' || now < (next.startedMinute ?? now) + next.serviceMinutes) throw new SenderError('Service not complete');
+      if (!args.outcome.trim() || args.outcome.length > 500) throw new SenderError('Explicit outcome required');
+      ctx.db.welfareVisit.id.update({ ...next, state: 'completed', outcome: args.outcome }); mode = 'holding'; currentVisitId = undefined;
+      ctx.db.responseRun.id.update({ ...run, epoch: run.epoch + 1n });
+    } else {
+      if (next.state === 'in_progress') throw new SenderError('Cannot move during service');
+      ctx.db.welfareVisit.id.update({ ...next, state: 'en_route' }); mode = 'en_route'; currentVisitId = next.id;
+    }
+  }
+  const exercise = ctx.db.areaExercise.disasterId.find(run.disasterId);
+  if (exercise && exercise.minute < Math.floor(run.startMinute + now)) ctx.db.areaExercise.disasterId.update({ ...exercise, minute: Math.floor(run.startMinute + now) });
+  const team = ctx.db.responseTeam.id.find(args.teamId);
+  if (!team) throw new SenderError('Team missing');
+  ctx.db.responseTeam.id.update({ ...team, latitude: args.latitude, longitude: args.longitude });
+  ctx.db.responseTeamState.teamId.update({ ...state, positionVersion: state.positionVersion + 1n, updatedAt: ctx.timestamp, tickSequence: args.sequence, currentVisitId, mode });
+});
+
+export const seedResponseRoutingDemo = db.reducer(ctx => { requireEmployee(ctx); seedRoutingFixture(ctx); });
+export const setResponseTeamAvailability = db.reducer({ runId: t.u64(), teamId: t.u64(), available: t.bool() }, (ctx, args) => {
+  requireEmployee(ctx); const run = runOf(ctx, args.runId), team = ctx.db.responseTeamState.teamId.find(args.teamId);
+  if (!team || team.runId !== run.id) throw new SenderError('Team not in run');
+  const activeVisit = team.currentVisitId === undefined ? undefined : ctx.db.welfareVisit.id.find(team.currentVisitId);
+  if (!args.available && activeVisit?.state === 'in_progress') throw new SenderError('Complete active service before making team unavailable');
+  if (!args.available) for (const visit of [...ctx.db.welfareVisit.runId.filter(run.id)]) if (visit.teamId === args.teamId && !terminal(visit.state)) ctx.db.welfareVisit.id.update({ ...visit, state: 'pending', teamId: undefined, notice: 'Team unavailable; awaiting reassignment' });
+  ctx.db.responseTeamState.teamId.update({ ...team, available: args.available, currentVisitId: undefined, mode: 'holding' });
+  ctx.db.responseRun.id.update({ ...run, epoch: run.epoch + 1n });
+});
+
+export const holdResponsePlanning = db.reducer({ runId: t.u64(), fence: t.u64() }, (ctx, args) => {
+  const run = workerRun(ctx, args.runId, args.fence);
+  ctx.db.responseRun.id.update({ ...run, elapsedMinutes: minuteOf(ctx, run), anchorMicros: ctx.timestamp.microsSinceUnixEpoch, holdUntil: run.leaseUntil });
+});
+export const responsePlanningFailed = db.reducer({ runId: t.u64(), fence: t.u64(), message: t.string() }, (ctx, args) => {
+  const run = workerRun(ctx, args.runId, args.fence);
+  for (const route of [...ctx.db.teamRoute.runId.filter(run.id)]) ctx.db.teamRoute.id.update({ ...route, status: 'stale', error: args.message.slice(0, 300) });
+  ctx.db.responseRun.id.update({ ...run, planningError: args.message.slice(0, 300), elapsedMinutes: minuteOf(ctx, run), anchorMicros: ctx.timestamp.microsSinceUnixEpoch, holdUntil: 0n });
+});
+export const routingHouseholds = db.view({ public: true }, t.array(household.rowType), ctx => {
+  if (!ctx.db.employee.identity.find(ctx.sender) && !ctx.db.routingWorker.identity.find(ctx.sender)) return [];
+  const zones = new Set([...ctx.db.responseRun.iter()].filter(r => r.status !== 'reset').map(r => r.zoneId));
+  return [...ctx.db.household.iter()].filter(h => zones.has(h.zoneId));
+});
+export const routingTeams = db.view({ public: true }, t.array(responseTeam.rowType), ctx => {
+  if (!ctx.db.employee.identity.find(ctx.sender) && !ctx.db.routingWorker.identity.find(ctx.sender)) return [];
+  return [...ctx.db.responseTeamState.iter()].flatMap(s => { const team = ctx.db.responseTeam.id.find(s.teamId); return team ? [team] : []; });
+});

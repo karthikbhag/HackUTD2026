@@ -87,9 +87,9 @@ switching back requires only restarting Next.js with the other database name.
 ## Small: 60 households
 
 `npm --prefix backend run build:scenario -- --preset small` stages the tracked
-legacy v1 fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
+modern schema-v3 `backend/src/default-scenario.json` fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
 seed it, and run `verify:scenario -- --preset small --database riskreach-small-60`.
-It has no explicit impact layers; the map labels its outlines as context only.
+It contains ten explicit impact layers and 12 reviewed templates; context outlines remain distinct.
 The ordinary backend build/seed also still uses this Small fixture.
 
 ## Repeat runs and expected counts
@@ -106,7 +106,7 @@ tasks, 93 impact layers, zero assignments.
 Stress seed 2026: 100,000 households (80,000 neighborhood / 20,000 regional), 56
 hotspots/disasters, 112 zones, 1,970 teams, 20,000 requests, 24,931 outreach tasks,
 93 impact layers, zero assignments. Small: 60 households (48/12), six hotspots,
-12 zones, 12 teams, 12 requests, 18 outreach tasks, zero impact layers/assignments.
+12 zones, 12 teams, 12 requests, 18 outreach tasks, ten impact layers and zero assignments.
 Task counts are calculated from never-contacted source rows and can change with
 another seed; use the manifest as the fixture-specific authority.
 
@@ -161,3 +161,7 @@ problems justify scoped server views/summaries, a viewport spatial index, cluste
 or worker adaptation. No live-update simulation, dispatch UI, or benchmarking
 framework was added. The pure exposure helper remains available through `npm run
 exposure`; exposure relations/counts are not persisted or displayed by this path.
+
+## Connected main checkpoint — 2026-11-08
+
+The main page now has a shared scenario desk and authoritative Person 3 decisions. See [SHARED_WORKFLOW.md](SHARED_WORKFLOW.md) for the persistent local Demo database, enrollment and repeatable live checks. Frontend production build now passes on Node 24.22.1; historical worker-port failures above do not describe the current check. Browser acceptance remains separate and pending.

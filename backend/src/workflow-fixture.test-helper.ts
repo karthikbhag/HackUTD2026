@@ -24,7 +24,7 @@ export function seed(ctx: ReducerCtx<InferSchema<typeof db>>) {
       const id = BigInt(i * 2 + j + 1);
       ctx.db.household.insert({ id, zoneId, displayName: `Fictional household ${id}`, latitude: spot.lat + j * .01, longitude: spot.lon + j * .01, isCustomer: j === 0, checkInStatus: j === 0 ? 'unknown' : 'needs_help', vulnerabilityFlags: j === 0 ? ['mobility_assistance'] : [], lastContactAt: new Timestamp(ctx.timestamp.microsSinceUnixEpoch - 48n * 3600n * 1000000n) });
       ctx.db.helpRequest.insert({ id: 0n, householdId: id, needType: j === 0 ? 'welfare_check' : spot.need, urgency: j === 0 ? 5 : 3, people: 2, status: 'open', createdAt: ctx.timestamp, resolvedAt: undefined });
-      ctx.db.preparednessTask.insert({ id: 0n, zoneId, householdId: id, actionType: j === 0 ? 'outreach' : spot.action, status: 'pending', createdAt: ctx.timestamp, completedAt: undefined });
+      ctx.db.preparednessTask.insert({ id: 0n, zoneId, householdId: id, actionType: j === 0 ? 'outreach' : spot.action, status: 'pending', createdAt: ctx.timestamp, completedAt: undefined, scenarioRunId: 0n, recommendationId: '' });
     }
     ctx.db.responseTeam.insert({ id: BigInt(i + 1), name: `${spot.name} simulated team`, latitude: spot.lat + .04, longitude: spot.lon, status: 'available', capacity: 4, capabilities: [...new Set(['water', 'food', 'welfare_check', spot.need])] });
   });

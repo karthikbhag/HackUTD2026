@@ -1,4 +1,4 @@
-import type { Assignment, Disaster, HelpRequest, Household, ImpactLayer, PreparednessTask, ResponseTeam, Zone } from "../../module_bindings/types";
+import type { ResponseTeamState, WelfareVisit, Assignment, Disaster, HelpRequest, Household, ImpactLayer, PreparednessTask, ResponseTeam, Zone } from "../../module_bindings/types";
 import { hazards, type Coordinate, type Hazard, type MapData } from "./types";
 
 export interface OperationalRows {
@@ -10,6 +10,8 @@ export interface OperationalRows {
   tasks: readonly PreparednessTask[];
   assignments: readonly Assignment[];
   impactLayers?: readonly ImpactLayer[];
+  welfareVisits?: readonly WelfareVisit[];
+  responseTeamStates?: readonly ResponseTeamState[];
 }
 
 // Reject unsupported geometry rather than silently dropping holes/islands.
@@ -78,7 +80,9 @@ export function toMapData(rows: OperationalRows): MapData {
     if (!["available", "assigned", "responding", "unavailable"].includes(row.status)) throw new Error("Unknown response team status.");
     const assignment = assignments.get(row.id);
     const request = assignment && requests.get(assignment.requestId);
-    const destination = request && allHouseholds.get(request.householdId);
+    const welfareState = rows.responseTeamStates?.find(s => s.teamId === row.id);
+    const welfare = rows.welfareVisits?.find(v => v.id === welfareState?.currentVisitId && ["en_route", "in_progress"].includes(v.state));
+    const destination = welfare ? allHouseholds.get(welfare.householdId) : request && allHouseholds.get(request.householdId);
     // Missing destinations must never become a proximity-based assignment.
     if (assignment && !destination) return [];
     let nearest: string | undefined;
