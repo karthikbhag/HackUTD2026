@@ -12,13 +12,16 @@ const hazardTypes = Object.keys(hazards) as Hazard[];
 const CONTACT_LABEL: Record<QueueItem["contactState"], string> = { never_contacted: "Never contacted", overdue: "Contact overdue", recent: "Recently contacted" };
 
 /** Re-evaluates time-based rules (contact age, overdue) without a backend change. */
+// The clock is read only in effects: Cache Components prerenders "/" and rejects Date.now() during render.
 function useNowMicros(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(timer);
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, intervalMs);
+    return () => { clearTimeout(first); clearInterval(timer); };
   }, [intervalMs]);
-  return BigInt(now) * 1000n;
+  return now === null ? null : BigInt(now) * 1000n;
 }
 
 export function PriorityQueue({ rows, connected, busy, selection, onSelect, actions, run }: {
@@ -32,7 +35,7 @@ export function PriorityQueue({ rows, connected, busy, selection, onSelect, acti
   const [limit, setLimit] = useState(PAGE);
 
   const result = useMemo((): { queue: Queue } | { error: string } | null => {
-    if (!rows) return null;
+    if (!rows || now === null) return null;
     try { return { queue: buildPriorityQueue(rows, now) }; }
     catch (error) { return { error: error instanceof Error ? error.message : String(error) }; }
   }, [rows, now]);
