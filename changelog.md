@@ -1,7 +1,6 @@
 # Changelog
 
-Current version: **1.5**
-Current version: **1.8**
+Current version: **1.9**
 
 ## Instructions for future updates
 
@@ -32,7 +31,7 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 1.5 — 2026-11-07
+## Version 1.9 — 2026-11-07
 
 **Author:** Karthik Bhagavatula
 
@@ -50,6 +49,7 @@ Entry template:
 - Nine regression tests passed, including legacy v1/v2 compatibility, unchanged base records, seeded repeatability, full Stress validation, component coverage, nested shaking zones, and invalid polygon rejection. Fifteen damaged-fixture mutation cases were rejected, including false live-source labels, missing components, cross-hazard recommendation links, missing human review, and open polygons.
 - Geometry QA checks coordinate ranges, closure, unique vertices, nonzero area, self-intersections, regional bounds, and inner/outer earthquake containment. Tested a valid concave polygon and boundary-inclusive point checks for fixture QA.
 - This is offline data/geometry verification. Household exposure calculation, map rendering of new impact layers, Spacetime persistence, household-specific action suggestions, prioritization, team matching, escalation, and reset remain pending. No live hazard integration or real-world prediction is claimed.
+
 ## Version 1.8 — 2026-11-07
 
 **Author:** Josh Sebastian
