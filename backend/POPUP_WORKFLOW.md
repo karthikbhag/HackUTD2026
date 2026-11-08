@@ -96,7 +96,7 @@ There is no optimistic browser-only copy of shared notices, replies or assignmen
   existing transactional assignment reducer and stores a dashboard link. Other
   unresolved needs remain recorded. The UI's local-area candidate is a suggestion,
   not a verified route; backend distance/ETA remain approximate.
-- **Reset:** administrator-only, with browser confirmation or the publishing CLI.
+- **Reset:** available to enrolled employees and administrators, with browser confirmation or the publishing CLI.
   Restores the selected fixture, advances the run and clears all dashboard rounds
   and operational assignments while preserving access and durable activity.
 

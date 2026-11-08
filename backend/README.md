@@ -93,7 +93,7 @@ Supported task actions: `outreach`, `preparedness_information`, `shelter_options
 - `updateAssignment({ assignmentId, status })`: assigned → in_progress/completed/cancelled; in_progress → completed/cancelled. Completion resolves the request; cancellation reopens it. Both release the team. Terminal assignments cannot change again.
 - `escalateScenario({ disasterId })`: administrator-only, changes just that simulated disaster to response and increases its zones' severity up to 5.
 - `seedDemo()`: administrator-only; refuses to overwrite an existing scenario.
-- `resetDemo({ confirmation: 'RESET SYNTHETIC DEMO' })`: administrator-only; replaces operational fixture data, preserves memberships and durable activity history, and records the reset.
+- `resetDemo({ confirmation: 'RESET SYNTHETIC DEMO' })`: enrolled employees and administrators; replaces operational fixture data, preserves memberships and durable activity history, and records the reset.
 - `setEmployee({ identity, enabled })`: administrator-only membership grant/revoke; cannot alter the administrator.
 
 All operational changes persist an activity event transactionally. Assignment distances are straight-line kilometers using Haversine; ETA is minutes at an assumed 30 km/h. These are approximations, not verified road routes or safe travel advice. A simulated needs-help dashboard reply automatically assigns the nearest compatible available unit in the same transaction, excluding busy and routing-reserved units. If no unit matches, the help reply and request remain queued. Manual dashboard approval is reserved for unanswered follow-ups after their 30-minute deadline. Reducers deliver no messages or real units and perform no network calls.

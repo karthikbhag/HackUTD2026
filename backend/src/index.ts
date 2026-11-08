@@ -50,7 +50,7 @@ export const seedDemo = db.reducer(ctx => {
   event(ctx, 'disaster', 1n, 'seeded', 'Synthetic nationwide multi-hazard scenario');
 });
 export const resetDemo = db.reducer({ confirmation: t.string() }, (ctx, { confirmation }) => {
-  requireEmployee(ctx, true);
+  requireEmployee(ctx);
   if (confirmation !== 'RESET SYNTHETIC DEMO') throw new SenderError('Reset confirmation required');
   // Membership is deliberately preserved. Snapshot before deleting iterator rows.
   // Preserve durable history across resets.
@@ -269,11 +269,11 @@ export const approveDashboardResponse = db.reducer({ ...DashboardArgs, household
   saveResponse(ctx, prepared.state.runId, args.householdId, prepared.requestId);
 });
 export const resetDashboard = db.reducer({ ...DashboardArgs, confirmation: t.string() }, (ctx, args) => {
-  requireEmployee(ctx, true); validateClock(ctx, args); resetDemo(ctx, { confirmation: args.confirmation });
+  requireEmployee(ctx); validateClock(ctx, args); resetDemo(ctx, { confirmation: args.confirmation });
 });
 const DashboardInfo = t.object('DashboardInfoRow', { id: t.u8(), runId: t.u64(), minute: t.i32(), canReset: t.bool() });
 export const dashboardState = db.view({ public: true }, t.array(DashboardInfo), ctx => {
-  const user = ctx.db.employee.identity.find(ctx.sender); return user ? [{ ...clock(ctx), canReset: user.admin }] : [];
+  const user = ctx.db.employee.identity.find(ctx.sender); return user ? [{ ...clock(ctx), canReset: true }] : [];
 });
 export const dashboardNotices = db.view({ public: true }, t.array(dashboardNotice.rowType), ctx =>
   ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === clock(ctx).runId) : []);

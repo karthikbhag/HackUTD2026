@@ -24,7 +24,7 @@ function useOperationalRows(conn: DbConnection) {
   useEffect(() => {
     let queued = false, disposed = false;
     const changed = () => { if (queued || disposed) return; queued = true; queueMicrotask(() => { queued = false; if (!disposed) setRevision(v => v + 1); }); };
-    const handles = [conn.db.decisions, conn.db.scenarioInfo, conn.db.exercises, conn.db.exerciseReplies, conn.db.householdDecisions,
+    const handles = [conn.db.decisions, conn.db.scenarioInfo, conn.db.dashboardState, conn.db.exercises, conn.db.exerciseReplies, conn.db.householdDecisions,
       conn.db.responseRuns, conn.db.welfareVisits, conn.db.responseTeamStates, conn.db.teamRecommendations, conn.db.tasks, conn.db.assignments, conn.db.activities, conn.db.households, conn.db.requests];
     for (const h of handles) { h.onInsert(changed); h.onDelete(changed); h.onUpdate(changed); }
     const subscription = conn.subscriptionBuilder().onApplied(changed).onError(ctx => setError(String(ctx.event)))
@@ -52,6 +52,7 @@ export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { 
   const snapshot = useMemo(() => {
     void revision;
     const info = [...conn.db.scenarioInfo.iter()][0];
+    const canReset = [...conn.db.dashboardState.iter()][0]?.canReset ?? false;
     const exercise = [...conn.db.exercises.iter()].find(e => e.disasterId === disasterId && e.runId === info?.runId);
     const homes = new Map(data.households.filter(h => (h.hotspotId ?? h.zoneId) === zone.id).map(h => [h.id, h]));
     const rows = [...conn.db.decisions.iter()].filter(r => homes.has(String(r.householdId))).sort((a, b) =>
@@ -61,7 +62,7 @@ export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { 
     const replies = [...conn.db.exerciseReplies.iter()].filter(r => r.disasterId === disasterId && r.runId === info?.runId);
     const disaster = [...conn.db.disasters.iter()].find(d => d.id === disasterId);
     const activities = [...conn.db.activities.iter()].sort((a, b) => a.id > b.id ? -1 : a.id < b.id ? 1 : 0).slice(0, 15);
-    return { info, exercise, homes, rows, replies, disaster, activities };
+    return { info, canReset, exercise, homes, rows, replies, disaster, activities };
   }, [conn, data.households, zone.id, disasterId, revision]);
   const minute = snapshot.exercise?.minute ?? (snapshot.disaster?.phase === "response" ? 0 : -120);
   const after = minute >= 0, sent = after ? snapshot.exercise?.postSent : snapshot.exercise?.preSent;
@@ -110,7 +111,7 @@ export function ConnectedWorkspace({ conn, data, zone, selection, onSelect }: { 
       <button disabled={busy || !!blocked || chosen.length !== 2}>Approve paused welfare exercise</button></form></details>}
       {welfare.map(v => <p key={String(v.id)}>{snapshot.homes.get(String(v.householdId))?.name}: {label(v.state)}{v.outcome && ` · ${v.outcome}`}{v.notice && ` · ${v.notice}`}</p>)}</section>
       <details><summary>Recent shared activity</summary><ol>{snapshot.activities.map(a => <li key={String(a.id)}>{a.timestamp.toDate().toLocaleString()} · {a.summary}</li>)}</ol></details>
-      {snapshot.info?.canManageScenario && <details><summary>Reset entire synthetic dataset</summary><p>Replaces all operational records and starts a new run. Access and activity history are preserved.</p>
+      {snapshot.canReset && <details><summary>Reset entire synthetic dataset</summary><p>Replaces all operational records for everyone and starts a new run. Enrolled employees and administrators can reset the demo. Access and activity history are preserved.</p>
         <label>Type RESET SYNTHETIC DEMO<input value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>
         <button className="outline-button" disabled={busy || confirmation !== "RESET SYNTHETIC DEMO"} onClick={() => perform(async () => { await conn.reducers.resetDemo({ confirmation }); setConfirmation(""); }, "Dataset reset in a new run.")}>Reset synthetic dataset</button></details>}
     </article><article className="checkin-workspace">

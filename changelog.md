@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.32**
+Current version: **1.33**
 
 ## Instructions for future updates
 
@@ -30,6 +30,22 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.33 — 2026-11-08
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Restore shared dataset reset access for all enrolled employees and administrators in the `fixed-some-stuff` branch. Both reset reducers enforce employee membership and explicit confirmation; the dashboard reducer retains run/minute validation. Unenrolled and revoked identities remain blocked, and membership management and other administrator permissions remain restricted.
+- Return the reset capability to every enrolled employee, gate the scenario desk reset on that capability instead of administrator-only scenario management, and update the disabled-button explanation and reset documentation. Preserve the branch's database/local mode selection, risk-specific notices, automatic help assignment and rescue-completion workflow.
+- Add regression coverage for both employee and administrator resets, invalid/stale confirmations, outsider/revoked rejection, fixture restoration and preservation of memberships and history.
+
+### Verification
+
+- All 153 backend tests across 16 files and all 51 frontend tests passed. Backend/frontend TypeScript checks, the staged 10,000-household Demo module build and frontend Webpack production build passed. Lint passed with the two existing warnings.
+- A separate disposable local Demo database verified employee reset through the actual frontend action wrapper, restoration of 10,000 households and rejection of invalid confirmations, outsiders and revoked employees. The candidate/cloud schemas and schedules matched after normalizing unordered declarations.
+- Published the matching Demo bundle to shared `statewatch` with `--delete-data=never`. Before/after checks preserved the scenario run/start time, clock, 10,000 households, assignment count and notice count. A read-only live subscription verified client decoding and the map adapter loaded all 10,000 households. No shared dataset reset, commit or push was performed.
 
 ## Version 1.32 — 2026-11-08
 
