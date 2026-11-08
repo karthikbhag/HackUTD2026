@@ -145,9 +145,9 @@ export const AREA_REVIEW_JSON_SCHEMA = {
 
 const NUMBER = /\d[\d,]*(?:\.\d+)?/g;
 const normalize = (token: string) => String(Number(token.replaceAll(",", "")));
-/** Every number that appears anywhere in the snapshot, normalized ("07" and "7" match). */
-function allowedNumbers(snapshot: AreaSnapshot): Set<string> {
-  return new Set((JSON.stringify(snapshot).match(NUMBER) ?? []).map(normalize));
+/** Every number that appears anywhere in the evidence, normalized ("07" and "7" match). */
+function allowedNumbers(evidence: unknown): Set<string> {
+  return new Set((JSON.stringify(evidence).match(NUMBER) ?? []).map(normalize));
 }
 
 /**
@@ -174,8 +174,8 @@ export function parseAreaReview(value: unknown, snapshot: AreaSnapshot): { revie
   return { review };
 }
 
-/** Numbers in AI text that do not appear anywhere in the snapshot (shared by the review and follow-up answers). */
-export function unsupportedNumbers(text: string, snapshot: AreaSnapshot): string[] {
-  const allowed = allowedNumbers(snapshot);
+/** Numbers in AI text that do not appear anywhere in the evidence (shared by reviews, follow-ups, and the assistant). */
+export function unsupportedNumbers(text: string, evidence: unknown): string[] {
+  const allowed = allowedNumbers(evidence);
   return [...new Set((text.match(NUMBER) ?? []).map(normalize))].filter(token => !allowed.has(token));
 }

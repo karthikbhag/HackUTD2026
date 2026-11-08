@@ -1,0 +1,123 @@
+/** Authoritative adapter for the new dashboard policy. No delivery/network I/O. */
+import { SenderError, type InferSchema, type ReducerCtx, type ViewCtx } from 'spacetimedb/server';
+import type db from './schema';
+import { refreshDecisions } from './decisions';
+type Ctx = ReducerCtx<InferSchema<typeof db>>;
+type ReadCtx = Pick<Ctx, 'db'> | Pick<ViewCtx<InferSchema<typeof db>>, 'db'>;
+export function clock(ctx: ReadCtx) {
+  return ctx.db.dashboardClock.id.find(1) ?? { id: 1, runId: ctx.db.scenarioState.id.find(1)?.runId ?? 0n, minute: -120 };
+}
+export function validateClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number }) {
+  const state = clock(ctx);
+  if (state.runId !== args.expectedRunId || state.minute !== args.expectedMinute) throw new SenderError('Dashboard changed; review the latest shared state');
+  return state;
+}
+function saveClock(ctx: Ctx, state: ReturnType<typeof clock>) {
+  if (ctx.db.dashboardClock.id.find(1)) ctx.db.dashboardClock.id.update(state); else ctx.db.dashboardClock.insert(state);
+}
+function event(ctx: Ctx, id: bigint, action: string, summary: string) {
+  ctx.db.activityEvent.insert({ id: 0n, entityType: 'dashboard', entityId: id, action, summary, actorId: ctx.sender, timestamp: ctx.timestamp });
+}
+function area(ctx: ReadCtx, id: bigint) {
+  const zone = ctx.db.zone.id.find(id);
+  if (!zone || zone.level !== 'neighborhood' || !ctx.db.disaster.id.find(zone.disasterId)?.isSimulated) throw new SenderError('Synthetic dashboard area not found');
+  return zone;
+}
+function homeArea(ctx: ReadCtx, householdId: bigint) {
+  const home = ctx.db.household.id.find(householdId);
+  const zone = home && ctx.db.zone.id.find(home.zoneId);
+  if (!home || !zone) throw new SenderError('Household not found');
+  const hotspot = [...ctx.db.zone.disasterId.filter(zone.disasterId)].find(z => z.level === 'neighborhood');
+  if (!hotspot) throw new SenderError('Household area not found');
+  return { home, hotspot };
+}
+const noticeId = (run: bigint, areaId: bigint, phase: string) => `${run}:${areaId}:${phase}`;
+function safe(ctx: ReadCtx, run: bigint, areaId: bigint, home: { id: bigint; isCustomer: boolean; checkInStatus: string }, phase: string) {
+  if (!home.isCustomer) return home.checkInStatus === 'safe';
+  const repliedSafe = (p: string) => ctx.db.dashboardRecipient.id.find(`${noticeId(run, areaId, p)}:${home.id}`)?.status === 'safe';
+  return repliedSafe(phase) || (phase === 'after' && repliedSafe('before'));
+}
+function welfare(ctx: Ctx, householdId: bigint) {
+  return [...ctx.db.helpRequest.householdId.filter(householdId)].find(r => r.needType === 'welfare_check' && r.status !== 'resolved')
+    ?? ctx.db.helpRequest.insert({ id: 0n, householdId, needType: 'welfare_check', urgency: 3, people: 1, status: 'open', createdAt: ctx.timestamp, resolvedAt: undefined });
+}
+export function sendNotice(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; areaId: bigint; message: string }) {
+  const state = validateClock(ctx, args), zone = area(ctx, args.areaId), phase = state.minute < 0 ? 'before' : 'after';
+  const id = noticeId(state.runId, zone.id, phase), message = args.message.trim();
+  if (!message || message.length > 4000) throw new SenderError('Review a message of 1–4000 characters');
+  if (ctx.db.dashboardNotice.id.find(id)) throw new SenderError('This area already has an approved notice for this phase');
+  const homes = [...ctx.db.zone.disasterId.filter(zone.disasterId)].flatMap(z => [...ctx.db.household.zoneId.filter(z.id)])
+    .filter(h => h.isCustomer && !safe(ctx, state.runId, zone.id, h, phase));
+  if (!homes.length) throw new SenderError('No unconfirmed customer recipients remain');
+  saveClock(ctx, state);
+  ctx.db.dashboardNotice.insert({ id, runId: state.runId, areaId: zone.id, phase, sentAt: state.minute, deadline: state.minute + 30, message });
+  for (const h of homes) ctx.db.dashboardRecipient.insert({ id: `${id}:${h.id}`, noticeId: id, householdId: h.id, status: 'unknown', repliedAt: undefined });
+  event(ctx, zone.id, 'notification_approved', `${phase} simulated notice approved for ${homes.length} recipients; no messages delivered`);
+}
+export function recordReply(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; reply: string }) {
+  const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId), phase = state.minute < 0 ? 'before' : 'after';
+  if (!['safe', 'needs_help'].includes(args.reply) || (phase === 'before' && args.reply !== 'safe')) throw new SenderError('Invalid reply for this notification phase');
+  const recipient = ctx.db.dashboardRecipient.id.find(`${noticeId(state.runId, hotspot.id, phase)}:${home.id}`);
+  if (!recipient || safe(ctx, state.runId, hotspot.id, home, phase)) throw new SenderError('Household is not awaiting a reply in this round');
+  if (currentResponse(ctx, state.runId, home.id)) throw new SenderError('Response unit already approved');
+  ctx.db.dashboardRecipient.id.update({ ...recipient, status: args.reply, repliedAt: ctx.timestamp });
+  ctx.db.household.id.update({ ...home, checkInStatus: args.reply, lastContactAt: ctx.timestamp });
+  if (args.reply === 'needs_help') welfare(ctx, home.id);
+  refreshDecisions(ctx, home.id);
+  event(ctx, home.id, 'notification_reply', `${phase} simulated ${args.reply} reply; existing assistance records preserved`);
+}
+export function advanceClock(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; step: string }) {
+  const state = validateClock(ctx, args), notices = [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === state.runId);
+  if (args.step === 'impact') {
+    if (state.minute >= 0 || !notices.some(n => n.phase === 'before')) throw new SenderError('Approve an initial notice before advancing to impact');
+    saveClock(ctx, { ...state, minute: 0 });
+    for (const d of [...ctx.db.disaster.iter()]) if (d.isSimulated) ctx.db.disaster.id.update({ ...d, phase: 'response', updatedAt: ctx.timestamp });
+    event(ctx, 1n, 'dashboard_impact', 'Shared synthetic clock advanced two hours; earlier safe replies are carried forward by the dashboard policy');
+  } else if (args.step === 'deadline') {
+    if (state.minute < 0 || !notices.some(n => n.phase === 'after' && n.deadline > state.minute)) throw new SenderError('No pending second-notification deadline');
+    const minute = state.minute + 30;
+    saveClock(ctx, { ...state, minute });
+    for (const notice of notices.filter(n => n.phase === 'after' && n.deadline <= minute)) {
+      for (const r of [...ctx.db.dashboardRecipient.noticeId.filter(notice.id)]) {
+        const h = ctx.db.household.id.find(r.householdId);
+        if (h && r.status === 'unknown' && !safe(ctx, state.runId, notice.areaId, h, 'after') && !currentResponse(ctx, state.runId, h.id)) welfare(ctx, h.id);
+      }
+    }
+    event(ctx, 1n, 'dashboard_deadline', `Shared clock advanced to T+${minute}; due unanswered cases have welfare-review requests, not automatic dispatch`);
+  } else throw new SenderError('Unknown clock step');
+  refreshDecisions(ctx);
+}
+function currentResponse(ctx: ReadCtx, run: bigint, householdId: bigint) {
+  const response = ctx.db.dashboardResponse.id.find(`${run}:${householdId}`);
+  const assignment = response && ctx.db.assignment.id.find(response.assignmentId);
+  return assignment && assignment.status !== 'cancelled' ? assignment : undefined;
+}
+export function prepareResponse(ctx: Ctx, args: { expectedRunId: bigint; expectedMinute: number; householdId: bigint; teamId: bigint }) {
+  const state = validateClock(ctx, args), { home, hotspot } = homeArea(ctx, args.householdId);
+  if (state.minute < 0 || safe(ctx, state.runId, hotspot.id, home, 'after')) throw new SenderError('Confirmed-safe or pre-impact households cannot receive dashboard response units');
+  if (currentResponse(ctx, state.runId, home.id)) throw new SenderError('Response unit already approved');
+  let requests = [...ctx.db.helpRequest.householdId.filter(home.id)].filter(r => r.status !== 'resolved');
+  const notice = ctx.db.dashboardNotice.id.find(noticeId(state.runId, hotspot.id, 'after'));
+  const recipient = notice && ctx.db.dashboardRecipient.id.find(`${notice.id}:${home.id}`);
+  const checkInNeed = !home.isCustomer && ['needs_help', 'urgent'].includes(home.checkInStatus);
+  if (!requests.length && !checkInNeed && !(recipient && (recipient.status === 'needs_help' || state.minute >= notice!.deadline))) throw new SenderError('No reported need or overdue second-notification reply');
+  if (!requests.length) requests = [welfare(ctx, home.id)];
+  if (requests.some(r => r.status !== 'open')) throw new SenderError('Household already has assigned assistance');
+  const team = ctx.db.responseTeam.id.find(args.teamId);
+  if (!team || team.status !== 'available' || requests.some(r => !team.capabilities.includes(r.needType) || team.capacity < r.people)) throw new SenderError('Team capability, capacity or availability no longer matches');
+  requests.sort((a, b) => b.urgency - a.urgency || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { state, requestId: requests[0].id };
+}
+export function saveResponse(ctx: Ctx, run: bigint, householdId: bigint, requestId: bigint) {
+  const assignment = [...ctx.db.assignment.requestId.filter(requestId)].find(a => ['assigned', 'in_progress'].includes(a.status));
+  if (!assignment) throw new SenderError('Committed assignment not found');
+  const row = { id: `${run}:${householdId}`, runId: run, householdId, requestId, assignmentId: assignment.id };
+  if (ctx.db.dashboardResponse.id.find(row.id)) ctx.db.dashboardResponse.id.update(row); else ctx.db.dashboardResponse.insert(row);
+}
+export function resetDashboardState(ctx: Ctx) {
+  const state = clock(ctx);
+  for (const r of [...ctx.db.dashboardRecipient.iter()]) ctx.db.dashboardRecipient.id.delete(r.id);
+  for (const n of [...ctx.db.dashboardNotice.iter()]) ctx.db.dashboardNotice.id.delete(n.id);
+  for (const r of [...ctx.db.dashboardResponse.iter()]) ctx.db.dashboardResponse.id.delete(r.id);
+  saveClock(ctx, { ...state, runId: state.runId + 1n, minute: -120 });
+}

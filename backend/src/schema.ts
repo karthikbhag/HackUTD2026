@@ -71,6 +71,20 @@ export const exerciseCheckIn = table({ name: 'exercise_check_in' }, {
   runId: t.u64(), phase: t.string(), status: t.string(), sentAtMinute: t.i32(), deadlineMinute: t.i32(),
   replyAtMinute: t.option(t.i32()), requestId: t.option(t.u64()),
 });
+export const dashboardClock = table({ name: 'dashboard_clock' }, {
+  id: t.u8().primaryKey(), runId: t.u64(), minute: t.i32(),
+});
+export const dashboardNotice = table({ name: 'dashboard_notice' }, {
+  id: t.string().primaryKey(), runId: t.u64(), areaId: t.u64().index('btree'), phase: t.string(),
+  sentAt: t.i32(), deadline: t.i32(), message: t.string(),
+});
+export const dashboardRecipient = table({ name: 'dashboard_recipient' }, {
+  id: t.string().primaryKey(), noticeId: t.string().index('btree'), householdId: t.u64().index('btree'),
+  status: t.string(), repliedAt: t.option(t.timestamp()),
+});
+export const dashboardResponse = table({ name: 'dashboard_response' }, {
+  id: t.string().primaryKey(), runId: t.u64(), householdId: t.u64().index('btree'), requestId: t.u64(), assignmentId: t.u64(),
+});
 export const responseRun = table({ name: 'response_run' }, {
   id: t.u64().primaryKey().autoInc(), disasterId: t.u64(), zoneId: t.u64(), scenarioRunId: t.u64(),
   ownsFixture: t.bool(), config: t.string(), configVersion: t.u32(), epoch: t.u64(), planVersion: t.u64(),
@@ -96,5 +110,5 @@ export const responseTeamState = table({ name: 'response_team_state' }, {
 });
 export const routingWorker = table({ name: 'routing_worker' }, { identity: t.identity().primaryKey() });
 const db = schema({ employee, disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer,
-  scenarioState, recommendationTemplate, decisionSummary, decisionTick, areaExercise, exerciseCheckIn, responseRun, welfareVisit, teamRoute, responseTeamState, routingWorker });
+  scenarioState, recommendationTemplate, decisionSummary, decisionTick, areaExercise, exerciseCheckIn, dashboardClock, dashboardNotice, dashboardRecipient, dashboardResponse, responseRun, welfareVisit, teamRoute, responseTeamState, routingWorker });
 export default db;

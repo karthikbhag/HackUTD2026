@@ -1,10 +1,8 @@
 # Person 2 — backend completion plan
 
-Current v1.18 supersedes the historical integration gaps below: Person 3's decisions,
-reviewed tasks and team recommendation views now power a connected main scenario
-desk with shared rounds and bounded synthetic time skips. The main local database
-is a persistent 10,000-household Demo fixture. See [current setup and verification](SHARED_WORKFLOW.md).
-Browser acceptance and actual AI/notification services remain separate work.
+> Current v1.27 integration: [shared popup workflow](POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
+The shared scenario desk, response routing and on-demand Gemini reviews from main are also retained. See [scenario desk setup](SHARED_WORKFLOW.md).
 
 Aligned with main README commit `39893be` (2026-11-07): nationwide multi-hazard MVP with tornado, earthquake, hurricane, wildfire, blizzard, and flood layers. Preserve the national → metro → neighborhood hierarchy; demonstrate the full workflow on one hotspot while retaining all six supported layers.
 

@@ -2,6 +2,8 @@ import type { ResponseTeamState, WelfareVisit, Assignment, Disaster, HelpRequest
 import { hazards, type Coordinate, type Hazard, type MapData } from "./types";
 
 export interface OperationalRows {
+  /** Derived from subscribed synthetic clock/rounds, separate from contact age. */
+  dashboardOverdueHouseholdIds?: readonly string[];
   disasters: readonly Disaster[];
   zones: readonly Zone[];
   households: readonly Household[];

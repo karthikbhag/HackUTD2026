@@ -8,6 +8,8 @@ import { decisionSummary, scenarioState, decisionTick } from './schema';
 import { refreshDecisions, householdDecision, requestRecommendations } from './decisions';
 import { areaExercise, exerciseCheckIn } from './schema';
 import { advanceExercise, sendExerciseNotice, replyToExercise } from './exercise';
+import { dashboardNotice, dashboardRecipient, dashboardResponse } from './schema';
+import { clock, validateClock, sendNotice, recordReply, advanceClock, prepareResponse, saveResponse, resetDashboardState } from './dashboard';
 export default db;
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
 function requireEmployee(ctx: Ctx, admin = false) {
@@ -47,6 +49,7 @@ export const resetDemo = db.reducer({ confirmation: t.string() }, (ctx, { confir
   if (confirmation !== 'RESET SYNTHETIC DEMO') throw new SenderError('Reset confirmation required');
   // Membership is deliberately preserved. Snapshot before deleting iterator rows.
   // Preserve durable history across resets.
+  resetDashboardState(ctx);
   resetOperationalData(ctx);
   event(ctx, 'disaster', 1n, 'reset', 'Synthetic scenario reset; memberships and history preserved');
 });
@@ -216,6 +219,32 @@ export const recordExerciseReply = db.reducer({ ...ExerciseArgs, householdId: t.
 export const exercises = db.view({ public: true }, t.array(areaExercise.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.areaExercise.iter()] : []);
 export const exerciseReplies = db.view({ public: true }, { disasterId: t.u64() }, t.array(exerciseCheckIn.rowType), (ctx, { disasterId }) =>
   ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.exerciseCheckIn.disasterId.filter(disasterId)] : []);
+const DashboardArgs = { expectedRunId: t.u64(), expectedMinute: t.i32() };
+export const approveDashboardNotice = db.reducer({ ...DashboardArgs, areaId: t.u64(), message: t.string() }, (ctx, args) => { requireEmployee(ctx); sendNotice(ctx, args); });
+export const replyDashboardNotice = db.reducer({ ...DashboardArgs, householdId: t.u64(), reply: t.string() }, (ctx, args) => { requireEmployee(ctx); recordReply(ctx, args); });
+export const advanceDashboardClock = db.reducer({ ...DashboardArgs, step: t.string() }, (ctx, args) => { requireEmployee(ctx); advanceClock(ctx, args); });
+export const approveDashboardResponse = db.reducer({ ...DashboardArgs, householdId: t.u64(), teamId: t.u64() }, (ctx, args) => {
+  requireEmployee(ctx);
+  const prepared = prepareResponse(ctx, args);
+  assignTeam(ctx, { requestId: prepared.requestId, teamId: args.teamId });
+  saveResponse(ctx, prepared.state.runId, args.householdId, prepared.requestId);
+});
+export const resetDashboard = db.reducer({ ...DashboardArgs, confirmation: t.string() }, (ctx, args) => {
+  requireEmployee(ctx, true); validateClock(ctx, args); resetDemo(ctx, { confirmation: args.confirmation });
+});
+const DashboardInfo = t.object('DashboardInfoRow', { id: t.u8(), runId: t.u64(), minute: t.i32(), canReset: t.bool() });
+export const dashboardState = db.view({ public: true }, t.array(DashboardInfo), ctx => {
+  const user = ctx.db.employee.identity.find(ctx.sender); return user ? [{ ...clock(ctx), canReset: user.admin }] : [];
+});
+export const dashboardNotices = db.view({ public: true }, t.array(dashboardNotice.rowType), ctx =>
+  ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.dashboardNotice.iter()].filter(n => n.runId === clock(ctx).runId) : []);
+export const dashboardRecipients = db.view({ public: true }, t.array(dashboardRecipient.rowType), ctx => {
+  if (!ctx.db.employee.identity.find(ctx.sender)) return [];
+  const notices = new Set([...ctx.db.dashboardNotice.iter()].filter(n => n.runId === clock(ctx).runId).map(n => n.id));
+  return [...ctx.db.dashboardRecipient.iter()].filter(r => notices.has(r.noticeId));
+});
+export const dashboardResponses = db.view({ public: true }, t.array(dashboardResponse.rowType), ctx =>
+  ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.dashboardResponse.iter()].filter(r => r.runId === clock(ctx).runId) : []);
 
 // Welfare routing uses its own queue; no fabricated assistance requests.
 export const setRoutingWorker = db.reducer({ identity: t.identity(), enabled: t.bool() }, (ctx, args) => {

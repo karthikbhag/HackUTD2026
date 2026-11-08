@@ -1,6 +1,8 @@
 # Map integration handoff
 
-Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an shared SpacetimeDB connection. `ConnectedWorkspace` now provides authoritative decisions and employee-reviewed mutations in the main scenario desk; `/demo` remains local. The scenario desk rehearses notification approval, check-in replies, time skips, and welfare-check assignments in fixture demo mode using browser-local state only.
+> Current v1.27 integration: [shared popup workflow](../../../../backend/POPUP_WORKFLOW.md). `/` and `/demo` use shared notifications, replies, clock and response approvals; `/demo/local` is isolated. The connected scenario desk, response-routing workspace and Gemini reviews from main are retained. Browser acceptance remains separate.
+
+Person 1: Aalvee Ahtav. The map, operational queue and scenario desk reuse one SpacetimeDB connection.
 
 ## Current presentation — v1.20
 
