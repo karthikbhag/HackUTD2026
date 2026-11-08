@@ -49,7 +49,8 @@ describe('shared popup dashboard', () => {
     expect(() => run(outsider, (ctx, current) => api.approveDashboardNotice(ctx, { ...current, areaId: areas[0].id, message: 'bad' }))).toThrow(/authorization/);
     send();
     expect(api.dashboardNotices(test.viewContext(employee))[0].message).toBe('Reviewed synthetic notification');
-    expect(api.dashboardRecipients(test.viewContext(employee))).toHaveLength(homes(areas[0].id).filter(h => h.isCustomer).length);
+    expect(api.dashboardRecipients(test.viewContext(employee)).length).toBeGreaterThan(0);
+    expect(api.dashboardRecipients(test.viewContext(employee)).every(r => r.riskLevel !== 'None' && r.approvedMessage === 'Reviewed synthetic notification')).toBe(true);
     expect(test.db.household.id.find(h.id)!.lastContactAt).toEqual(contact);
     expect(() => send()).toThrow(/already/);
     expect(() => run(employee, (ctx, current) => api.replyDashboardNotice(ctx, { ...current, householdId: h.id, reply: 'needs_help' }))).toThrow(/phase/);
@@ -119,5 +120,30 @@ describe('shared popup dashboard', () => {
     expect(api.households(test.viewContext(employee))).toHaveLength(60);
     expect(test.db.activityEvent.count()).toBeGreaterThan(history);
     expect(() => run(employee, (ctx, current) => api.advanceDashboardClock(ctx, { ...old, step: 'deadline' }))).toThrow(/changed/);
+  });
+});
+
+describe('versioned hazard updates and risk outreach', () => {
+  it('updates exposure, rejects unauthorized ingestion and stale approval, and preserves approved snapshots on cancellation', () => {
+    const {test,run,areas,homes} = fixture();
+    const area = areas[0], disaster = test.db.disaster.id.find(area.disasterId)!;
+    const home = homes(area.id).find(h=>h.isCustomer)!;
+    const update = {areaId:String(area.id),version:1,hazard:disaster.type,severity:'high',longitude:home.longitude,latitude:home.latitude,
+      observedAt:'2030-03-17T17:46:40Z',expiresAt:'2040-01-01T00:00:00Z',source:'Test normalized feed',dataKind:'simulation',status:'active',radiiMeters:[1000,2000,3000]};
+    expect(()=>run(employee,ctx=>api.ingestHazardEvent(ctx,{update}))).toThrow(/authorization/);
+    run(admin,ctx=>api.ingestHazardEvent(ctx,{update}));
+    const first = [...test.db.impactLayer.disasterId.filter(disaster.id)];
+    expect(first).toHaveLength(3);
+    run(admin,ctx=>api.ingestHazardEvent(ctx,{update:{...update,version:1,longitude:0}}));
+    expect([...test.db.impactLayer.disasterId.filter(disaster.id)]).toEqual(first);
+    const messages = {High:'High guidance',Medium:'Medium guidance',Low:'Low guidance'};
+    expect(()=>run(employee,(ctx,current)=>api.approveDashboardNotice(ctx,{...current,areaId:area.id,message:JSON.stringify({format:'risk-messages-v1',messages,eventVersion:'old'})}))).toThrow(/Risk changed/);
+    run(employee,(ctx,current)=>api.approveDashboardNotice(ctx,{...current,areaId:area.id,message:JSON.stringify({format:'risk-messages-v1',messages})}));
+    const recipients = api.dashboardRecipients(test.viewContext(employee));
+    expect(recipients.find(r=>r.householdId===home.id)).toMatchObject({riskLevel:'High',approvedMessage:'High guidance'});
+    run(admin,ctx=>api.ingestHazardEvent(ctx,{update:{...update,version:2,status:'cancelled'}}));
+    expect(api.impactLayers(test.viewContext(employee)).filter(l=>l.disasterId===disaster.id)).toHaveLength(0);
+    expect(api.dashboardRecipients(test.viewContext(employee))).toEqual(recipients);
+    expect(test.db.decisionSummary.householdId.find(home.id)?.layerIds.every(id=>!id.startsWith(`event:${disaster.id}:`))).toBe(true);
   });
 });

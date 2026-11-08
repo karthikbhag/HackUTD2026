@@ -1,3 +1,4 @@
+import { activeImpactRows } from './hazard-layers';
 /** Authoritative integration of the tested Person 3 helpers. Compact summaries
  * are stored transactionally; detailed explanations are derived on demand.
  */
@@ -11,15 +12,15 @@ import { ScheduleAt } from 'spacetimedb';
 import defaultScenario from './default-scenario.json';
 
 type WriteCtx = ReducerCtx<InferSchema<typeof db>>;
-type ReadCtx = Pick<WriteCtx, 'db'> | Pick<ViewCtx<InferSchema<typeof db>>, 'db'>;
+type ReadCtx = (Pick<WriteCtx, 'db'> | Pick<ViewCtx<InferSchema<typeof db>>, 'db'>) & { timestamp?: WriteCtx['timestamp'] };
 const json = (value: unknown) => JSON.stringify(value, (_key, v) => typeof v === 'bigint' ? v.toString() : v);
 
 export function operationalLayers(ctx: ReadCtx): ImpactLayer[] {
-  return [...ctx.db.impactLayer.iter()].map(l => ({ id: l.id, disaster_id: String(l.disasterId), hazard_type: l.hazardType as Hazard,
-    component: l.component, severity: l.severity as ImpactLayer['severity'], geometry: JSON.parse(l.geometry),
-    data_kind: l.dataKind as ImpactLayer['data_kind'], is_simulated: l.isSimulated, source: l.source,
-    updated_at: l.updatedAt.toDate().toISOString(), label: l.label }));
+  return activeImpactRows(ctx).map(l => ({ id:l.id, disaster_id:String(l.disasterId),hazard_type:l.hazardType as Hazard,
+    component:l.component,severity:l.severity as ImpactLayer['severity'],geometry:JSON.parse(l.geometry),
+    data_kind:l.dataKind as ImpactLayer['data_kind'],is_simulated:l.isSimulated,source:l.source,updated_at:l.updatedAt.toDate().toISOString(),label:l.label }));
 }
+
 function evaluate(ctx: ReadCtx, homes: { id: bigint; latitude: number; longitude: number; checkInStatus: string; vulnerabilityFlags: string[]; lastContactAt?: { microsSinceUnixEpoch: bigint } }[], now: bigint) {
   const exposures = calculateExposure(homes.map(h => ({ id: String(h.id), latitude: h.latitude, longitude: h.longitude })), operationalLayers(ctx));
   const ids = new Set(homes.map(h => h.id));
@@ -78,8 +79,7 @@ export function householdDecision(ctx: ReadCtx, householdId: bigint) {
   const templates: PreparednessTemplate[] = [...ctx.db.recommendationTemplate.iter()].map(t => ({ id: t.id, hazard_type: t.hazardType as Hazard,
     title: t.title, description: t.description, phase: 'preparedness', requires_human_review: true,
     guidance_url: t.guidanceUrl, guidance_checked_on: t.guidanceCheckedOn, source_label: t.sourceLabel }));
-  const layers = [...ctx.db.impactLayer.iter()].map(l => ({ id: l.id, disaster_id: String(l.disasterId), hazard_type: l.hazardType as Hazard,
-    component: l.component, recommendation_ids: l.recommendationIds }));
+  const layers = operationalLayers(ctx).map(l => ({ ...l, recommendation_ids: [...ctx.db.recommendationTemplate.iter()].filter(t => t.hazardType === l.hazard_type).map(t => t.id) }));
   const disasters: PreparednessDisaster[] = [...ctx.db.disaster.iter()].map(d => ({ id: String(d.id), type: d.type as Hazard, phase: d.phase as 'preparedness' | 'response' }));
   const history = [...ctx.db.preparednessTask.byHousehold.filter(householdId)].filter(t => t.recommendationId).map(t => ({ id: String(t.id), householdId: String(householdId),
     scenarioRunId: String(t.scenarioRunId), recommendationId: t.recommendationId, status: t.status as 'pending' | 'in_progress' | 'completed' }));

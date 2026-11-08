@@ -1,3 +1,5 @@
+import { eventRevision, riskCircles, riskLevel } from '../../../../backend/src/risk-bands';
+import { calculateExposure, type ImpactLayer as ExposureLayer } from '../../../../backend/src/exposure';
 import type { ResponseTeamState, WelfareVisit, Assignment, Disaster, HelpRequest, Household, ImpactLayer, PreparednessTask, ResponseTeam, Zone } from "../../module_bindings/types";
 import { hazards, type Coordinate, type Hazard, type MapData } from "./types";
 
@@ -99,13 +101,41 @@ export function toMapData(rows: OperationalRows): MapData {
       status: row.status as MapData["teams"][number]["status"], capacity: row.capacity, capabilities: row.capabilities }] : [];
   });
   const result: MapData = { zones, households, teams };
-  if (rows.impactLayers) result.impactLayers = rows.impactLayers.map(row => {
-    const hotspotId = hotspotByDisaster.get(row.disasterId);
-    if (!hotspotId || !Object.prototype.hasOwnProperty.call(hazards, row.hazardType)) throw new Error("Impact layer has no hotspot.");
-    return { id: row.id, hotspotId, hazard: row.hazardType as Hazard, boundary: boundary(row.geometry),
-      component: row.component, severity: row.severity, severityBasis: row.severityBasis, source: row.source,
-      simulated: row.isSimulated, updatedAt: row.updatedAt.toDate().toISOString(), label: row.label, limitations: row.limitations,
-      ...(row.dataKind === "simulation" || row.dataKind === "forecast" || row.dataKind === "report" ? { dataKind: row.dataKind } : {}) };
+  const circles = riskCircles((rows.impactLayers ?? []).map(row => ({
+    id:row.id,disaster_id:String(row.disasterId),hazard_type:row.hazardType as Hazard,severity:row.severity as ExposureLayer['severity'],
+    geometry:JSON.parse(row.geometry),component:row.component,data_kind:row.dataKind as ExposureLayer['data_kind'],
+    is_simulated:row.isSimulated,source:row.source,updated_at:row.updatedAt.toDate().toISOString(),label:row.label,
+    severityBasis:row.severityBasis,limitations:row.limitations,
+  })));
+  result.impactLayers = circles.map(l => {
+    const hotspotId = hotspotByDisaster.get(BigInt(l.disaster_id));
+    if (!hotspotId || !Object.prototype.hasOwnProperty.call(hazards,l.hazard_type)) throw new Error('Impact layer has no hotspot.');
+    return {id:l.id,hotspotId,hazard:l.hazard_type,boundary:l.geometry.coordinates[0].map((p: readonly [number,number]) => [p[1],p[0]] as Coordinate),
+      component:l.component,severity:l.severity,severityBasis:l.severityBasis,source:l.source,simulated:l.is_simulated,updatedAt:l.updated_at,
+      label:`${riskLevel(l.severity)} risk`,limitations:l.limitations,dataKind:l.data_kind,riskCircle:l.geometry.riskCircle};
   });
+  for (const zone of result.zones) {
+    const eventLayers = circles.filter(l=>hotspotByDisaster.get(BigInt(l.disaster_id)) === zone.id);
+    zone.eventVersion = eventRevision(eventLayers);
+    const circle = eventLayers[0]?.geometry.riskCircle;
+    if (circle) {
+      zone.eventCenter = [circle.center[1],circle.center[0]];
+      zone.severity = circle.eventSeverity as typeof zone.severity;
+      zone.radiiMeters = ['critical','high','moderate'].map(band=>eventLayers.find(l=>l.severity===band)?.geometry.riskCircle?.radiusMeters ?? 0) as [number,number,number];
+    }
+  }
+  const exposure = calculateExposure(result.households.map(h=>({id:h.id,latitude:h.position[0],longitude:h.position[1]})),circles);
+  const evidence = new Map(exposure.households.map(h=>[h.householdId,h]));
+  result.households = result.households.map(h=>{
+    const row = evidence.get(h.id)!;
+    const riskByArea: Record<string, 'High'|'Medium'|'Low'|'None'> = {};
+    for(const match of row.exposures) {
+      const areaId = hotspotByDisaster.get(BigInt(match.disasterId))!;
+      const band = riskLevel(match.severity), previous = riskByArea[areaId];
+      if(!previous || band==='High' || (band==='Medium' && previous==='Low'))riskByArea[areaId]=band;
+    }
+    return {...h,riskLevel:riskLevel(row.highestSeverity),riskByArea};
+  });
+  if (rows.impactLayers === undefined) delete result.impactLayers;
   return result;
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.29**
+Current version: **1.31**
 
 ## Instructions for future updates
 
@@ -30,6 +30,38 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.31 — 2026-11-08
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Resolved PR #18 against main (`69b9c56`), preserving circular risk, reviewed outreach, response routing and marker controls alongside the area follow-up chat, Ask StateWatch AI assistant and development mock mode.
+- Combined both branches' dashboard imports, response/map and AI styles, and frontend test commands. Preserved main's changelog entries 1.28/1.29 and renumbered this branch's former 1.28 entry to 1.30.
+
+### Verification
+
+- On Node 24.22.2, all 40 frontend scenario/notification/AI tests passed. Frontend lint passed with two warnings (generated bindings and an unused test import). Conflict-marker and whitespace checks passed for the merge changes.
+- Frontend production compilation passed, but typecheck and build failed on pre-existing missing dummy-weather binding types/reducers and the unsupported response-approval `areaId` argument. The affected controls, action wrapper and generated bindings are unchanged by this merge.
+- Backend tests passed 143 of 144; the unchanged dummy-weather test failed because returned radii were ordered `[1500, 3000, 500]` instead of `[500, 1500, 3000]`. Backend files are unchanged by this merge. Live browser/API acceptance remains pending; no database deployment, commit or push was performed during conflict resolution.
+
+## Version 1.30 — 2026-11-08
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Added shared circular High/Medium/Low risk modeling for map exposure and backend decisions, with None outside modeled event footprints. Added versioned administrator hazard ingestion, cancellation/expiry handling, a normalized-feed polling/replay script, and deterministic dummy-weather controls and scheduled updates.
+- Added risk-specific notification message review and recipient risk/message/event snapshots, stale-event approval rejection, and event-area context for replies and response approval. Retained compatibility with the legacy cloud wire contract; risk-specific editing depends on matching generated bindings and backend deployment.
+- Updated map risk displays, notification/response marker filters and badges, selected-household styling, and overlapping-event review context. Restyled the response workspace and added explicit run/team URL selection, area navigation, and routing-reset activity records.
+- Added employee-managed dispatch-team enrollment and household dispatch-approval contracts, generated client bindings for new dispatch/hazard operations, and administrator removal of Alaska/Hawaii operational records. Added explicit local database seed/reseed scripts and setup documentation, workflow/routing plans, pnpm configuration and lockfile, and regression coverage.
+
+### Verification
+
+- All 31 frontend scenario, notification-dialog, shared-dashboard and AI tests passed with `npm --prefix frontend run test:scenario`.
+- Backend tests were attempted with `npm --prefix backend test` but could not start on the installed Node 20.11.0 runtime: the Vitest dependency requires `node:util.styleText`. Backend tests on a supported runtime, typechecks, production/module builds, and live feed/browser/deployment acceptance remain pending for this checkpoint.
+- `git diff --cached --check` reported an extra blank line at the end of `frontend/tests/notification-dialog.test.cjs`. No database deployment, reseed, commit or push was performed during this changelog update.
 
 ## Version 1.29 — 2026-11-08
 

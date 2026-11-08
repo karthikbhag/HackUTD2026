@@ -1,3 +1,4 @@
+import { riskCircles } from '../../../../backend/src/risk-bands';
 /**
  * Person 4 adapter: turns subscribed rows into a ranked follow-up queue using
  * Person 3's pure helpers (single source of truth, imported, not copied).
@@ -73,7 +74,7 @@ function exposures(rows: OperationalRows, ids: string[]): { list: HouseholdExpos
   }
   try {
     const located = rows.households.map(h => ({ id: h.id.toString(), latitude: h.latitude, longitude: h.longitude }));
-    const result = calculateExposure(located, usable);
+    const result = calculateExposure(located, riskCircles(usable));
     const byId = new Map(result.households.map(h => [h.householdId, h.exposures]));
     return { list: ids.map(householdId => ({ householdId, exposures: byId.get(householdId) ?? [] })),
       note: `Exposure computed in this browser from ${usable.length} simulated impact layer(s)${skipped ? `; ${skipped} unsupported layer(s) ignored` : ""}.` };

@@ -1,11 +1,16 @@
-import { responseRun, welfareVisit, teamRoute, responseTeamState } from './schema';
+import { configureDummyFeed, advanceDummyFeed } from './dummy-weather';
+import { hazardFeedState, hazardFeedTick } from './schema';
+import { activeImpactRows } from './hazard-layers';
+import { ingestHazard } from './hazard-ingestion';
+import { removeNoncontiguous } from './remove-noncontiguous';
+import { dispatcherMembership, dispatchApproval, responseRun, welfareVisit, teamRoute, responseTeamState } from './schema';
 import { seedRoutingFixture, createRun, runOf, workerRun, configOf, minuteOf, synchronizeWelfare, terminal } from './response-routing';
 import { t, SenderError, type InferSchema, type ReducerCtx } from 'spacetimedb/server';
 import db, { disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer } from './schema';
 import { seed, resetOperationalData } from './seed';
 import { ScheduleAt } from 'spacetimedb';
 import { decisionSummary, scenarioState, decisionTick } from './schema';
-import { refreshDecisions, householdDecision, requestRecommendations } from './decisions';
+import { operationalLayers, refreshDecisions, householdDecision, requestRecommendations } from './decisions';
 import { areaExercise, exerciseCheckIn } from './schema';
 import { advanceExercise, sendExerciseNotice, replyToExercise } from './exercise';
 import { dashboardNotice, dashboardRecipient, dashboardResponse } from './schema';
@@ -170,7 +175,7 @@ export const teams = db.view({ public: true }, t.array(responseTeam.rowType), ct
 export const assignments = db.view({ public: true }, t.array(assignment.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.assignment.iter()] : []);
 export const tasks = db.view({ public: true }, t.array(preparednessTask.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.preparednessTask.iter()] : []);
 export const activities = db.view({ public: true }, t.array(activityEvent.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.activityEvent.iter()] : []);
-export const impactLayers = db.view({ public: true }, t.array(impactLayer.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.impactLayer.iter()] : []);
+export const impactLayers = db.view({ public: true }, t.array(impactLayer.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? activeImpactRows(ctx) : []);
 
 export const decisions = db.view({ public: true }, t.array(decisionSummary.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.decisionSummary.iter()] : []);
 const Info = t.object('ScenarioInfoRow', { id: t.u8(), runId: t.u64(), scenarioId: t.string(), startedAt: t.timestamp(), evaluatedAt: t.timestamp(), canManageScenario: t.bool() });
@@ -221,9 +226,9 @@ export const exerciseReplies = db.view({ public: true }, { disasterId: t.u64() }
   ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.exerciseCheckIn.disasterId.filter(disasterId)] : []);
 const DashboardArgs = { expectedRunId: t.u64(), expectedMinute: t.i32() };
 export const approveDashboardNotice = db.reducer({ ...DashboardArgs, areaId: t.u64(), message: t.string() }, (ctx, args) => { requireEmployee(ctx); sendNotice(ctx, args); });
-export const replyDashboardNotice = db.reducer({ ...DashboardArgs, householdId: t.u64(), reply: t.string() }, (ctx, args) => { requireEmployee(ctx); recordReply(ctx, args); });
+export const replyDashboardNotice = db.reducer({ ...DashboardArgs, householdId: t.u64(), reply: t.string(), areaId: t.option(t.u64()) }, (ctx, args) => { requireEmployee(ctx); recordReply(ctx, args); });
 export const advanceDashboardClock = db.reducer({ ...DashboardArgs, step: t.string() }, (ctx, args) => { requireEmployee(ctx); advanceClock(ctx, args); });
-export const approveDashboardResponse = db.reducer({ ...DashboardArgs, householdId: t.u64(), teamId: t.u64() }, (ctx, args) => {
+export const approveDashboardResponse = db.reducer({ ...DashboardArgs, householdId: t.u64(), teamId: t.u64(), areaId: t.option(t.u64()) }, (ctx, args) => {
   requireEmployee(ctx);
   const prepared = prepareResponse(ctx, args);
   assignTeam(ctx, { requestId: prepared.requestId, teamId: args.teamId });
@@ -280,6 +285,7 @@ export const resumeResponseDemo = db.reducer({ runId: t.u64() }, (ctx, { runId }
 });
 export const resetResponseDemo = db.reducer({ runId: t.u64() }, (ctx, { runId }) => {
   requireEmployee(ctx); const run = runOf(ctx, runId);
+  event(ctx, 'zone', run.zoneId, 'routing_released', 'Welfare routing reset; reserved teams released');
   if ([...ctx.db.welfareVisit.runId.filter(runId)].some(v => v.state === 'in_progress')) throw new SenderError('Complete active checks before reset');
   for (const visit of [...ctx.db.welfareVisit.runId.filter(runId)]) if (!terminal(visit.state)) ctx.db.welfareVisit.id.update({ ...visit, state: 'cancelled', teamId: undefined, notice: 'Run reset' });
   if (run.ownsFixture) {
@@ -407,4 +413,60 @@ export const routingHouseholds = db.view({ public: true }, t.array(household.row
 export const routingTeams = db.view({ public: true }, t.array(responseTeam.rowType), ctx => {
   if (!ctx.db.employee.identity.find(ctx.sender) && !ctx.db.routingWorker.identity.find(ctx.sender)) return [];
   return [...ctx.db.responseTeamState.iter()].flatMap(s => { const team = ctx.db.responseTeam.id.find(s.teamId); return team ? [team] : []; });
+});
+
+// Employee-managed team enrollment; existing shared teams can be linked without reseeding.
+export const registerDispatchTeam = db.reducer({ teamId: t.option(t.u64()), name: t.string(), disasterId: t.u64(), householdId: t.u64(), latitude: t.f64(), longitude: t.f64(), dispatcher: t.identity() }, (ctx, args) => {
+  requireEmployee(ctx);
+  const home = ctx.db.household.id.find(args.householdId);
+  const area = home && ctx.db.zone.id.find(home.zoneId);
+  if (!home || area?.disasterId !== args.disasterId || !ctx.db.disaster.id.find(args.disasterId)) throw new SenderError('Select a household in this disaster');
+  if (!Number.isFinite(args.latitude) || Math.abs(args.latitude)>90 || !Number.isFinite(args.longitude) || Math.abs(args.longitude)>180) throw new SenderError('Invalid coordinates');
+  const rad=Math.PI/180, a=Math.sin((home.latitude-args.latitude)*rad/2)**2+Math.cos(home.latitude*rad)*Math.cos(args.latitude*rad)*Math.sin((home.longitude-args.longitude)*rad/2)**2;
+  if (6371*2*Math.asin(Math.sqrt(Math.min(1,a)))>25) throw new SenderError('Team must be within 25 km of the selected affected household');
+  if (ctx.db.dispatcherMembership.identity.find(args.dispatcher)) throw new SenderError('Dispatcher already has a team');
+  let team = args.teamId === undefined ? undefined : ctx.db.responseTeam.id.find(args.teamId);
+  if (args.teamId !== undefined && !team) throw new SenderError('Team not found');
+  if (team && ([...ctx.db.dispatcherMembership.iter()].some(m=>m.teamId===team!.id) || ctx.db.responseTeamState.teamId.find(team.id) || [...ctx.db.assignment.teamId.filter(team.id)].some(a=>active(a.status)))) throw new SenderError('Team is already deployed');
+  if (!team) {
+    if (!args.name.trim()) throw new SenderError('Team name required');
+    const id=[...ctx.db.responseTeam.iter()].reduce((n,t)=>t.id>=n?t.id+1n:n,1n);
+    team=ctx.db.responseTeam.insert({id,name:args.name.trim(),latitude:args.latitude,longitude:args.longitude,status:'available',capacity:0,capabilities:['welfare_check']});
+  } else ctx.db.responseTeam.id.update({...team,latitude:args.latitude,longitude:args.longitude});
+  ctx.db.dispatcherMembership.insert({identity:args.dispatcher,teamId:team.id,disasterId:args.disasterId});
+  event(ctx,'team',team.id,'registered','Dispatcher linked to disaster response team');
+});
+export const setDispatchApproval = db.reducer({ householdIds: t.array(t.u64()), approved: t.bool() }, (ctx, args) => {
+  requireEmployee(ctx);
+  if (!args.householdIds.length || args.householdIds.length>200) throw new SenderError('Select 1–200 households');
+  for (const householdId of new Set(args.householdIds)) {
+    const home=ctx.db.household.id.find(householdId), area=home&&ctx.db.zone.id.find(home.zoneId);
+    if (!home || !area) throw new SenderError('Household not found');
+    if (args.approved && home.checkInStatus==='safe') throw new SenderError('Safe households do not require welfare dispatch');
+    const id=`${area.disasterId}:${householdId}`, previous=ctx.db.dispatchApproval.id.find(id);
+    const row={id,householdId,disasterId:area.disasterId,approved:args.approved,actor:ctx.sender,updatedAt:ctx.timestamp};
+    if(previous)ctx.db.dispatchApproval.id.update(row);else ctx.db.dispatchApproval.insert(row);
+    event(ctx,'household',householdId,args.approved?'dispatch_approved':'dispatch_withdrawn','Employee welfare dispatch decision recorded');
+  }
+});
+export const myDispatchTeam = db.view({public:true},t.array(dispatcherMembership.rowType),ctx=>{
+  const row=ctx.db.dispatcherMembership.identity.find(ctx.sender);return row?[row]:[];
+});
+export const dispatchApprovals = db.view({public:true},t.array(dispatchApproval.rowType),ctx=>ctx.db.employee.identity.find(ctx.sender)?[...ctx.db.dispatchApproval.iter()]:[]);
+
+export const removeAlaskaHawaii = db.reducer(ctx => { requireEmployee(ctx, true); removeNoncontiguous(ctx); });
+
+const HazardUpdateInput = t.object('HazardUpdateInput', {
+  areaId:t.string(), version:t.u32(), hazard:t.string(), severity:t.string(), longitude:t.f64(), latitude:t.f64(),
+  observedAt:t.string(), expiresAt:t.string(), source:t.string(), dataKind:t.string(), status:t.string(), radiiMeters:t.option(t.array(t.f64())),
+});
+export const ingestHazardEvent = db.reducer({ update: HazardUpdateInput }, (ctx, { update }) => { requireEmployee(ctx, true); ingestHazard(ctx, update); });
+
+export const dummyWeatherState = db.view({public:true},t.array(hazardFeedState.rowType),ctx=>ctx.db.employee.identity.find(ctx.sender)?[...ctx.db.hazardFeedState.iter()]:[]);
+export const setDummyWeatherFeed = db.reducer({areaId:t.u64(),expectedRunId:t.u64(),enabled:t.bool(),intervalSeconds:t.u32()},(ctx,args)=>{requireEmployee(ctx);configureDummyFeed(ctx,args);});
+export const advanceDummyWeather = db.reducer({areaId:t.u64(),expectedRunId:t.u64()},(ctx,args)=>{requireEmployee(ctx);advanceDummyFeed(ctx,args);});
+export const tickDummyWeather = db.reducer({onSchedule:hazardFeedTick},{timer:hazardFeedTick.rowType},ctx=>{
+  if(!ctx.sender.equals(ctx.identity))throw new SenderError('Weather timer is internal only');
+  const state=ctx.db.hazardFeedState.id.find(1);
+  if(state?.enabled)advanceDummyFeed(ctx,{areaId:state.areaId,expectedRunId:ctx.db.scenarioState.id.find(1)?.runId ?? 0n});
 });

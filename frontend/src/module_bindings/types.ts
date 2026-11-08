@@ -143,6 +143,26 @@ export type Disaster = __Infer<typeof Disaster>;
 export const Disasters = __t.object("Disasters", {});
 export type Disasters = __Infer<typeof Disasters>;
 
+export const DispatchApproval = __t.object("DispatchApproval", {
+  id: __t.string(),
+  householdId: __t.u64(),
+  disasterId: __t.u64(),
+  approved: __t.bool(),
+  actor: __t.identity(),
+  updatedAt: __t.timestamp(),
+});
+export type DispatchApproval = __Infer<typeof DispatchApproval>;
+
+export const DispatchApprovals = __t.object("DispatchApprovals", {});
+export type DispatchApprovals = __Infer<typeof DispatchApprovals>;
+
+export const DispatcherMembership = __t.object("DispatcherMembership", {
+  identity: __t.identity(),
+  teamId: __t.u64(),
+  disasterId: __t.u64(),
+});
+export type DispatcherMembership = __Infer<typeof DispatcherMembership>;
+
 export const Employee = __t.object("Employee", {
   identity: __t.identity(),
   admin: __t.bool(),
@@ -170,6 +190,22 @@ export type ExerciseReplies = __Infer<typeof ExerciseReplies>;
 
 export const Exercises = __t.object("Exercises", {});
 export type Exercises = __Infer<typeof Exercises>;
+
+export const HazardUpdateInput = __t.object("HazardUpdateInput", {
+  areaId: __t.string(),
+  version: __t.u32(),
+  hazard: __t.string(),
+  severity: __t.string(),
+  longitude: __t.f64(),
+  latitude: __t.f64(),
+  observedAt: __t.string(),
+  expiresAt: __t.string(),
+  source: __t.string(),
+  dataKind: __t.string(),
+  status: __t.string(),
+  radiiMeters: __t.option(__t.array(__t.f64())),
+});
+export type HazardUpdateInput = __Infer<typeof HazardUpdateInput>;
 
 export const HelpRequest = __t.object("HelpRequest", {
   id: __t.u64(),
@@ -231,6 +267,9 @@ export type ImpactLayer = __Infer<typeof ImpactLayer>;
 
 export const ImpactLayers = __t.object("ImpactLayers", {});
 export type ImpactLayers = __Infer<typeof ImpactLayers>;
+
+export const MyDispatchTeam = __t.object("MyDispatchTeam", {});
+export type MyDispatchTeam = __Infer<typeof MyDispatchTeam>;
 
 export const PreparednessTask = __t.object("PreparednessTask", {
   id: __t.u64(),

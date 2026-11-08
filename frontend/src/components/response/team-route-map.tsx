@@ -33,12 +33,12 @@ export function TeamRouteMap({browserKey,workerUrl,runId,teamId,version,epoch,te
         const data=await res.json() as {version:string;paths:Point[][]};
         if(data.version!==version)throw new Error('Route update pending');
         if(disposed)return;
-        for(const path of data.paths)overlays.push(new maps.Polyline({map,path:path.map(p=>({lat:p.latitude,lng:p.longitude})),strokeColor:'#2563eb',strokeWeight:5}));
+        for(const path of data.paths)overlays.push(new maps.Polyline({map,path:path.map(p=>({lat:p.latitude,lng:p.longitude})),strokeColor:'#d62311',strokeWeight:5}));
         setError('');
       }catch(e){if(!disposed)setError(e instanceof Error?e.message:'Route unavailable');}
     }).catch(e=>{if(!disposed)setError(e.message);});
     return()=>{disposed=true;controller.abort();for(const overlay of overlays)overlay.setMap(null);};
   },[browserKey,workerUrl,runId,teamId,version,epoch,team,stops]);
   if(!browserKey)return <p role="status">Google Maps browser key missing. Stops and safety notices remain available.</p>;
-  return <section><div ref={host} style={{height:420,borderRadius:16,background:'#e2e8f0'}} aria-label="Google map of simulated team route"/>{error&&<p role="status">{error}</p>}</section>;
+  return <section><div ref={host} className="response-map" aria-label="Google map of simulated team route"/>{error&&<p role="status">{error}</p>}</section>;
 }

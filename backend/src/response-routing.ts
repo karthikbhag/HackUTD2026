@@ -61,6 +61,7 @@ export function createRun(ctx: Ctx, args: { zoneId: bigint; teamIds: bigint[]; s
     if (!team || team.status !== 'available' || !team.capabilities.includes('welfare_check') || state || [...ctx.db.assignment.teamId.filter(id)].some(a => ['assigned','in_progress'].includes(a.status))) throw new SenderError('Team unavailable');
   }
   const run = ctx.db.responseRun.insert({ id: 0n, disasterId: zone.disasterId, zoneId: zone.id, scenarioRunId: scenario.runId, ownsFixture: false, config: JSON.stringify(responseRoutingDefaults), configVersion: 1, epoch: 1n, planVersion: 0n, status: 'paused', elapsedMinutes: 0, anchorMicros: ctx.timestamp.microsSinceUnixEpoch, startMinute: exercise.minute, stagingLatitude: args.stagingLatitude, stagingLongitude: args.stagingLongitude, holdUntil: 0n, leaseOwner: undefined, leaseUntil: 0n, fence: 0n, planningError: '' });
+  ctx.db.activityEvent.insert({ id: 0n, entityType: 'zone', entityId: zone.id, action: 'routing_approved', summary: `Welfare routing approved for ${zone.name}; two teams reserved, exercise paused`, actorId: ctx.sender, timestamp: ctx.timestamp });
   for (const teamId of args.teamIds) ctx.db.responseTeamState.insert({ teamId, runId: run.id, positionVersion: 0n, updatedAt: ctx.timestamp, mode: 'holding', currentVisitId: undefined, available: true, tickSequence: 0n });
   for (const h of ctx.db.household.zoneId.filter(zone.id)) synchronizeWelfare(ctx, h.id);
 }

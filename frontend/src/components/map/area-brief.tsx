@@ -8,6 +8,7 @@ export function AreaBrief({ data, zone, phase = "before" }: { data: MapData; zon
   const [evidence, setEvidence] = useState(false);
   const [index, setIndex] = useState(0);
   const households = data.households.filter(row => (row.hotspotId ?? row.zoneId) === zone.id && row.isCustomer);
+  const exposed = data.households.filter(h=>h.riskByArea?.[zone.id] && h.riskByArea[zone.id] !== 'None');
   const layers = (data.impactLayers ?? []).filter(layer => layer.hotspotId === zone.id);
   const highest = [...layers].sort((a, b) => severityRank(b.severity) - severityRank(a.severity))[0];
   const currentIndex = Math.min(index, Math.max(0, layers.length - 1));
@@ -15,6 +16,8 @@ export function AreaBrief({ data, zone, phase = "before" }: { data: MapData; zon
   return <article className="area-brief compact-area-brief">
     <div className="panel-heading"><p className="eyebrow">{hazards[zone.hazard].label} · {zone.simulated ? "Simulation" : "Source data"}</p><span className={`severity ${zone.severity}`}>{zone.severity} severity</span></div>
     <h3>{zone.name}</h3>
+    {zone.eventCenter && <p className="small">Event location: {zone.eventCenter.map(n=>n.toFixed(4)).join(', ')} · {zone.severity} severity</p>}
+    {zone.radiiMeters && <dl className="brief-facts">{(['High','Medium','Low'] as const).map((band,i)=><div key={band}><dt>{band} risk · {(zone.radiiMeters![i]/1000).toFixed(1)} km</dt><dd>{exposed.filter(h=>h.riskByArea?.[zone.id]===band).length.toLocaleString()} households</dd></div>)}</dl>}
     {evidence && <section className="compact-evidence" aria-label="Area evidence">
       <h4>Evidence & source</h4><p>{zone.source}<br/>{displayTime(zone.updatedAt)}</p>
       {layer ? <><strong>{layer.label} · {layer.severity}</strong><p>{layer.severityBasis}</p><p>{layer.limitations}</p><small>{layer.source} · {displayTime(layer.updatedAt)}</small></> : <p>No explicit hazard footprints supplied. Context boundaries do not establish exposure.</p>}
@@ -25,7 +28,7 @@ export function AreaBrief({ data, zone, phase = "before" }: { data: MapData; zon
       <p className="brief-lead">{highest ? `Highest supplied impact: ${highest.severity} · ${highest.label}.` : 'No explicit footprint supplied. Context boundaries do not establish exposure.'}</p>
       <AiAreaReview data={data} zone={zone} phase={phase}/>
       <dl className="brief-facts"><div><dt>Impact shapes</dt><dd>{layers.length} supplied</dd></div><div><dt>Outreach context</dt><dd>{households.length.toLocaleString()} customers</dd></div></dl>
-      <p className="muted small">Geographic membership, not verified exposure. Review the footprint before outreach.</p>
+      <p className="muted small">Risk counts use modeled distance bands. None means outside the outer circle. Outreach excludes confirmed-safe households.</p>
     </div>
     <button className="text-button brief-evidence-toggle" onClick={() => setEvidence(value => !value)}>{evidence ? "← Back to summary" : "Evidence & source →"}</button>
   </article>;

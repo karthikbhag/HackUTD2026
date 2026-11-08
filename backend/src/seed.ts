@@ -1,3 +1,4 @@
+import { stopDummyFeed } from './dummy-weather';
 import type { InferSchema, ReducerCtx } from 'spacetimedb/server';
 import type db from './schema';
 import { adaptScenario, source, type Scenario } from './scenario';
@@ -34,6 +35,7 @@ export function seed(ctx: ReducerCtx<InferSchema<typeof db>>, scenario: Scenario
 /** Same lifecycle for each build's selected fixture; preserves memberships,
  * periodic clock, scenario counter, catalog and durable activity history. */
 export function resetOperationalData(ctx: ReducerCtx<InferSchema<typeof db>>, scenario: Scenario = source) {
+  stopDummyFeed(ctx);
   for (const row of [...ctx.db.responseRun.iter()]) ctx.db.responseRun.id.update({ ...row, status: 'reset', fence: row.fence + 1n, epoch: row.epoch + 1n, leaseUntil: 0n });
   for (const row of [...ctx.db.welfareVisit.iter()]) ctx.db.welfareVisit.id.delete(row.id);
   for (const row of [...ctx.db.teamRoute.iter()]) ctx.db.teamRoute.id.delete(row.id);

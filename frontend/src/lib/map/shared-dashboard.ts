@@ -16,7 +16,7 @@ export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, noti
   const state: DashboardScenario = { minute: info?.minute ?? -120, areas: {}, assignments: {} };
   const rounds = new Map<string, NonNullable<DashboardScenario["areas"][string]["before"]>>();
   for (const notice of notices) if (notice.runId === info?.runId) {
-    const round = { recipients: [] as string[], sentAt: notice.sentAt, message: notice.message, replies: {} as Record<string, "safe" | "needs_help"> };
+    const round = { recipients: [] as string[], sentAt: notice.sentAt, message: notice.message, recipientRisk: {} as Record<string,string>, recipientMessages: {} as Record<string,string>, replies: {} as Record<string, "safe" | "needs_help"> };
     const area = state.areas[String(notice.areaId)] ?? {};
     if (notice.phase === "before" || notice.phase === "after") area[notice.phase] = round;
     state.areas[String(notice.areaId)] = area; rounds.set(notice.id, round);
@@ -25,6 +25,9 @@ export function sharedDashboardSnapshot(info: DashboardInfoRow | undefined, noti
     const round = rounds.get(recipient.noticeId);
     if (!round) continue;
     const id = String(recipient.householdId); round.recipients.push(id);
+    const risk = recipient as DashboardRecipient & { riskLevel?: string; approvedMessage?: string };
+    if (risk.riskLevel) round.recipientRisk![id] = risk.riskLevel;
+    if (risk.approvedMessage) round.recipientMessages![id] = risk.approvedMessage;
     if (recipient.status === "safe" || recipient.status === "needs_help") round.replies[id] = recipient.status;
   }
   const byId = new Map(assignments.map(a => [a.id, a])), assignmentStatuses: Record<string, string> = {};

@@ -81,6 +81,7 @@ export const dashboardNotice = table({ name: 'dashboard_notice' }, {
 export const dashboardRecipient = table({ name: 'dashboard_recipient' }, {
   id: t.string().primaryKey(), noticeId: t.string().index('btree'), householdId: t.u64().index('btree'),
   status: t.string(), repliedAt: t.option(t.timestamp()),
+  riskLevel: t.string().default('None'), approvedMessage: t.string().default(''), eventVersion: t.string().default(''),
 });
 export const dashboardResponse = table({ name: 'dashboard_response' }, {
   id: t.string().primaryKey(), runId: t.u64(), householdId: t.u64().index('btree'), requestId: t.u64(), assignmentId: t.u64(),
@@ -109,6 +110,19 @@ export const responseTeamState = table({ name: 'response_team_state' }, {
   tickSequence: t.u64(),
 });
 export const routingWorker = table({ name: 'routing_worker' }, { identity: t.identity().primaryKey() });
-const db = schema({ employee, disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer,
+export const dispatcherMembership = table({ name: 'dispatcher_membership' }, {
+  identity: t.identity().primaryKey(), teamId: t.u64(), disasterId: t.u64(),
+});
+export const dispatchApproval = table({ name: 'dispatch_approval' }, {
+  id: t.string().primaryKey(), householdId: t.u64(), disasterId: t.u64(),
+  approved: t.bool(), actor: t.identity(), updatedAt: t.timestamp(),
+});
+export const hazardFeedState = table({ name: 'hazard_feed_state' }, {
+  id:t.u8().primaryKey(), areaId:t.u64(), enabled:t.bool(), intervalSeconds:t.u32(), step:t.u32(), updatedAt:t.timestamp(),
+});
+export const hazardFeedTick = table({ name: 'hazard_feed_tick' }, {
+  scheduledId:t.u64().primaryKey().autoInc(), scheduledAt:t.scheduleAt(),
+});
+const db = schema({ hazardFeedState, hazardFeedTick, dispatcherMembership, dispatchApproval, employee, disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer,
   scenarioState, recommendationTemplate, decisionSummary, decisionTick, areaExercise, exerciseCheckIn, dashboardClock, dashboardNotice, dashboardRecipient, dashboardResponse, responseRun, welfareVisit, teamRoute, responseTeamState, routingWorker });
 export default db;
