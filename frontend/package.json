@@ -11,6 +11,7 @@
     "test:scenario": "node --test tests/scenario-demo.test.cjs"
   },
   "dependencies": {
+    "@google/genai": "^3.0.0",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "next": "16.4.5",
