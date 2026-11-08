@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.17**
+Current version: **1.19**
 
 ## Instructions for future updates
 
@@ -30,6 +30,48 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.19 — 2026-11-08
+
+**Author:** Aalvee Ahtav
+
+### Changes
+
+- Moved the fixture demo's operational rehearsal onto the dashboard. **Take action** now replaces the area-review popup with `NotificationDialog` rather than navigating to `/outreach`. Employees can review/edit and approve the initial notice, simulate replies, close the popup, and advance time with dashboard controls. The older standalone outreach route remains available with its previous independent fresh-check-in behavior; connected records remain read-only.
+- Added `dashboard-scenario.ts` with a shared fictional clock, per-area notification rounds/recipient snapshots, a two-hour impact skip, and independent 30-minute deadlines starting at each area's second notice. Closing popups or changing areas/tabs preserves rehearsal state; reset, reload, or leaving the dashboard clears it. Before becomes a preparation-history view after impact.
+- Changed the dashboard demo's follow-up policy: confirmed-safe households are excluded from repeat notifications, the map/attention queue, and response-unit approval, even when an older welfare-check need is recorded. The assignment reducer enforces the same exclusion; original need records remain intact. Unanswered households carry into the second notification, and silence becomes eligible for response review only after that area's second-notification deadline. Explicit help replies and unresolved recorded needs are reviewable immediately after impact unless confirmed safe.
+- Added employee-approved local response-unit matching by area, exact required capabilities, availability, and positive capacity. Assignments update the displayed team availability and prevent duplicate household assignments or reuse of an active unit. Cases without a suitable available unit remain visible. This is a fixture-only matcher, separate from Person 3's full backend recommendation/ETA helper.
+- Renamed visible frontend branding, metadata, and fixture source labels to StateWatch; retained internal `riskreach` package/database/token identifiers. Changed the hero to **Disaster watch**, replaced the subtitle with a red count of visible area alerts containing unresolved, unassigned households, and renamed phase controls to **Disaster prep / After disaster respond**. The count reflects loaded and hazard-filtered records; it is not a risk score.
+- Moved Overview, Households, Teams, and Preparedness navigation from the app header to the top of the household/team panel. Preserved active-state styling and added horizontal overflow for narrow layouts.
+- Applied Noto Sans through `next/font/google`, including normal/italic variable styles and the global font token. Updated form controls, notification textareas, map labels, and markers to use the app font. Fonts are downloaded during an uncached build and served with the app.
+- Updated the root README and map handoff for the current popup workflow, local-versus-connected behavior, setup/troubleshooting, verification, and remaining work. Revised Persons 1–4 responsibilities and deliverables, recorded Josh Sebastian and Karthik Bhagavatula from existing project history, and distinguished Person 1's completed local frontend rehearsal from Person 4's pending shared-state integration. Person 4's name remains TBD.
+
+### Verification
+
+- Frontend TypeScript checking and all 16 `npm run test:scenario` tests passed: nine dashboard-flow regressions plus seven retained standalone-outreach regressions. Dashboard coverage includes safe-confirmation exclusion with older needs, safe community cases, second-notification recipients, per-area deadlines, help versus silence eligibility, team matching, duplicate assignments, and reset/source immutability.
+- `npm run build -- --webpack` passed after the final Noto Sans integration, producing `/`, `/demo`, and `/outreach`. The first sandboxed attempt could not resolve `fonts.googleapis.com`; a network-enabled retry fetched the font and completed successfully. The default Turbopack production build was not reverified.
+- The dashboard preview returned HTTP 200 at `/demo` during this contribution. Git whitespace and documentation consistency checks passed. Full interactive visual/responsive/keyboard acceptance and connected-backend/two-browser operational verification remain pending; screenshots and state tests do not establish those checks.
+- No new backend test suite or lint run was performed for this checkpoint. AI generation, real notification delivery, persisted/shared scenario state and dispatch, scoring/flag rendering, assignment completion UI, and full backend recommendation integration remain pending. No deployment, real outreach, or operational dispatch was performed.
+
+## Version 1.18 — 2026-11-08
+
+**Author:** Aalvee Ahtav
+
+### Changes
+
+- Added a centered area-review popup opened by the red map information icon, with a map scoped to the selected area, severity, household context, and a source-based AI preview. The compact layout places the map beside the review on wider screens and reduces its size on narrow screens; action buttons remain outside the content area. Evidence and source details use a separate view with paged shapes instead of expanding the popup. Escape, close/back buttons, and backdrop dismissal restore focus.
+- Added **Take action** navigation to `/outreach?area=<id>&mode=demo` or `mode=connected`, preserving the selected area and data mode. The outreach page focuses on preparation controls and households needing attention, without a map. Connected mode reuses the authorized subscription flow, shows read-only customer/community records, and handles loading, connection errors, and unavailable areas.
+- Added the browser-local scenario rehearsal available through `/demo`: employee-approved simulated notices, a two-hour skip to impact, a fresh post-disaster check-in, and a 30-minute follow-up deadline. Previous replies remain history and do not answer a new check-in. State resets when leaving the page, changing areas, reloading, or explicitly resetting.
+- Limited pre-disaster replies to **safe**. Removed the pre-disaster need-help button and metric, updated the suggested notice to request safety confirmation only, and labeled unanswered sent check-ins **No reply**. The reducer rejects pre-disaster help replies; silence remains an absent reply. Confirmed-safe customers leave the pre-disaster attention filter even when source records contain an earlier need.
+- Kept **safe** and **need help** replies after impact. Help requests can be reviewed immediately; unanswered post-disaster cases become eligible for a simulated welfare check after the deadline. Local team matching requires availability, welfare-check capability, positive capacity, and the same area; duplicate active assignments are prevented. Safe replies do not clear recorded assistance needs after impact.
+- Added fictional outer/core impact bands, severity styling, area information markers, and three customer records per fixture hotspot to exercise safety and unanswered outcomes. Counts remain geographic membership rather than verified exposure. AI generation, actual notification delivery, persisted/shared operational controls, and full backend team-recommendation integration remain pending; no messages are delivered or teams dispatched by the rehearsal.
+
+### Verification
+
+- Frontend type checking passed after the final safety-only preparation change. All seven `npm run test:scenario` tests passed, covering pre-disaster reply restrictions, silence, fresh post-impact rounds, immediate help versus overdue unanswered cases, safe-response exclusion from no-response dispatch, duplicate assignments, and reset behavior.
+- `npm run build -- --webpack` passed with `/`, `/demo`, and `/outreach` after the compact popup changes. The later safety-only preparation change was checked with TypeScript and scenario tests; the production build was not repeated afterward. Earlier Turbopack worker-port failures remain historical; a successful Webpack build does not verify that Turbopack restriction is resolved.
+- Static rendering checks during the popup/outreach split verified selected-area/data-mode links, URL encoding, read-only connected behavior, community cases, unavailable areas, and removal of inline outreach from the overview. These checks preceded the subsequent map relocation, compact popup, and safety-only UI refinements.
+- Git whitespace checks passed. Final visual checks for popup fit, keyboard interaction, responsive map sizing, and the revised check-in flow remain pending, as do connected-backend end-to-end verification and the full shared operational acceptance checks. No deployment or real outreach/dispatch was performed.
 
 ## Version 1.17 — 2026-11-07
 
