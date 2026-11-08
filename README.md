@@ -14,7 +14,7 @@ This is a hackathon prototype using synthetic households and simulated response 
 
 ## Before and after a disaster
 
-The following describes the intended end-to-end workflow. The map and read-only subscriptions are implemented. The latest local preview keeps the rehearsal on `/demo`: an area alert opens the review, **Take action** opens a notification popup, and dashboard controls skip time through impact and follow-up. Safe confirmations are excluded from repeat outreach; unanswered households carry into After. Confirmed-safe households leave the queue and cannot receive response units, including when an older assistance need is recorded. State persists across areas and tabs until reset, reload, or leaving the dashboard. Area reviews show source-based preview text; AI generation, actual notification delivery, and persisted/shared operational UI actions remain pending. The older `/outreach` route remains available with its previous fresh-check-in behavior.
+The following describes the intended end-to-end workflow. The map and read-only subscriptions are implemented. The latest local preview keeps the rehearsal on `/demo`: an area alert opens the review, **Take action** opens a notification popup, and dashboard controls skip time through impact and follow-up. Safe confirmations are excluded from repeat outreach; unanswered households carry into After. Confirmed-safe households leave the queue and cannot receive response units, including when an older assistance need is recorded. State persists across areas and tabs until reset, reload, or leaving the dashboard. Area reviews show source-based preview text; AI generation, actual notification delivery, and persisted notification/assignment approval controls remain pending; the connected operational panel separately supports a live priority queue and persisted Mark contacted. The older `/outreach` route remains available with its previous fresh-check-in behavior.
 
 ### Before: identify risk, explain it, and check on customers
 
@@ -76,7 +76,7 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 
 ## Technical design
 
-**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Leaflet/OpenStreetMap dashboard and operational backend are integrated through an optional read-only subscription connection. Demo mode remains available without configuration. See [backend setup and contract](backend/README.md) and [map integration handoff](frontend/src/components/map/README.md). Operational UI controls and final decision logic remain pending.
+**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Leaflet/OpenStreetMap dashboard and operational backend are integrated through an optional read-only subscription connection. Demo mode remains available without configuration. See [backend setup and contract](backend/README.md) and [map integration handoff](frontend/src/components/map/README.md). The connected operational panel now includes a live priority queue and persisted Mark contacted; notification/dispatch controls and remaining decision-helper integration are pending.
 
 | Layer | Proposed approach | Responsibility |
 | --- | --- | --- |
@@ -127,14 +127,14 @@ The planned AI area review summarizes structured scenario evidence and drafts ne
 
 ## Four-person work split
 
-Aalvee Ahtav owns Person 1's frontend work, Josh Sebastian owns Person 2's backend work, and Karthik Bhagavatula owns Person 3's data and decision logic. Person 4's name remains unassigned in the project records. The table separates delivered work from remaining integration; a browser-local rehearsal does not complete the shared operational workflow.
+Aalvee Ahtav owns Person 1's frontend work, Josh Sebastian owns Person 2's backend work, and Karthik Bhagavatula owns Person 3's data and decision logic. Tien Phan owns Person 4's shared workflow and integration work. The table separates delivered work from remaining integration; a browser-local rehearsal does not complete the shared operational workflow.
 
 | Owner | Workstream | Delivered work | Remaining work and handoff |
 | --- | --- | --- | --- |
 | Person 1 — Aalvee Ahtav | Map, interface, and frontend demo | StateWatch branding, Noto Sans, Disaster watch heading and red area-alert count; nationwide Leaflet map, six hazard filters, footprints and clustering; household/team details; panel-level Overview/Households/Teams/Preparedness navigation; area-review and notification popups; dashboard demo clock, two-stage outreach, safe-reply exclusion, and employee-approved simulated response units | Verify final popup fit, keyboard behavior, and responsive layout; pair with Person 4 to connect UI controls to authoritative operations. Keep fixture-only state separate from subscribed records. |
 | Person 2 — Josh Sebastian | Spacetime backend | Tables/indexes and generated bindings; authorized employee views; seed/reset and escalation reducers; check-ins, requests, atomic assignment lifecycle and activity events; live SDK and large-dataset integration checks recorded in prior changelog entries | Extend the contract for per-notification rounds and a shared scenario clock; integrate Person 3's decision helpers; pair with Person 4 on validated mutations and browser acceptance. |
 | Person 3 — Karthik Bhagavatula | Disaster data and decision logic | Small/Demo/Stress fixtures for six hazards; synthetic impact geometry and sourced guidance templates; tested exposure, priority, overdue-contact, and capability/capacity recommendation helpers with approximate distance/ETA and offline reports | Integrate helpers into authoritative shared operations and the UI; reconcile preparedness-helper availability and escalation behavior. Local popup matching is a separate demo implementation, not the full recommendation engine. |
-| Person 4 — name TBD | Shared workflow, integration, and delivery | Read-only subscription connection and frontend adapter are available as the integration foundation; Person 1 has supplied the local popup rehearsal and queue UI | Wire notifications, check-in rounds, clock/deadlines, help requests and assignment approval to SpacetimeDB; integrate scores/reasons and overdue flags; show synchronized progress/activity; complete two-browser verification, final demo and submission materials. |
+| Person 4 — Tien Phan | Shared workflow, integration, and delivery | Typed reducer wrappers and shared feedback on the existing connection; Mark contacted action; live priority queue using Person 3’s exposure, ranking, and follow-up helpers, with score reasons, overlooked/hazard filters, paging and map selection | Wire notification rounds, clock/deadlines, help requests and assignment approval to SpacetimeDB; show synchronized assignment progress/activity; complete interactive and two-browser verification, final demo and submission materials. Person 1’s popup rehearsal remains browser-local. |
 
 Each owner resolves issues in their own workstream and helps with integration. Person 1 maintains the map, details, and demo popup/queue presentation. Person 4 coordinates shared operational state and actions with Person 2, using Person 3's decision logic and Person 1's UI. Coordinate edits to shared components before integration.
 
@@ -154,7 +154,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.19 — 2026-11-08.** StateWatch uses Noto Sans, a **Disaster watch** heading, a red count of visible area alerts needing action, and **Disaster prep / After disaster respond** controls. Overview, Households, Teams, and Preparedness now sit at the top of the household panel. In `/demo`, area review leads to a notification popup on the same dashboard. Dashboard time skips advance through impact and each area's second-notification deadline. Confirmed-safe households leave the queue and cannot receive response units, even with older recorded needs; unmatched cases remain visible. State is browser-local and survives popup closure, area changes, and tab changes until reset, reload, or navigation away. The older `/outreach` route remains available separately. TypeScript, 16 scenario tests, and the Webpack production build passed; final visual, keyboard, responsive, and connected-backend browser acceptance remain pending. AI generation, actual delivery, persisted/shared operational controls, scoring/flag rendering, and the full backend recommendation UI remain pending. See [changelog v1.19](changelog.md#version-119--2026-11-08), the [map/UI handoff](frontend/src/components/map/README.md), and the [scenario runbook](backend/SCENARIOS.md).
+**Current checkpoint: v1.20 — 2026-11-08.** StateWatch uses Noto Sans, a **Disaster watch** heading, a red count of visible area alerts needing action, and **Disaster prep / After disaster respond** controls. Overview, Households, Teams, and Preparedness now sit at the top of the household panel. In `/demo`, area review leads to a notification popup on the same dashboard. Dashboard time skips advance through impact and each area's second-notification deadline. Confirmed-safe households leave the queue and cannot receive response units, even with older recorded needs; unmatched cases remain visible. State is browser-local and survives popup closure, area changes, and tab changes until reset, reload, or navigation away. The older `/outreach` route remains available separately. TypeScript, 16 scenario tests, and the Webpack production build passed; final visual, keyboard, responsive, and connected-backend browser acceptance remain pending. AI generation, actual delivery, persisted/shared operational controls, the full backend recommendation UI and remaining operational controls remain pending. Tien’s merged priority queue renders live scores/reasons and overlooked flags and supports persisted Mark contacted using the existing connection; interactive/two-browser acceptance is still pending. See [changelog v1.20](changelog.md#version-120--2026-11-08), the [map/UI handoff](frontend/src/components/map/README.md), and the [scenario runbook](backend/SCENARIOS.md).
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -165,7 +165,8 @@ Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)`
 - [x] Draft MVP, technical approach, data contract, four workstreams, and schedule.
 - [x] Confirm Next.js + TypeScript for the application and TypeScript + SpacetimeDB for the core backend.
 - [x] Set the frontend product name to StateWatch. Internal package names, database names, and token keys retain `riskreach` for compatibility.
-- [ ] Finalize Person 4 ownership and team-wide scenario assumptions. Persons 1–3 and the six-hazard nationwide scope are documented above.
+- [x] Record all four workstream owners and the six-hazard nationwide scope.
+- [ ] Finalize team-wide scenario assumptions and contract sign-off.
 - [ ] Confirm map provider, hazard-layer behavior, schema, status enums, scoring weights, and contact threshold.
 - [ ] Confirm official submission deadline and sponsor eligibility requirements.
 
@@ -208,17 +209,17 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 - [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading and subscription checks now pass; national summaries and viewport rendering are implemented. Scoped server subscriptions remain deferred; interactive browser acceptance is pending.
 - [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Explicit footprint persistence and subscribed rendering are implemented; interactive browser acceptance remains pending.
 - [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); persistence and live UI integration remain pending.
-- [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted/live scores and queue rendering remain pending integration.
-- [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Live persistence, scheduled recomputation, and queue filtering remain pending integration.
+- [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Live queue rendering is integrated in the browser by Person 4 (`frontend/src/lib/workflow/priority-queue.ts`); scores are computed client-side and not persisted.
+- [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Queue filtering is integrated by Person 4 and recomputes in the browser every 30 seconds; live persistence remains pending.
 - [ ] Implement preparedness action suggestions.
 - [x] Implement capability/capacity-aware team recommendations and approximate distance/ETA. Karthik Bhagavatula supplied the [pure snapshot helper and offline report](backend/TEAM_RECOMMENDATIONS.md), with exact eligibility/exclusion reasons, top-K distance ranking, configurable approximate ETA, all-preset checks, and actual dispatch/release harness tests. Employee approval and reducer revalidation remain required; live/UI integration is pending.
 - [ ] Implement reproducible multi-hazard scenario escalation and reset behavior. (backend escalation/reset verified; Person 3 impact-layer and decision-logic integration remain pending)
 
-### Workflow, integration, and delivery — Person 4
+### Workflow, integration, and delivery — Person 4: Tien Phan
 
 - [x] Connect the map to optional read-only SpacetimeDB subscriptions. (adapter datastore/live SDK checks passed; integrated browser verification pending)
-- [ ] Connect operational action controls to the shared SpacetimeDB connection.
-- [ ] Build priority queue and overlooked-case filtering.
+- [x] Connect typed reducer wrappers and shared pending/success/error feedback to the existing SpacetimeDB connection; wire Mark contacted for the selected household. (interactive/two-browser verification pending)
+- [x] Build the live priority queue using Person 3’s exposure, ranking, and follow-up helpers, with score reasons, overlooked and hazard filters, pagination, map selection, and Mark contacted. (upstream offline smoke checks passed; interactive/two-browser verification pending)
 - [x] Provide a browser-local rehearsal as the UI foundation. Person 1 delivered dashboard notification popups, two-hour and 30-minute time skips, safe-response exclusion, and simulated response-unit approval. (nine dashboard tests plus seven retained standalone-outreach tests pass; final browser checks pending)
 - [ ] Connect notification/check-in controls and assignment approval to persisted shared operational state.
 - [ ] Connect AI-generated reviews grounded in scenario evidence. (selectable area information icons and explicitly labeled source-based previews are implemented)
@@ -250,22 +251,22 @@ The full browser acceptance checks below remain pending UI integration. Backend 
 
 ## Judge demonstration — target 2–3 minutes
 
-The current fixture rehearsal is local to one browser. Shared updates, operational priority ranking, assignment completion, and community dispatch below remain integration targets; do not present them as implemented by `/demo`.
+The current fixture rehearsal is local to one browser. Shared notification/assignment updates, assignment completion, and community dispatch below remain integration targets; the connected workflow separately supplies live priority ranking and Mark contacted; do not present them as implemented by `/demo`.
 
 1. Open `/demo` in **Disaster prep**. Show the fictional map, red area-alert count, and household-panel tabs. Open a red information icon, review the local map and evidence, and choose **Take action**.
 2. Review/edit and approve the initial simulated notification in the popup. Confirm a customer safe and leave another unanswered. Show the safe household leaving the queue, then close the popup.
 3. Use **Skip 2 hours → After impact** on the dashboard. In **After disaster respond**, reopen the area alert and approve the second notification. Earlier safe responders are excluded; unanswered households carry forward.
 4. Simulate **need help** for a recipient, or close the popup and use **Skip 30 min → Check responses** to make unanswered second notices overdue. Each area's deadline starts when its own second notice is sent.
 5. Open an eligible household's popup, review a matching local unit, and approve the simulated assignment. Safe households cannot receive units; assigned teams cannot be reused. Cases with no available capability match remain visible.
-6. Show that switching areas or tabs preserves the browser-local rehearsal, then use **Reset demo**. Explain that actual delivery, shared assignments/progress, priority ranking, and completion remain integration targets.
+6. Show that switching areas or tabs preserves the browser-local rehearsal, then use **Reset demo**. Explain that actual delivery, shared notification/assignment progress and completion remain integration targets. The connected workflow separately supports a live priority queue and Mark contacted.
 
 Pitch: **StateWatch helps State Farm employees prepare before disasters, coordinate assistance afterward, and track unresolved needs so no one is overlooked.**
 
 ## Development and change tracking
 
-### Current checkpoint — v1.19
+### Current checkpoint — v1.20
 
-The StateWatch dashboard now keeps fixture outreach on the map page: area-review and notification popups, explicit dashboard time skips, per-area second-notification deadlines, safe-household queue removal and dispatch blocking, and local capability-matched response approvals. Assigned teams become unavailable to other local cases. State persists across areas and tabs until reset, reload, or navigation away. Noto Sans is loaded through `next/font/google` with normal/italic variable weights; the header, hero, alert count, phase labels, panel navigation, forms, and map labels use the updated presentation. The older `/outreach` page retains its independent fresh-check-in rehearsal. Connected records remain read-only; shared operational actions and activity-history UI remain pending.
+The StateWatch dashboard now keeps fixture outreach on the map page: area-review and notification popups, explicit dashboard time skips, per-area second-notification deadlines, safe-household queue removal and dispatch blocking, and local capability-matched response approvals. Assigned teams become unavailable to other local cases. State persists across areas and tabs until reset, reload, or navigation away. Noto Sans is loaded through `next/font/google` with normal/italic variable weights; the header, hero, alert count, phase labels, panel navigation, forms, and map labels use the updated presentation. The older `/outreach` page retains its independent fresh-check-in rehearsal. Connected map details and notification controls remain read-only; the operational workflow supports persisted Mark contacted and a live priority queue. Remaining notification/assignment controls and activity-history UI are pending.
 
 Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
 seed, verify and switch between separate Small/Demo/Stress databases. The default
@@ -273,7 +274,7 @@ build retains Small; generated v3 presets persist explicit hazard footprints.
 Household exposure remains available as a pure helper/offline report; exposure
 relations and operational controls are not part of this display integration.
 
-Person 3's [exposure](backend/EXPOSURE.md), [priority scoring](backend/PRIORITY.md) and [follow-up detection](backend/FOLLOW_UP.md) helpers remain available as pure calculations and offline reports. Score/flag persistence, scheduled recomputation and queue rendering remain pending.
+Person 3's [exposure](backend/EXPOSURE.md), [priority scoring](backend/PRIORITY.md) and [follow-up detection](backend/FOLLOW_UP.md) helpers remain available as pure calculations and offline reports. Tien’s connected queue now computes exposure, scores/reasons, and follow-up flags from subscribed rows and refreshes time-based rules every 30 seconds. Persisted scores/flags and authoritative scheduled recomputation remain pending.
 
 ### Local setup
 
@@ -307,7 +308,7 @@ Noto Sans is fetched at build time by `next/font/google` and served with the app
 4. Use **Skip 2 hours → After impact** on the dashboard. The After tab opens with unanswered households retained. Open the area alert again and choose **Take action** to send the second notification; earlier safe responders are excluded.
 5. Simulate **need help**, or close the popup and use **Skip 30 min → Check responses** to reveal overdue silence. Reopen the popup from the alert or a household queue row to approve a matching response unit. Assigned teams become unavailable to other cases; cases without a matching unit remain visible.
 
-The dashboard demo clock applies to all six fictional areas; each second notification starts its own 30-minute reply deadline. Changing tabs or areas preserves state. Before becomes a history view after impact. Reloading, leaving the dashboard, or **Reset demo** clears the rehearsal. Recorded needs and community assistance remain visible for households without a safe confirmation. Safe confirmations remove households from the queue and block response-unit approval without deleting older needs. The older map-free `/outreach` route remains available separately. Connected mode uses authorized subscriptions and remains read-only. AI reviews are source-based previews; the demo sends no messages and performs no operational dispatch.
+The dashboard demo clock applies to all six fictional areas; each second notification starts its own 30-minute reply deadline. Changing tabs or areas preserves state. Before becomes a history view after impact. Reloading, leaving the dashboard, or **Reset demo** clears the rehearsal. Recorded needs and community assistance remain visible for households without a safe confirmation. Safe confirmations remove households from the queue and block response-unit approval without deleting older needs. The older map-free `/outreach` route remains available separately. Connected mode uses authorized subscriptions. Its map and notification views remain read-only, while the operational workflow provides a live priority queue and persisted Mark contacted. AI reviews are source-based previews; the demo sends no messages and performs no operational dispatch.
 
 The dashboard popup preview passed TypeScript, all 16 scenario tests (nine dashboard-flow tests and seven older outreach tests), and the Webpack production build. `/demo` returned HTTP 200 locally. Interactive visual, responsive, and keyboard acceptance remain pending.
 
@@ -318,10 +319,10 @@ Run these commands from `frontend/`. From the repository root, use `npm --prefix
 | Command | Purpose | Current verification |
 | --- | --- | --- |
 | `npm run dev` | Start local development | Dashboard browser smoke check passed (user-reported) |
-| `npm run lint` | Run ESLint | Earlier checkpoint passed with an existing generated-bindings warning; not rerun for v1.19 |
+| `npm run lint` | Run ESLint | Earlier checkpoint passed with an existing generated-bindings warning; not rerun for v1.20 |
 | `npm run typecheck` | Generate route types and check TypeScript | Passed |
-| `npm run build` | Create a production build with default Turbopack | Historical CSS worker-port failure; default production build not reverified at v1.19 |
-| `npm run build -- --webpack` | Build with Webpack | Passed at v1.19 after the popup workflow, safe-dispatch fix, branding/navigation, and Noto Sans changes |
+| `npm run build` | Create a production build with default Turbopack | Historical CSS worker-port failure; default production build not reverified at v1.20 |
+| `npm run build -- --webpack` | Build with Webpack | Passed at v1.20 after the popup workflow, safe-dispatch fix, branding/navigation, and Noto Sans changes |
 | `npm run test:scenario` | Verify browser-local scenario transitions | All 16 tests passed (nine dashboard and seven standalone-outreach tests) |
 | `npm start` | Serve a successful production build | Runtime smoke check pending |
 

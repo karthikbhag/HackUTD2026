@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.19**
+Current version: **1.20**
 
 ## Instructions for future updates
 
@@ -31,29 +31,31 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 1.19 — 2026-11-08
+## Version 1.20 — 2026-11-08
 
 **Author:** Aalvee Ahtav
 
 ### Changes
 
-- Moved the fixture demo's operational rehearsal onto the dashboard. **Take action** now replaces the area-review popup with `NotificationDialog` rather than navigating to `/outreach`. Employees can review/edit and approve the initial notice, simulate replies, close the popup, and advance time with dashboard controls. The older standalone outreach route remains available with its previous independent fresh-check-in behavior; connected records remain read-only.
+- Moved the fixture demo's operational rehearsal onto the dashboard. **Take action** now replaces the area-review popup with `NotificationDialog` rather than navigating to `/outreach`. Employees can review/edit and approve the initial notice, simulate replies, close the popup, and advance time with dashboard controls. The older standalone outreach route remains available with its previous independent fresh-check-in behavior; connected map and notification details remain read-only; the merged operational panel separately supports persisted Mark contacted.
 - Added `dashboard-scenario.ts` with a shared fictional clock, per-area notification rounds/recipient snapshots, a two-hour impact skip, and independent 30-minute deadlines starting at each area's second notice. Closing popups or changing areas/tabs preserves rehearsal state; reset, reload, or leaving the dashboard clears it. Before becomes a preparation-history view after impact.
 - Changed the dashboard demo's follow-up policy: confirmed-safe households are excluded from repeat notifications, the map/attention queue, and response-unit approval, even when an older welfare-check need is recorded. The assignment reducer enforces the same exclusion; original need records remain intact. Unanswered households carry into the second notification, and silence becomes eligible for response review only after that area's second-notification deadline. Explicit help replies and unresolved recorded needs are reviewable immediately after impact unless confirmed safe.
 - Added employee-approved local response-unit matching by area, exact required capabilities, availability, and positive capacity. Assignments update the displayed team availability and prevent duplicate household assignments or reuse of an active unit. Cases without a suitable available unit remain visible. This is a fixture-only matcher, separate from Person 3's full backend recommendation/ETA helper.
 - Renamed visible frontend branding, metadata, and fixture source labels to StateWatch; retained internal `riskreach` package/database/token identifiers. Changed the hero to **Disaster watch**, replaced the subtitle with a red count of visible area alerts containing unresolved, unassigned households, and renamed phase controls to **Disaster prep / After disaster respond**. The count reflects loaded and hazard-filtered records; it is not a risk score.
 - Moved Overview, Households, Teams, and Preparedness navigation from the app header to the top of the household/team panel. Preserved active-state styling and added horizontal overflow for narrow layouts.
 - Applied Noto Sans through `next/font/google`, including normal/italic variable styles and the global font token. Updated form controls, notification textareas, map labels, and markers to use the app font. Fonts are downloaded during an uncached build and served with the app.
-- Updated the root README and map handoff for the current popup workflow, local-versus-connected behavior, setup/troubleshooting, verification, and remaining work. Revised Persons 1–4 responsibilities and deliverables, recorded Josh Sebastian and Karthik Bhagavatula from existing project history, and distinguished Person 1's completed local frontend rehearsal from Person 4's pending shared-state integration. Person 4's name remains TBD.
+- Updated the root README and map handoff for the current popup workflow, local-versus-connected behavior, setup/troubleshooting, verification, and remaining work. Revised Persons 1–4 responsibilities and deliverables, recorded Josh Sebastian and Karthik Bhagavatula from existing project history, and distinguished Person 1's completed local frontend rehearsal from Person 4's pending shared-state integration. The subsequent merge identifies Person 4 as Tien Phan; the README now credits his delivered queue and Mark contacted work.
+
+- Reconciled the merge with Tien Phan’s operational workflow: preserved the connection/action lifecycle, raw subscribed rows, selection-aware workflow slot, priority queue and its stylesheet alongside the popup demo, standalone outreach route, and StateWatch styling. Retained Tien’s v1.18 entry; renumbered the local popup checkpoint to v1.19 and this dashboard checkpoint to v1.20 to avoid duplicate versions. Updated the README ownership and progress to reflect the live queue and persisted Mark contacted action.
 
 ### Verification
 
-- Frontend TypeScript checking and all 16 `npm run test:scenario` tests passed: nine dashboard-flow regressions plus seven retained standalone-outreach regressions. Dashboard coverage includes safe-confirmation exclusion with older needs, safe community cases, second-notification recipients, per-area deadlines, help versus silence eligibility, team matching, duplicate assignments, and reset/source immutability.
+- After resolving merge conflicts, frontend TypeScript checking, the Webpack production build, and all 16 `npm run test:scenario` tests passed: nine dashboard-flow regressions plus seven retained standalone-outreach regressions. Dashboard coverage includes safe-confirmation exclusion with older needs, safe community cases, second-notification recipients, per-area deadlines, help versus silence eligibility, team matching, duplicate assignments, and reset/source immutability.
 - `npm run build -- --webpack` passed after the final Noto Sans integration, producing `/`, `/demo`, and `/outreach`. The first sandboxed attempt could not resolve `fonts.googleapis.com`; a network-enabled retry fetched the font and completed successfully. The default Turbopack production build was not reverified.
 - The dashboard preview returned HTTP 200 at `/demo` during this contribution. Git whitespace and documentation consistency checks passed. Full interactive visual/responsive/keyboard acceptance and connected-backend/two-browser operational verification remain pending; screenshots and state tests do not establish those checks.
-- No new backend test suite or lint run was performed for this checkpoint. AI generation, real notification delivery, persisted/shared scenario state and dispatch, scoring/flag rendering, assignment completion UI, and full backend recommendation integration remain pending. No deployment, real outreach, or operational dispatch was performed.
+- No new backend test suite or lint run was performed for this checkpoint. AI generation, real notification delivery, persisted/shared scenario state and dispatch, authoritative score/flag persistence, assignment completion UI, and full backend recommendation integration remain pending. No deployment, real outreach, or operational dispatch was performed.
 
-## Version 1.18 — 2026-11-08
+## Version 1.19 — 2026-11-08
 
 **Author:** Aalvee Ahtav
 
@@ -72,6 +74,31 @@ Entry template:
 - `npm run build -- --webpack` passed with `/`, `/demo`, and `/outreach` after the compact popup changes. The later safety-only preparation change was checked with TypeScript and scenario tests; the production build was not repeated afterward. Earlier Turbopack worker-port failures remain historical; a successful Webpack build does not verify that Turbopack restriction is resolved.
 - Static rendering checks during the popup/outreach split verified selected-area/data-mode links, URL encoding, read-only connected behavior, community cases, unavailable areas, and removal of inline outreach from the overview. These checks preceded the subsequent map relocation, compact popup, and safety-only UI refinements.
 - Git whitespace checks passed. Final visual checks for popup fit, keyboard interaction, responsive map sizing, and the revised check-in flow remain pending, as do connected-backend end-to-end verification and the full shared operational acceptance checks. No deployment or real outreach/dispatch was performed.
+
+## Version 1.18 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Started Person 4's operational workflow in `frontend/src/components/workflow/`. This entry replaces the earlier Person 4 v1.15 entry, which was overwritten when main's v1.15 (team recommendations) merged.
+- `actions.ts` adds typed wrappers for every operational reducer (check-in, outreach, tasks, requests, assignments, escalation, reset) and converts string view-model IDs to u64. A `ConnectionLink` reuses the single connection owned by `ConnectedDashboard`, so no second connection or identity is opened.
+- `action-feedback.tsx` shows one shared pending/success/error message after every action. Backend rejections show the reducer's own `SenderError` text, for example "Team is unavailable".
+- `operational-workflow.tsx` is mounted through `MapDashboard`'s `workflowPanel` slot. Its "Record outreach" card acts on the household selected on the map or in the queue (a dropdown would list every household, 10,000+ in the Demo preset), showing check-in and last-contact time with a "Mark contacted" button that calls `recordOutreach`; results return through the existing subscription, so other sessions see them live.
+- Added the live priority queue. `frontend/src/lib/workflow/priority-queue.ts` builds it from subscribed rows by importing Person 3's `rankHouseholds` and `detectFollowUp` from `backend/src` (not copied, so there is one source of truth). Exposure is computed in the browser from subscribed impact layers with `calculateExposure`. With no layers, every household gets empty exposure and the queue says so; unsupported layers are skipped and counted. Each layer is checked on its own with Person 3's validator, so one malformed or duplicate layer is skipped instead of zeroing exposure for every household. The clock never runs behind the latest recorded contact, which tolerates browser/database clock skew.
+- `priority-queue.tsx` shows ranked rows with score out of 175, hazard/zone/check-in tags, an Overlooked flag, follow-up concerns, and a "Why this score" breakdown of all six reasons. Views: Needs follow-up (default), Overlooked, and All households, plus a hazard filter, with counts and paging of 25. "Show on map" selects the household; "Mark contacted" records outreach. Labeled "Demo scoring — employee review required", with the assumption label, exposure source, and overlooked rule shown. Time-based rules recompute every 30 seconds; the clock is read in an effect, not during render, because Cache Components prerenders `/` and rejects `Date.now()` there.
+- `MapDashboard`'s `workflowPanel` can now be a function that receives the map selection and its setter. This is backward compatible and documented in `frontend/src/components/map/README.md`. `ConnectedDashboard` also passes raw subscribed rows, since the queue needs request urgency and microsecond timestamps.
+- `next.config.ts` sets `turbopack.root` and `outputFileTracingRoot` to the repository root, because Turbopack does not resolve files outside its root. `tsconfig.json` targets ES2020 for BigInt literals in the shared helpers.
+- Reconciled with Aalvee Ahtav's v1.17 redesign: kept the redesigned dashboard and stylesheet unchanged apart from the `workflowPanel` hook, and restyled the workflow/queue CSS with the redesign's brand, border, and status tokens (red pill buttons, shared check-in colors). Restored the workflow styles that the earlier merge had dropped. Updated the README Person 4 checklist and Person 3 integration notes.
+
+### Verification
+
+- After reconciliation: frontend `tsc --noEmit` passed and ESLint on `src` passed with the existing generated-bindings warning. Installing the redesign's new `leaflet.markercluster` dependencies (already in the lockfile) was required for typechecking. Full `npm run lint` still reports six `require()` errors in the redesign's `tests/scenario-demo.test.cjs`, unrelated to this work.
+- Offline smoke test on the Small fixture: 60 households, 24 need follow-up, 12 overlooked, all six hazards mapped. Recording contact on the top household cleared its overlooked flag while it still needed follow-up (score 105 to 90). A synthetic high-severity layer added 30 exposure points, and an unsupported layer was skipped.
+- Before the redesign merge, the dev server rendered the queue after the Turbopack root change; before that change, the backend import failed with "Module not found". After reconciliation, the running dev server reported a cached "Can't resolve leaflet.markercluster CSS" error because it was started before the dependency install; a restart is needed to re-verify rendering.
+- `npm run build` on Next.js 16.4.5 first failed prerendering `/` ("unstable value `Date.now()` in a Client Component") and passed after the clock fix, prerendering `/`, `/demo`, and `/_not-found`.
+- Offline check: one valid plus one malformed layer (simulation flag mismatch) still gives the valid layer's 30 exposure points and reports 1 ignored layer. `npm run test:scenario` passed (6 of 6).
+- Pending: interactive browser checks and two-session verification of Mark contacted and queue updates.
 
 ## Version 1.17 — 2026-11-07
 
