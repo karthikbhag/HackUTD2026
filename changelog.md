@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **2.1**
+Current version: **2.2**
 
 ## Instructions for future updates
 
@@ -30,6 +30,24 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 2.2 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Completed Person 3 task 6 with `backend/src/preparedness.ts`, a deterministic SDK-independent suggestion helper using actual exposure, preparedness-phase disasters, existing sourced templates, recorded support flags, and explicit task history. All suggestions require employee review; no tasks or outreach are created.
+- Added explicit eligibility rules for general hazard guidance, support-specific shelter/transport/access planning, smoke-only cleaner-air guidance, and isolation-or-support winter checks. Preserves catalog text and guidance provenance, adding household-specific reasons and layer/disaster evidence.
+- Deduplicates by scenario run, household, and recommendation ID across overlapping layers/disasters. Distinct hazard guidance remains separate. Matching pending/in-progress/completed tasks suppress candidates only in the same run; old runs do not block replay. Returns explainable suppression records and counts.
+- Added a pure schema-v3 adapter and offline report command with summary, history-file, and run-ID options. Documented eligibility, phase separation, existing task-schema limits, run identity, review requirements, and integration in `backend/PREPAREDNESS.md`; updated project progress/handoffs.
+
+### Verification
+
+- All 76 backend tests passed, including 17 new preparedness cases and all 59 existing regressions. All nine Python generator/geometry tests, backend TypeScript checking, and Spacetime module build passed on Node 24.22.1.
+- Verified exposure-based selection, source text/review requirements, support flags, smoke/isolation eligibility, overlapping components/disasters/hazards, mixed phases, pending/in-progress/completed suppression, new-run replay, household isolation, customer neutrality, stable output, bigint IDs, empty inputs, and invalid joins/history/policies.
+- Evaluated all six hazards in Small (60), Demo (10,000), and Stress (100,000). Stress produced 150,940 suggestions for 82,184 households under default rules. CLI history checks suppressed two completed recommendations in the same run and restored them in a new run. These are synthetic fixture results, not live operational or performance claims.
+- Existing schema, reducers, seed/reset, bindings, catalog/generator, and frontend behavior are unchanged. Live integration still requires stored recommendation/run identity, authorized decision data, employee-approved task creation, and UI presentation. The current generic task schema is not treated as already supporting recommendation-level deduplication. No commit, push, publish, database mutation, or outreach was made.
 
 ## Version 2.1 — 2026-11-07
 

@@ -98,6 +98,8 @@ The live test creates three temporary client identities, authorizes two through 
 
 ## Remaining integration
 
+Person 3 task 6 now provides [household-specific preparedness suggestions](PREPAREDNESS.md), with exposure/phase/support selection and current-run task-history suppression. All suggestions require employee review. The existing task schema still needs explicit recommendation/run identity and approved task creation before live deduplication can be claimed.
+
 Person 3 task 5 now provides [overdue-contact and overlooked-case detection](FOLLOW_UP.md), including independent concern reasons, configurable thresholds, flag-clearing behavior, and offline reports across all presets. Live authorized flags, time-driven recomputation, subscriptions, and queue filtering still require integration.
 
 Person 3 task 4 now provides configurable [priority scoring and reason breakdowns](PRIORITY.md), verified across Small/Demo/Stress. The pure helper and offline report do not change database schema, reducers, seed/reset, or live UI behavior. Authenticated live score/flag integration and remaining recommendations still need implementation.

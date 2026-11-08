@@ -56,7 +56,9 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 Small has 10 impact layers; Demo/Stress each have 93. All presets include the
 same 12 reusable recommendation templates (two per hazard), linked by
 `recommendation_ids`. Recommendations are employee-review content, not persisted
-tasks or automatic household-specific suggestions; Person 3 task 6 remains pending.
+tasks. Person 3 task 6 now selects household-specific suggestions through the
+[preparedness helper](../../backend/PREPAREDNESS.md), using exposure, phase,
+support flags, and explicit current-run task history. Live task creation is pending.
 
 Each impact layer identifies its disaster, context region, hazard, component,
 qualitative severity/basis, label, authored source, simulation kind, timestamp,
@@ -92,7 +94,7 @@ do not imply advance prediction. Coordinates are not residents or safe routes.
 
 Use hotspot summaries or clusters nationally, and load individual households for the selected area or viewport. Scope Spacetime subscriptions to needed data and index the relevant zone/location fields. Seed in controlled batches appropriate to the eventual module. These are integration plans: map clustering, scoped subscriptions, and batched seeding are not implemented here.
 
-The presets verify fixture integrity; the TypeScript exposure, [priority scoring](../../backend/PRIORITY.md), and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested against all three sizes. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration. Persisted exposure/score/flag integration, household-specific preparedness suggestions, and team recommendations remain subsequent work. Existing legacy Small seed/reset and escalation reducers do not yet use v3 impact layers.
+The presets verify fixture integrity; exposure, [priority scoring](../../backend/PRIORITY.md), [follow-up detection](../../backend/FOLLOW_UP.md), and [preparedness suggestions](../../backend/PREPAREDNESS.md) are tested against all three sizes. Backend throughput, subscription volume, browser rendering, and memory behavior require separate measurements after integration. Persisted exposure/score/flag/suggestion integration, approved task creation, and team recommendations remain subsequent work. Existing legacy Small seed/reset and escalation reducers do not yet use v3 impact layers.
 
 ## Backend integration
 
