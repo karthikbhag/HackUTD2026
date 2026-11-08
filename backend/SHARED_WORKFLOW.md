@@ -1,8 +1,13 @@
 # Connected main dashboard
 
-`http://localhost:3000/` uses the shared SpacetimeDB scenario desk. `/demo` stays
-a separate browser-local rehearsal. The main page reports missing configuration
+`http://localhost:3000/` and `/demo` use the shared SpacetimeDB dashboard and
+scenario desk. `/demo/local` is the separate browser-local rehearsal. The main page reports missing configuration
 instead of silently substituting local demo records.
+
+The dashboard notification popups and global clock follow the carried-safe policy
+in [POPUP_WORKFLOW.md](POPUP_WORKFLOW.md). The per-disaster scenario desk below
+retains its separate pre/post-impact check-ins described here. Both reuse the
+same page connection; the response-routing workspace remains at `/response`.
 
 This checkout is configured with ignored `frontend/.env.local` values:
 

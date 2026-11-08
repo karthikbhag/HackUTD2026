@@ -14,9 +14,10 @@
     "exposure": "esbuild scripts/exposure.ts --bundle --platform=node --format=esm --outfile=.test-output/exposure.mjs && node .test-output/exposure.mjs",
     "generate": "spacetime generate --lang typescript --module-path . --out-dir ../frontend/src/module_bindings --yes",
     "test:live": "esbuild scripts/live-smoke.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/live-smoke.mjs && node .test-output/live-smoke.mjs",
-    "build:scenario": "node scripts/build-scenario.ts",
+    "build:scenario": "esbuild scripts/build-scenario.ts --bundle --platform=node --format=esm --outfile=.test-output/build-scenario.mjs && node .test-output/build-scenario.mjs",
     "verify:scenario": "esbuild scripts/verify-scenario.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-scenario.mjs && node .test-output/verify-scenario.mjs",
-    "test:routing:live": "esbuild scripts/verify-routing.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-routing.mjs && node .test-output/verify-routing.mjs"
+    "test:routing:live": "esbuild scripts/verify-routing.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-routing.mjs && node .test-output/verify-routing.mjs",
+    "test:popup:live": "esbuild scripts/verify-dashboard.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-dashboard.mjs && node .test-output/verify-dashboard.mjs"
   },
   "keywords": [],
   "author": "",

@@ -1,5 +1,7 @@
 # Repeatable nationwide scenario datasets
 
+> Current v1.21 integration: [shared popup workflow](../../backend/POPUP_WORKFLOW.md). Main `/` and `/demo` now persist/share notifications, replies, clock and response approvals; `/demo/local` is isolated. The current Turbopack production build passes. Historical pending-integration notes below are superseded by this checkpoint; interactive browser acceptance remains separate.
+
 Person 3's portable source data supports the map and future Spacetime seed reducer. The Small fixture is connected to backend seed/reset through a validated adapter; the larger presets can be built and loaded into isolated local databases using the [scenario runbook](../../backend/SCENARIOS.md). Python 3.11+ is needed only for generation and validation, with no dependencies.
 
 ## Presets

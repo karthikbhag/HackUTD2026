@@ -50,6 +50,62 @@ export type Assignment = __Infer<typeof Assignment>;
 export const Assignments = __t.object("Assignments", {});
 export type Assignments = __Infer<typeof Assignments>;
 
+export const DashboardClock = __t.object("DashboardClock", {
+  id: __t.u8(),
+  runId: __t.u64(),
+  minute: __t.i32(),
+});
+export type DashboardClock = __Infer<typeof DashboardClock>;
+
+export const DashboardInfoRow = __t.object("DashboardInfoRow", {
+  id: __t.u8(),
+  runId: __t.u64(),
+  minute: __t.i32(),
+  canReset: __t.bool(),
+});
+export type DashboardInfoRow = __Infer<typeof DashboardInfoRow>;
+
+export const DashboardNotice = __t.object("DashboardNotice", {
+  id: __t.string(),
+  runId: __t.u64(),
+  areaId: __t.u64(),
+  phase: __t.string(),
+  sentAt: __t.i32(),
+  deadline: __t.i32(),
+  message: __t.string(),
+});
+export type DashboardNotice = __Infer<typeof DashboardNotice>;
+
+export const DashboardNotices = __t.object("DashboardNotices", {});
+export type DashboardNotices = __Infer<typeof DashboardNotices>;
+
+export const DashboardRecipient = __t.object("DashboardRecipient", {
+  id: __t.string(),
+  noticeId: __t.string(),
+  householdId: __t.u64(),
+  status: __t.string(),
+  repliedAt: __t.option(__t.timestamp()),
+});
+export type DashboardRecipient = __Infer<typeof DashboardRecipient>;
+
+export const DashboardRecipients = __t.object("DashboardRecipients", {});
+export type DashboardRecipients = __Infer<typeof DashboardRecipients>;
+
+export const DashboardResponse = __t.object("DashboardResponse", {
+  id: __t.string(),
+  runId: __t.u64(),
+  householdId: __t.u64(),
+  requestId: __t.u64(),
+  assignmentId: __t.u64(),
+});
+export type DashboardResponse = __Infer<typeof DashboardResponse>;
+
+export const DashboardResponses = __t.object("DashboardResponses", {});
+export type DashboardResponses = __Infer<typeof DashboardResponses>;
+
+export const DashboardState = __t.object("DashboardState", {});
+export type DashboardState = __Infer<typeof DashboardState>;
+
 export const DecisionSummary = __t.object("DecisionSummary", {
   householdId: __t.u64(),
   runId: __t.u64(),
