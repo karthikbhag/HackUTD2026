@@ -1,12 +1,13 @@
 import type { InferSchema, ReducerCtx } from 'spacetimedb/server';
 import type db from './schema';
-import { adaptScenario, source } from './scenario';
+import { adaptScenario, source, type Scenario } from './scenario';
 
 // Seed and reset share the checked-in Person 3 dataset; no filesystem/network at runtime.
-export function seed(ctx: ReducerCtx<InferSchema<typeof db>>) {
-  const rows = adaptScenario(source, ctx.timestamp);
+export function seed(ctx: ReducerCtx<InferSchema<typeof db>>, scenario: Scenario = source) {
+  const rows = adaptScenario(scenario, ctx.timestamp);
   rows.disasters.forEach(row => ctx.db.disaster.insert(row));
   rows.zones.forEach(row => ctx.db.zone.insert(row));
+  rows.impactLayers.forEach(row => ctx.db.impactLayer.insert(row));
   rows.households.forEach(row => ctx.db.household.insert(row));
   rows.teams.forEach(row => ctx.db.responseTeam.insert(row));
   // Let SpacetimeDB allocate IDs so old activity history cannot alias new requests.

@@ -115,5 +115,4 @@ configuration changes. These are derived snapshots, not a timer or persisted
 queue. Authorized views, stored v3 layers/exposure, scheduled recomputation,
 subscriptions, and browser filtering remain integration work. Existing legacy
 Small seed/reset, schemas, reducers, and bindings are unchanged. Household-specific
-preparedness suggestions are now available through the separate
-[preparedness helper](PREPAREDNESS.md); team recommendations remain subsequent work.
+preparedness suggestions and team recommendations remain subsequent tasks.

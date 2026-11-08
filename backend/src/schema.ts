@@ -39,5 +39,11 @@ export const activityEvent = table({ name: 'activity_event' }, {
   id: t.u64().primaryKey().autoInc(), entityType: t.string(), entityId: t.u64(), action: t.string(),
   actorId: t.identity(), timestamp: t.timestamp(), summary: t.string(),
 });
-const db = schema({ employee, disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent });
+export const impactLayer = table({ name: 'impact_layer' }, {
+  id: t.string().primaryKey(), disasterId: t.u64().index('btree'), contextZoneId: t.u64(),
+  hazardType: t.string(), component: t.string(), severity: t.string(), severityBasis: t.string(),
+  geometry: t.string(), dataKind: t.string(), isSimulated: t.bool(), source: t.string(),
+  updatedAt: t.timestamp(), label: t.string(), limitations: t.string(),
+});
+const db = schema({ employee, disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer });
 export default db;

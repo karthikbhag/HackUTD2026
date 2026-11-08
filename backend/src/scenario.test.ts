@@ -87,10 +87,10 @@ describe('Person 3 dataset integration', () => {
     const ctx = test.viewContext(admin);
     const map = toMapData({ disasters: api.disasters(ctx), zones: api.zones(ctx), households: api.households(ctx), requests: api.requests(ctx), teams: api.teams(ctx), tasks: api.tasks(ctx), assignments: api.assignments(ctx) });
     expect(map.zones).toHaveLength(6);
-    expect(map.households).toHaveLength(48); // Regional households remain in backend; map shows neighborhoods only.
+    expect(map.households).toHaveLength(60); // Regional households are inspectable through their hotspot.
     expect(map.teams).toHaveLength(12);
   });
-  it.each(['cancelled', 'completed'] as const)('omits active regional dispatches until %s using production seed/reducers', status => {
+  it.each(['cancelled', 'completed'] as const)('retains regional destinations and resumes proximity after %s', status => {
     const test = fixture();
     const employee = TestAuth.fromJwtPayload(JSON.stringify({ iss: 'test', sub: 'regional-dispatch' }), new ConnectionId(21n));
     test.withReducerTx(admin, ctx => api.setEmployee(ctx, { identity: test.viewContext(employee).sender, enabled: true }));
@@ -104,8 +104,8 @@ describe('Person 3 dataset integration', () => {
     const household = test.db.household.id.find(householdId)!;
     expect(test.db.zone.id.find(household.zoneId)?.level).toBe('metro');
     const initial = toMapData(rows());
-    expect(initial.households).toHaveLength(48);
-    expect(initial.households.some(h => h.id === String(householdId))).toBe(false);
+    expect(initial.households).toHaveLength(60);
+    expect(initial.households.find(h => h.id === String(householdId))).toMatchObject({ membership: "regional", zoneId: String(household.zoneId) });
     const homeZoneId = initial.teams.find(t => t.id === String(teamId))!.zoneId;
     expect(initial.zones.find(z => z.id === homeZoneId)?.hazard).toBe('earthquake');
     expect(initial.teams.find(t => t.id === String(teamId))?.status).toBe('available');
@@ -119,7 +119,7 @@ describe('Person 3 dataset integration', () => {
     for (const activeStatus of ['assigned', 'in_progress'] as const) {
       if (activeStatus === 'in_progress') test.withReducerTx(employee, ctx => api.updateAssignment(ctx, { assignmentId: assignment.id, status: activeStatus }));
       expect(test.db.assignment.id.find(assignment.id)?.status).toBe(activeStatus);
-      expect(toMapData(rows()).teams.some(t => t.id === String(teamId))).toBe(false);
+      expect(toMapData(rows()).teams.find(t => t.id === String(teamId))).toMatchObject({ zoneId: String(household.zoneId), hotspotId: String(maps.zones.get("tornado-neighborhood")) });
       // Incomplete subscription rows must never cause an active assignment to fall back to proximity.
       const missingDestination = rows();
       missingDestination.households = missingDestination.households.filter(h => h.id !== householdId);

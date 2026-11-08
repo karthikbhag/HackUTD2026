@@ -1,13 +1,13 @@
 # Changelog
 
-Current version: **2.2**
+Current version: **1.14**
 
 ## Instructions for future updates
 
 When a contributor asks to update this changelog:
 
 - Keep these rules and the entry template above the changelog entries. Add each new version entry below the rules and above the previous entries, keeping the full history.
-- Increase the version by one minor step for each new update: `1.1`, `1.2`, through `1.9`, then `2.0`, `2.1`, and so on. After any `.9`, increase the first number and reset the second number to `0`; do not use `1.10`.
+- Keep versions in the `1.x` series and increase the second number for each update: `1.9`, `1.10`, `1.11`, `1.12`, and so on. Do not advance to `2.x` unless explicitly requested.
 - Update the current version shown at the top of this file.
 - Record the contributor's full name under **Author** and the update date as `YYYY-MM-DD`. Ask for the name if it is unknown; do not reuse the previous author's name automatically. List all authors for a shared contribution.
 - Review the actual changes since the previous checkpoint and describe what changed, why it matters, and how it was verified. Do not repeat earlier changes as new work.
@@ -31,25 +31,22 @@ Entry template:
 - Note relevant checks still pending.
 ```
 
-## Version 2.2 — 2026-11-07
+## Version 1.14 — 2026-11-07
 
-**Author:** Karthik Bhagavatula
+**Author:** Josh Sebastian
 
 ### Changes
 
-- Completed Person 3 task 6 with `backend/src/preparedness.ts`, a deterministic SDK-independent suggestion helper using actual exposure, preparedness-phase disasters, existing sourced templates, recorded support flags, and explicit task history. All suggestions require employee review; no tasks or outreach are created.
-- Added explicit eligibility rules for general hazard guidance, support-specific shelter/transport/access planning, smoke-only cleaner-air guidance, and isolation-or-support winter checks. Preserves catalog text and guidance provenance, adding household-specific reasons and layer/disaster evidence.
-- Deduplicates by scenario run, household, and recommendation ID across overlapping layers/disasters. Distinct hazard guidance remains separate. Matching pending/in-progress/completed tasks suppress candidates only in the same run; old runs do not block replay. Returns explainable suppression records and counts.
-- Added a pure schema-v3 adapter and offline report command with summary, history-file, and run-ID options. Documented eligibility, phase separation, existing task-schema limits, run identity, review requirements, and integration in `backend/PREPAREDNESS.md`; updated project progress/handoffs.
+- Merged main's priority scoring and follow-up detection helpers, tests, scripts and handoffs into the large-dataset feature branch. Preserved the isolated fixture build/subscription/map implementation and both sets of backend commands.
+- Reconciled README and scenario handoffs to distinguish implemented footprint persistence/display from pending exposure/score/flag persistence and queue integration.
+- Kept release numbering in the requested 1.x series. Main's priority/follow-up entries, originally labeled 2.0/2.1, are retained below as 1.12/1.13 with their original authors and content; feature entries 1.10/1.11 and earlier history remain intact.
 
 ### Verification
 
-- All 76 backend tests passed, including 17 new preparedness cases and all 59 existing regressions. All nine Python generator/geometry tests, backend TypeScript checking, and Spacetime module build passed on Node 24.22.1.
-- Verified exposure-based selection, source text/review requirements, support flags, smoke/isolation eligibility, overlapping components/disasters/hazards, mixed phases, pending/in-progress/completed suppression, new-run replay, household isolation, customer neutrality, stable output, bigint IDs, empty inputs, and invalid joins/history/policies.
-- Evaluated all six hazards in Small (60), Demo (10,000), and Stress (100,000). Stress produced 150,940 suggestions for 82,184 households under default rules. CLI history checks suppressed two completed recommendations in the same run and restored them in a new run. These are synthetic fixture results, not live operational or performance claims.
-- Existing schema, reducers, seed/reset, bindings, catalog/generator, and frontend behavior are unchanged. Live integration still requires stored recommendation/run identity, authorized decision data, employee-approved task creation, and UI presentation. The current generic task schema is not treated as already supporting recommendation-level deduplication. No commit, push, publish, database mutation, or outreach was made.
+- All 62 backend tests passed on Node 24.22.2, covering both upstream priority/follow-up logic and the feature branch's large-fixture regressions. Backend/frontend typechecks and the SpacetimeDB module build passed.
+- Frontend lint passed with the existing generated-bindings warning. No runtime code conflict required resolution; helper implementations remain unchanged from main. Browser interaction and the known production-build limitation remain as previously recorded.
 
-## Version 2.1 — 2026-11-07
+## Version 1.13 — 2026-11-07
 
 **Author:** Karthik Bhagavatula
 
@@ -69,7 +66,7 @@ Entry template:
 - Ran the Stress summary report: 69,433 households retain follow-up concerns and 57,997 are flagged overlooked under demo defaults; saved the first 25 overlooked rows with complete counts/assumptions to an ignored local report. These are synthetic scenario results, not operational findings or backend performance benchmarks.
 - No schema, seed/reset, reducer, binding, or frontend behavior changes were made. Flags remain derived snapshots; persisted/live authorized flags, timer-driven recomputation, subscriptions, and queue filtering are pending integration. No commit, push, publish, or database mutation was made.
 
-## Version 2.0 — 2026-11-07
+## Version 1.12 — 2026-11-07
 
 **Author:** Karthik Bhagavatula
 
@@ -88,6 +85,42 @@ Entry template:
 - Ran the offline Stress summary report: all 100,000 households ranked; the top 25 were written to an ignored report. The highest observed score was 150 under default demo weights; this is an exercise result, not an operational urgency threshold or performance guarantee.
 - Before implementation, fast-forwarded the clean local main checkout to the user's already-merged remote main so the exposure helper was available. No new commit, push, database publish, or database mutation was made.
 - Scoring is a derived helper/report, not persisted or subscribed functionality. Overdue/overlooked flags, household-specific suggestions, team recommendations, and live priority queue verification remain pending.
+
+## Version 1.11 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Switched the ignored local frontend configuration from the development database to Demo and then Stress for manual inspection. The running Next.js server reloaded each environment change without replacing existing development data.
+- Enrolled the supplied browser identities in their respective local test databases. Local environment values, identity tokens, generated fixtures and database contents are not part of this commit.
+
+### Verification
+
+- Repeated the real SDK subscription/adapter check for Demo: 10,000 households (8,000 neighborhood / 2,000 regional) and 93 footprints; approximately 171 ms subscription application and 17 ms adaptation.
+- Repeated the same check for Stress: 100,000 households (80,000 neighborhood / 20,000 regional) and 93 footprints; approximately 1,364 ms subscription application and 152 ms adaptation. Authorized counts, hazard filtering, regional inspection data and outsider isolation passed.
+- Confirmed the localhost frontend returned HTTP success after switching to Demo and observed Next.js environment reload/reconnection logs for both datasets. These checks do not establish interactive browser rendering or responsiveness; manual acceptance and the production-build limitation recorded in v1.10 remain outstanding.
+
+## Version 1.10 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Added isolated `build:scenario` commands for Small/Demo/Stress. Builds validate and stage the selected fixture, invoke the installed SpacetimeDB CLI, and write a bundle plus generation/count/checksum manifest without replacing the tracked Small fixture. Normal builds retain Small.
+- Extended conversion to schema v3 and added private impact-layer persistence with employee-authorized subscriptions, seed/reset handling and regenerated frontend bindings. Reused the existing exposure helper to validate layer geometry/provenance with empty household input; no exposure relations or live-update simulation were added.
+- Retained regional households and actual zone IDs in the frontend adapter, adding separate hotspot/membership grouping. Regional assignment destinations now remain inspectable; missing active destinations still never fall back to proximity. Replaced repeated request/task/assignment scans with indexes and per-team centroid sorting with a nearest-centroid pass.
+- Added national hotspot summaries with Alaska/Hawaii framing, viewport-limited Canvas household markers at zoom 9+, selection styling independent of geometry rebuilding, and 50-row household pages with membership filtering. Dataset totals, neighborhood/regional counts, hazard-filter matches and drawn marker counts are distinct.
+- Rendered geographic context as dashed unfilled outlines and actual synthetic hazard footprints separately, retaining overlapping components and source/time/severity-basis/limitation details. Geographic membership is not labeled as hazard exposure.
+- Added a manifest-driven local SDK subscription verification command and `backend/SCENARIOS.md` with generation, loading, startup, browser enrollment, size switching, repeat runs, expected counts and browser acceptance checks. Updated backend, scenario, exposure, map and root documentation.
+
+### Verification
+
+- All 31 backend tests passed on Node 24.22.2, including v3 Demo/Stress conversion/map/filter/viewport tests, Demo insertion/authorization/reset checks, damaged-input rejection and existing workflow/exposure regressions. Backend and frontend typechecks passed. Frontend lint passed with one existing generated-bindings warning. All nine Python generator/geometry tests passed.
+- CLI/SDK 2.14.1 built, published and atomically seeded separate local `riskreach-demo-10k` and `riskreach-stress-100k` databases. No batched importer was needed. The existing `riskreach-local` database retained 60 households.
+- Real authorized SDK subscriptions and map adaptation verified Demo's 10,000 households (8,000 neighborhood / 2,000 regional), 220 teams, 2,000 requests, 2,597 tasks and 93 footprints, and Stress's 100,000 households (80,000 / 20,000), 1,970 teams, 20,000 requests, 24,931 tasks and 93 footprints. Both have 56 disasters/hotspots, 112 zones and no assignments. Outsider isolation, hazard filters, regional inspection data and safe households with unresolved needs passed.
+- Single local subscription/adaptation runs measured approximately 142/17 ms for Demo and 1,341/155 ms for Stress. These exclude browser rendering and are not responsiveness guarantees.
+- Interactive browser acceptance remains pending because the computer-use browser host was unavailable. A second development process was refused by Next.js's existing per-checkout server lock; the user's existing server was left running. Production builds failed at the existing Turbopack CSS worker-port `Operation not permitted` error, including an elevated retry. No production-build or interactive-browser success is claimed.
 
 ## Version 1.9 — 2026-11-07
 
