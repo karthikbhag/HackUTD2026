@@ -50,6 +50,10 @@ export interface AreaReview {
 /** Successful route response. */
 export interface AreaReviewResult {
   areaId: string; phase: Phase; snapshotAt: string; generatedAt: string; model: string; simulated: boolean; review: AreaReview;
+  /** True when identical evidence was answered from the server cache (no Gemini tokens used). */
+  cached: boolean;
+  /** Gemini tokens used when this review was generated (0 if unknown). */
+  tokens: number;
 }
 export type AreaReviewErrorCode = "not_configured" | "invalid_request" | "rate_limited" | "upstream_error" | "timeout" | "invalid_response" | "forbidden";
 export interface AreaReviewError { error: { code: AreaReviewErrorCode; message: string; retryAfterSeconds?: number } }

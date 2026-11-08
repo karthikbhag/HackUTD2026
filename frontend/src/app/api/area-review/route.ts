@@ -3,15 +3,12 @@
  * The browser sends counts and labels only; GEMINI_API_KEY stays on the server.
  * This route only returns text: it never writes to SpacetimeDB, sends notifications, or dispatches teams.
  */
-import { isGeminiConfigured } from "@/lib/ai/gemini";
-import { AreaReviewFailure, generateAreaReview } from "@/lib/ai/generate-area-review";
-import { parseAreaSnapshot, type AreaReviewError, type AreaReviewErrorCode, type AreaReviewResult } from "@/lib/ai/area-review";
+import { geminiModel, isGeminiConfigured } from "@/lib/ai/gemini";
+import { AreaReviewFailure, generateAreaReview, simulatedFailure } from "@/lib/ai/generate-area-review";
+import { parseAreaSnapshot, snapshotFingerprint, type AreaReviewError, type AreaReviewErrorCode, type AreaReviewResult, type AreaSnapshot } from "@/lib/ai/area-review";
+import { getCachedReview, reserveReview, setCachedReview, shareInFlight, type CachedReview } from "@/lib/ai/review-budget";
 
 const MAX_BODY_BYTES = 16_000;
-// Local guard for the shared free-tier quota (per server process); Gemini enforces its own limits too.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 6;
-const recent: number[] = [];
 
 function fail(code: AreaReviewErrorCode, message: string, status: number, retryAfterSeconds?: number) {
   const body: AreaReviewError = { error: { code, message, ...(retryAfterSeconds ? { retryAfterSeconds } : {}) } };
@@ -39,24 +36,37 @@ export async function POST(request: Request) {
 
   if (!isGeminiConfigured()) return fail("not_configured", "AI review is not configured. Add GEMINI_API_KEY to frontend/.env.local and restart the dev server.", 503);
 
-  const now = Date.now();
-  while (recent.length && now - recent[0] > WINDOW_MS) recent.shift();
-  if (recent.length >= MAX_PER_WINDOW) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((WINDOW_MS - (now - recent[0])) / 1000));
-    return fail("rate_limited", `Too many AI reviews in the last minute (local limit ${MAX_PER_WINDOW}). Retry in ${retryAfterSeconds} s.`, 429, retryAfterSeconds);
-  }
-  recent.push(now);
+  // Development-only error simulation runs before the cache so cached reviews do not hide it.
+  const simulated = simulatedFailure();
+  if (simulated) return fail(simulated.code, simulated.message, simulated.status, simulated.retryAfterSeconds);
+
+  // Identical evidence (same area, phase, counts and sources) reuses a recent review: no Gemini tokens.
+  const key = `${geminiModel()}|${snapshotFingerprint(snapshot)}`;
+  const hit = getCachedReview(key);
+  if (hit) return Response.json(toResult(snapshot, hit, true), { headers: { "Cache-Control": "no-store" } });
 
   try {
-    const { review, model } = await generateAreaReview(snapshot);
-    const result: AreaReviewResult = {
-      areaId: snapshot.areaId, phase: snapshot.phase, snapshotAt: snapshot.snapshotAt, generatedAt: new Date().toISOString(),
-      model, simulated: snapshot.area.simulated || snapshot.impactLayers.some(layer => layer.simulated), review,
-    };
-    return Response.json(result, { headers: { "Cache-Control": "no-store" } });
+    const { promise, joined } = shareInFlight(key, async () => {
+      // Budget is checked only when Gemini will actually be called (not for cache hits or joined requests).
+      const denied = reserveReview();
+      if (denied) throw new AreaReviewFailure("rate_limited", denied.message, 429, denied.retryAfterSeconds);
+      const { review, model, tokens } = await generateAreaReview(snapshot);
+      const value: CachedReview = { review, model, tokens, generatedAt: new Date().toISOString() };
+      setCachedReview(key, value);
+      return value;
+    });
+    return Response.json(toResult(snapshot, await promise, joined), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof AreaReviewFailure) return fail(error.code, error.message, error.status, error.retryAfterSeconds);
     console.error("[area-review] unexpected failure", error instanceof Error ? error.name : typeof error);
     return fail("upstream_error", "AI review failed unexpectedly.", 500);
   }
+}
+
+function toResult(snapshot: AreaSnapshot, value: CachedReview, cached: boolean): AreaReviewResult {
+  return {
+    areaId: snapshot.areaId, phase: snapshot.phase, snapshotAt: snapshot.snapshotAt, generatedAt: value.generatedAt,
+    model: value.model, simulated: snapshot.area.simulated || snapshot.impactLayers.some(layer => layer.simulated),
+    review: value.review, cached, tokens: cached ? 0 : value.tokens,
+  };
 }

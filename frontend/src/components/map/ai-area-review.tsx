@@ -56,6 +56,8 @@ export function AiAreaReview({ data, zone, phase }: { data: MapData; zone: MapZo
 
   const guidance = phase === "after" ? zone.response : zone.preparation;
   const loading = current.status === "loading";
+  // Unchanged evidence would only return the same (cached) review, so regenerating is offered only after data changes.
+  const upToDate = current.status === "success" && current.fingerprint === fingerprint;
 
   return <div className="ai-review" aria-live="polite" aria-busy={loading}>
     {current.status === "success" ? <ReviewBody result={current.result} stale={current.fingerprint !== fingerprint}/> : <>
@@ -66,8 +68,8 @@ export function AiAreaReview({ data, zone, phase }: { data: MapData; zone: MapZo
     </>}
     {current.status === "error" && <div className="ai-review-error" role="alert"><strong>AI review unavailable.</strong> {current.message}{current.code === "not_configured" ? "" : " The area details above are unaffected."}</div>}
     <div className="ai-review-actions">
-      <button type="button" className="outline-button ai-generate" onClick={generate} disabled={loading}>
-        {loading ? "Generating…" : current.status === "error" ? "Retry AI review" : current.status === "success" ? "Regenerate" : "Generate AI Review"}
+      <button type="button" className="outline-button ai-generate" onClick={generate} disabled={loading || upToDate}>
+        {loading ? "Generating…" : current.status === "error" ? "Retry AI review" : current.status === "success" ? (upToDate ? "Review is up to date" : "Regenerate with new data") : "Generate AI Review"}
       </button>
       {loading && <span className="muted small" role="status">Asking Gemini using this area&apos;s evidence…</span>}
     </div>
@@ -80,7 +82,7 @@ function ReviewBody({ result, stale }: { result: AreaReviewResult; stale: boolea
   const section = (title: string, items: string[], empty?: string) => (items.length || empty) ? <><h5>{title}</h5>{items.length ? <ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul> : <p className="muted">{empty}</p>}</> : null;
   return <div className="ai-review-result">
     <div className="tag-row"><span className="tag ai-tag">AI-generated · {result.model}</span>{result.simulated && <span className="tag">Simulation</span>}</div>
-    <small>Snapshot {displayTime(result.snapshotAt)} · Generated {displayTime(result.generatedAt)}</small>
+    <small>Snapshot {displayTime(result.snapshotAt)} · Generated {displayTime(result.generatedAt)} · {result.cached ? "Reused for unchanged evidence (no new tokens)" : result.tokens ? `${result.tokens.toLocaleString()} Gemini tokens` : "Token use unavailable"}</small>
     {stale && <p className="ai-review-stale">Area data changed after this snapshot. Regenerate for current evidence.</p>}
     <p>{review.summary}</p>
     {section("Expected conditions", review.expectedConditions)}

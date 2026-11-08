@@ -3,8 +3,9 @@
  * has no access to SpacetimeDB, notifications, or dispatch, and returns suggestions.
  */
 import "server-only";
-import { ApiError } from "@google/genai";
+import { ApiError, FinishReason, ThinkingLevel } from "@google/genai";
 import { geminiModel, getGeminiClient } from "./gemini";
+import { recordTokens, reviewBudgetConfig } from "./review-budget";
 import { AREA_REVIEW_JSON_SCHEMA, parseAreaReview, type AreaReview, type AreaReviewErrorCode, type AreaSnapshot } from "./area-review";
 
 const TIMEOUT_MS = 30_000;
@@ -31,7 +32,7 @@ export class AreaReviewFailure extends Error {
  * GEMINI_REVIEW_SIMULATE_ERROR=rate_limit | api_error | timeout | invalid_response.
  * Ignored in production builds.
  */
-function simulatedFailure(): AreaReviewFailure | null {
+export function simulatedFailure(): AreaReviewFailure | null {
   if (process.env.NODE_ENV === "production") return null;
   switch (process.env.GEMINI_REVIEW_SIMULATE_ERROR?.trim()) {
     case "rate_limit": return new AreaReviewFailure("rate_limited", "Gemini free-tier rate limit reached (simulated). Wait a minute and retry.", 429, 60);
@@ -42,11 +43,16 @@ function simulatedFailure(): AreaReviewFailure | null {
   }
 }
 
-export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ review: AreaReview; model: string }> {
-  const simulated = simulatedFailure();
-  if (simulated) throw simulated;
+/**
+ * One Gemini call. Token use is kept low by a compact snapshot, a minimal thinking
+ * level, and an output cap (see review-budget.ts); reported tokens count toward the daily budget.
+ */
+export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ review: AreaReview; model: string; tokens: number }> {
   const model = geminiModel();
+  const budget = reviewBudgetConfig();
   let text: string | undefined;
+  let tokens = 0;
+  let truncated = false;
   try {
     const response = await getGeminiClient().models.generateContent({
       model,
@@ -56,19 +62,27 @@ export async function generateAreaReview(snapshot: AreaSnapshot): Promise<{ revi
         temperature: 0.2,
         responseMimeType: "application/json",
         responseJsonSchema: AREA_REVIEW_JSON_SCHEMA,
+        // Thinking tokens are billed and count toward maxOutputTokens; MINIMAL keeps them low.
+        ...(budget.thinkingLevel ? { thinkingConfig: { thinkingLevel: ThinkingLevel[budget.thinkingLevel] } } : {}),
+        maxOutputTokens: budget.maxOutputTokens,
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
       },
     });
     text = response.text;
+    tokens = response.usageMetadata?.totalTokenCount ?? 0;
+    truncated = response.candidates?.[0]?.finishReason === FinishReason.MAX_TOKENS;
+    recordTokens(tokens);
+    console.info(`[area-review] ${model}: ${tokens} tokens (prompt ${response.usageMetadata?.promptTokenCount ?? "?"}, thinking ${response.usageMetadata?.thoughtsTokenCount ?? 0}, output ${response.usageMetadata?.candidatesTokenCount ?? "?"})`);
   } catch (error) {
     throw toFailure(error);
   }
+  if (truncated) throw new AreaReviewFailure("invalid_response", `Gemini's review was cut off at the ${budget.maxOutputTokens}-token output cap. Raise GEMINI_REVIEW_MAX_OUTPUT_TOKENS if this repeats.`, 502);
   if (!text) throw new AreaReviewFailure("invalid_response", "Gemini returned an empty response (it may have been blocked by safety filters).", 502);
   let parsed: unknown;
   try { parsed = JSON.parse(text); } catch { throw new AreaReviewFailure("invalid_response", "Gemini returned malformed JSON.", 502); }
   const result = parseAreaReview(parsed, snapshot);
   if ("error" in result) throw new AreaReviewFailure("invalid_response", `Gemini's review failed validation: ${result.error}`, 502);
-  return { review: result.review, model };
+  return { review: result.review, model, tokens };
 }
 
 /** Maps SDK errors to safe messages. Upstream error text is logged by status only, never returned. */

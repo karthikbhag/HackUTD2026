@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.23**
+Current version: **1.24**
 
 ## Instructions for future updates
 
@@ -30,6 +30,29 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.24 — 2026-11-08
+
+**Author:** Tien Phan
+
+### Changes
+
+- Added a configurable token and request budget for the AI area review in `frontend/src/lib/ai/review-budget.ts`, so the free tier lasts longer and limits can be raised later through `frontend/.env.local` without code changes (0 turns a limit off):
+  - `GEMINI_REVIEW_CACHE_MINUTES` (default 30): a review for identical evidence (same model, area, phase, counts, and sources) is reused from an in-memory server cache with no Gemini call. Identical concurrent requests share one call.
+  - `GEMINI_THINKING_LEVEL` (default `minimal`; `default` keeps the model's own level, needed for models without `minimal` such as `gemini-3.8-flash` per Google's thinking docs).
+  - `GEMINI_REVIEW_MAX_OUTPUT_TOKENS` (default 1,024, minimum 256; includes thinking tokens). A truncated reply is reported as an error rather than shown.
+  - `GEMINI_REVIEW_MAX_PER_MINUTE` (default 5, replacing the fixed 6), `GEMINI_REVIEW_MAX_PER_DAY` (default 50), and `GEMINI_REVIEW_MAX_TOKENS_PER_DAY` (default 100,000), counted per Pacific-time day because Google resets daily quotas at midnight Pacific. Limits apply only when Gemini is actually called; cache hits are free.
+- The route now records Gemini's reported token usage (server log shows prompt, thinking, and output tokens) and returns `cached` and `tokens`. The popup shows the token count or "Reused for unchanged evidence (no new tokens)". After a successful review the button reads **Review is up to date** and is disabled until the area's evidence changes, then offers **Regenerate with new data**.
+- The development-only `GEMINI_REVIEW_SIMULATE_ERROR` check now runs before the cache, so cached reviews do not hide simulated errors.
+- Counters and cache are per server process and reset on restart; they are not shared across multiple deployed instances. Google's project-level quotas still apply (Google's rate-limit page says limits are per project, not per key, and lists per-model free-tier values in AI Studio rather than on the page).
+- Documented the variables in `frontend/.env.example` and the README.
+
+### Verification
+
+- Frontend `tsc --noEmit` passed; ESLint on `src` reported 0 errors (existing generated-bindings warning); `npm run build` passed.
+- `npm run test:scenario`: 25 of 25 passed, including 5 new budget tests (defaults and env overrides, invalid values, per-minute release, daily request/token limits and Pacific-day reset, cache expiry and disabling, in-flight sharing).
+- Live, with the Tampa fixture snapshot through the dev-server route: the first request returned 200 in 2.6 s using 984 tokens; an identical repeat returned in 5 ms from the cache with 0 tokens. A direct comparison with the same short prompt on `gemini-3.6-flash` used 1,413 tokens (827 thinking) and 5.7 s at the model's default level versus 742 tokens (0 thinking) and 2.3 s at `minimal`. One `minimal` comparison attempt first received Gemini 503 (overloaded).
+- Pending: interactive browser check of the token label and the up-to-date/regenerate button states.
 
 ## Version 1.23 — 2026-11-08
 
