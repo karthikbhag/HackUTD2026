@@ -137,7 +137,10 @@ describe('Person 3 dataset integration', () => {
   });
   it('adapts generated v2 demo and stress presets without dropping relationships', () => {
     for (const [preset, count] of [['demo', 10000], ['stress', 100000]] as const) {
-      const data = JSON.parse(execFileSync('python3', ['../data/scenarios/generate.py', '--preset', preset], { maxBuffer: 64 * 1024 * 1024 }).toString()) as Scenario;
+      // This regression intentionally covers the v2 converter. The public CLI
+      // now emits v3 impact layers, which are handled separately by exposure.ts.
+      const code = "import sys,json; sys.path.insert(0,'../data/scenarios'); from generate import generate_base; print(json.dumps(generate_base(sys.argv[1])))";
+      const data = JSON.parse(execFileSync(process.env.PYTHON ?? 'python', ['-c', code, preset], { maxBuffer: 64 * 1024 * 1024 }).toString()) as Scenario;
       const rows = adaptScenario(data, now);
       expect(rows.households).toHaveLength(count);
       expect(rows.disasters).toHaveLength(56);
