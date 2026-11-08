@@ -33,7 +33,7 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 ## Contract and handoff
 
 - Schema v2 adds `generation`, `hotspots`, and regional `zone_id` on teams. The fixture version is independent of the changelog version. Existing collection field conventions remain intact.
-- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 3. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
+- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 4 (schema remains 3), adding Small team-region metadata; existing generator-v3 fixtures remain valid. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
 - IDs are stable strings unique within each collection. `disaster_id`, `parent_zone_id`, `zone_id`, and `household_id` are foreign keys. Infer a zone's hazard through its disaster. The selected narrative hotspot remains `tornado-neighborhood`.
 - V2 hotspots identify state, disaster, neighborhood, dense-demo flag, and household/request/team totals. These summaries describe the initial fixture, not live operational counts; recompute them from authoritative tables after changes.
 - Boundaries are GeoJSON Polygon geometry in **longitude, latitude** order. Household/team coordinates are explicit fields. Zone rectangles now mean geographic context only; use `impact_layers[].geometry` to render actual synthetic hazard footprints. Household coordinates/memberships are preserved. The 80% neighborhood count is geographic membership, not an affected-household count.
@@ -56,7 +56,7 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 Small has 10 impact layers; Demo/Stress each have 93. All presets include the
 same 12 reusable recommendation templates (two per hazard), linked by
 `recommendation_ids`. Recommendations are employee-review content, not persisted
-tasks or automatic household-specific suggestions; Person 3 task 6 remains pending.
+tasks until reviewed. The restored preparedness helper now selects household-specific suggestions from exposure, phase, support needs and task history; an employee explicitly approves each task.
 
 Each impact layer identifies its disaster, context region, hazard, component,
 qualitative severity/basis, label, authored source, simulation kind, timestamp,
@@ -97,9 +97,9 @@ viewport filtering, indexed adapter joins and 50-row household pages are impleme
 Full subscriptions remain; server scoping/clustering/batched imports are deferred
 until actual tests justify them. Both datasets passed database/subscription checks;
 interactive browser acceptance remains pending. Exposure helper correctness is
-separate from browser performance and no exposure relations are persisted.
+separate from browser performance and matched layer IDs now persist in compact decision summaries; complete evidence is derived for selected households.
 
-The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested across all three sizes. Persisted scores/flags, scheduled recomputation, household-specific suggestions and team recommendations remain subsequent work.
+The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested across all three sizes. Persisted summaries, scheduled refresh, household-specific preparedness and team recommendation views now power the [connected main desk](../../backend/SHARED_WORKFLOW.md).
 
 ## Backend integration
 
@@ -122,4 +122,4 @@ is pending. Regional households are now included with explicit membership and
 separate hotspot grouping. Missing active team destinations are omitted rather than
 falling back to proximity. Team home-region metadata remains source-only. Hazard
 footprints persist separately from geographic context; calculated exposure,
-priority rules and operational UI controls remain outside this display integration.
+priority rules and operational controls are now supplied by the connected decision/workflow integration. Browser acceptance remains pending.

@@ -4,11 +4,11 @@ Person 2 owns this TypeScript module. It implements the operational backend for 
 
 ## Large fixture inspection
 
-See [the local scenario runbook](SCENARIOS.md) for isolated Small/Demo/Stress builds, atomic seeding, startup, enrollment, count verification and browser checks. v3 impact layers now persist and subscribe separately from geographic context. Normal builds still use legacy Small. Household exposure remains a separate pure calculation.
+See [the local scenario runbook](SCENARIOS.md) for isolated Small/Demo/Stress builds, atomic seeding, startup, enrollment, count verification and browser checks. v3 impact layers now persist and subscribe separately from geographic context. Normal builds use modern schema-v3 Small with ten impacts. The [connected main workflow](SHARED_WORKFLOW.md) uses a separate persistent local Demo database with authoritative summaries and workflow controls.
 
 ## Requirements and local setup
 
-Use SpacetimeDB CLI **2.14.1** and SDK **2.14.1**. The SDK requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; the root `.nvmrc` selects the Node 24 line, so install its latest patch. Verification here used Node 24.20.0, which npm warns is below the supported patch range; repeat checks on a supported patch before deployment.
+Use SpacetimeDB CLI **2.14.1** and SDK **2.14.1**. The SDK requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; the root `.nvmrc` selects the Node 24 line, so install its latest patch. Current verification uses supported Node 24.22.1 and Python 3.12.
 
 From the repository root:
 
@@ -34,11 +34,11 @@ spacetime publish riskreach-local --server http://127.0.0.1:3100 --module-path b
 spacetime call riskreach-local seed_demo --server http://127.0.0.1:3100
 ```
 
-No cloud deployment or external API keys are required. `spacetime.json` points at `backend/` and defaults to local; commands explicitly use port 3100 to avoid Next.js on 3000. Start Next.js with `npm --prefix frontend run dev`. The map supports optional read-only subscriptions: set `NEXT_PUBLIC_SPACETIMEDB_URI=http://127.0.0.1:3100` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE=riskreach-local` in `frontend/.env.local`, restart Next.js, then enroll the browser identity displayed below the map. With neither variable set it uses labeled UI fixtures. See the [map handoff](../frontend/src/components/map/README.md). Operational UI controls remain pending.
+No cloud deployment or external API keys are required. `spacetime.json` points at `backend/` and defaults to local; commands explicitly use port 3100 to avoid Next.js on 3000. Start Next.js with `npm --prefix frontend run dev`. The map supports shared subscriptions: set `NEXT_PUBLIC_SPACETIMEDB_URI=http://127.0.0.1:3100` and `NEXT_PUBLIC_SPACETIMEDB_DATABASE=riskreach-local` in `frontend/.env.local`, restart Next.js, then enroll the browser identity displayed below the map. With neither variable set the main page reports setup instructions; `/demo` remains the browser-local rehearsal. See the [map handoff](../frontend/src/components/map/README.md). Connected workflow controls are implemented; see [current setup and enrollment](SHARED_WORKFLOW.md).
 
 ## Contract and client handoff
 
-Generated bindings are committed under `frontend/src/module_bindings/`; regenerate after changing the schema or reducer arguments. The frontend SDK is pinned to match. `ConnectedDashboard` owns the read-only browser connection and UI subscription lifecycle; Person 4 can extend it for workflow controls.
+Generated bindings are committed under `frontend/src/module_bindings/`; regenerate after changing the schema or reducer arguments. The frontend SDK is pinned to match. `ConnectedDashboard` owns the shared browser connection and subscription lifecycle; `ConnectedWorkspace` reuses it for authoritative decisions and operational actions.
 
 - Import `DbConnection` and `tables` from `@/module_bindings`.
 - Connect with `.withUri('http://127.0.0.1:3100').withDatabaseName('riskreach-local')`. Persist each browser's returned identity token locally; never commit or share it.
@@ -54,13 +54,13 @@ spacetime call riskreach-local set_employee '"EMPLOYEE_IDENTITY_HEX"' true --ser
 
 Wire/SQL names use snake_case; generated TypeScript uses camelCase. IDs are `u64`/`bigint`. Never assume auto-generated request, task, assignment, or event IDs are sequential or repeat after reset. Timestamps are SDK `Timestamp` values, not ISO strings. Optional fields use `undefined`.
 
-The schema includes all eight README entities plus a private employee allowlist. Zones carry `disasterId`, `level` (`national`, `metro`, `neighborhood`), optional `parentZoneId`, and `boundary` as a GeoJSON Polygon JSON string with `[longitude, latitude]` coordinates. The imported fixture has metro → neighborhood hierarchies; national framing stays source metadata rather than an impact polygon. Household `zoneId` identifies its neighborhood or metro; follow zone → disaster for hazard filters. The current contract assigns one zone per household; shared-household cross-hazard exposure needs a future relation agreed with Person 3.
+The schema includes all eight README entities plus a private employee allowlist. Zones carry `disasterId`, `level` (`national`, `metro`, `neighborhood`), optional `parentZoneId`, and `boundary` as a GeoJSON Polygon JSON string with `[longitude, latitude]` coordinates. The imported fixture has metro → neighborhood hierarchies; national framing stays source metadata rather than an impact polygon. Household `zoneId` identifies its neighborhood or metro; follow zone → disaster for hazard filters. The current contract assigns one zone per household; cross-hazard exposure is retained separately as layer IDs in decision summaries and full evidence in authorized selected-household views.
 
 Status values follow the root README. Risk and urgency are demo scales of 1–5. Requests add `people` (positive integer); team `capacity` is the maximum people supported by one assignment. One team can have only one active assignment, even when that assignment uses less than its capacity. Teams retain their source `available`/`unavailable` status.
 
 Supported request needs: `food`, `water`, `shelter`, `welfare_check`, `evacuation`, `claims_support`, `fire_smoke_support`, `winter_weather_support`. Capabilities match these exact strings. Seeded teams cover their hotspot's needs; unsupported teams are rejected. Customer status never affects eligibility.
 
-Supported task actions: `outreach`, `preparedness_information`, `shelter_options`, `position_supplies`, `shelter_in_place`, `infrastructure_check`, `evacuation_preparation`, `smoke_protection`, `winter_preparation`, `flood_preparation`. Hazard-specific fixture tasks are placeholders for Person 3's reviewed recommendations.
+Supported task actions: `outreach`, `preparedness_information`, `shelter_options`, `position_supplies`, `shelter_in_place`, `infrastructure_check`, `evacuation_preparation`, `smoke_protection`, `winter_preparation`, `flood_preparation`. Approved recommendation tasks store explicit scenario-run/recommendation identity; legacy generic tasks have empty recommendation IDs.
 
 ## Reducers and transitions
 
@@ -81,15 +81,7 @@ All operational changes persist an activity event transactionally. Assignment di
 
 ## Repeatable verification
 
-All 62 backend tests cover authorization, workflow transitions, priority/follow-up calculations, legacy/v2/v3 conversion,
-regional destination grouping, exposure correctness and large-fixture map/filter/
-viewport behavior. Backend/frontend typechecks and frontend lint pass on Node
-24.22.2; nine Python tests pass. Real Demo/Stress subscriptions are verified by the
-manifest-driven command in [SCENARIOS.md](SCENARIOS.md). Interactive browser
-acceptance remains pending; production build still encounters the Turbopack CSS
-worker-port permission failure, including an elevated retry. Harness tests alone
-do not establish subscription behavior. The older workflow-mutating live check
-below remains available for a disposable Small database.
+All 101 backend tests, nine Python tests and six frontend demo-state tests pass. Typechecks, module builds, frontend lint and production build pass; lint retains one generated-bindings warning. A new two-client live verifier covers the complete shared workflow in a separate disposable database. Browser acceptance still requires enrolled browser sessions. See [current commands/results](SHARED_WORKFLOW.md).
 
 For a disposable local database published by your current CLI identity:
 
@@ -108,20 +100,12 @@ npm --prefix backend run test:live
 
 The live test creates three temporary client identities, authorizes two through the CLI publisher, verifies map adaptation, synchronization and competing dispatch, completes assistance, checks displayed needs/team grouping, revocation and outsider rejection, and revokes test memberships on exit. It mutates this disposable fixture. Override `SPACETIMEDB_URI` and `SPACETIMEDB_DATABASE` if needed; the script restricts the host to localhost/127.0.0.1.
 
-## Remaining integration
+## Current integration
 
-Person 3 task 7 now provides [team recommendations with eligibility reasons, distance, and approximate ETA](TEAM_RECOMMENDATIONS.md), matching the one-active-assignment and people-capacity rules. Actual reducer harness tests verify dispatch and release behavior. Authorized live recommendation views and UI selection remain pending; recommendations never reserve or assign teams.
-
-Person 3 task 5 now provides [overdue-contact and overlooked-case detection](FOLLOW_UP.md), including independent concern reasons, configurable thresholds, flag-clearing behavior, and offline reports across all presets. Live authorized flags, time-driven recomputation, subscriptions, and queue filtering still require integration.
-
-Person 3 task 4 now provides configurable [priority scoring and reason breakdowns](PRIORITY.md), verified across Small/Demo/Stress. The pure helper and offline report do not change database schema, reducers, seed/reset, or live UI behavior. Authenticated live score/flag integration and remaining recommendations still need implementation.
-
-Person 3 task 3 provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). The converter now accepts v1/v2/v3; v3 layers are persisted and rendered through authorized subscriptions. Exposure relations remain unpersisted. See [large fixture verification](SCENARIOS.md).
-
-See [Person 2 plan](PLAN.md). Person 3 supplied the portable datasets now used by seed/reset and still owns final hazard geometry/exposure, transparent priority scores/reasons, overdue-contact rules, and suitable-team recommendations. The fixture has one hotspot per hazard, 12 metro/neighborhood zones, 60 fictional households, 12 requests, 18 outreach tasks, and 12 teams; it is not a real hazard feed. The map and read-only subscription integration are implemented; Person 4's operational UI controls and integrated browser acceptance checks remain pending. OIDC login UX, production deployment, and team-wide contract sign-off remain pending.
+See [SHARED_WORKFLOW.md](SHARED_WORKFLOW.md) for the restored decision integration, connected scenario desk, enrollment commands, bounded employee-controlled synthetic clock, separate reply rounds, welfare-review requests and verification. Actual AI generation, notification delivery, browser acceptance, sponsor submission materials and team-wide contract sign-off remain separate work.
 
 ## Person 3 dataset import
 
-`seedDemo` and `resetDemo` share `src/seed.ts`, which bundles `../data/scenarios/nationwide-v1.json` and validates/converts every row through `src/scenario.ts` before inserts. The default is the Small fixture: six disasters, 12 zones, 60 households, 12 teams, 12 open requests, and 18 synthesized outreach tasks for never-contacted households. No filesystem/network access occurs in reducers. The previous sparse fixture is retained only in a test helper to preserve the existing workflow/map regressions.
+`seedDemo` and `resetDemo` share `src/seed.ts`, which selects bundled `src/default-scenario.json` for ordinary Small builds and the selected v3 fixture for staged builds and validates/converts every row through `src/scenario.ts` before inserts. The default is the Small fixture: six disasters, 12 zones, 60 households, 12 teams, 12 open requests, and 18 synthesized outreach tasks for never-contacted households. No filesystem/network access occurs in reducers. The previous sparse fixture is retained only in a test helper to preserve the existing workflow/map regressions.
 
-See the [source mapping contract](../data/scenarios/README.md#backend-integration) for ID, time, enums, party-size/capacity assumptions and retained metadata. No schema/reducer arguments changed, so bindings remain valid without regeneration. Fixture-specific Demo/Stress bundles now load into separate local test databases. The map retains regional households, preserves their real zone IDs, and groups them under geographic hotspots for inspection. Active regional assignments retain their destination; missing active destinations are omitted. Only unassigned teams use proximity grouping. See [commands and verification](SCENARIOS.md).
+See the [source mapping contract](../data/scenarios/README.md#backend-integration) for ID, time, enums, party-size/capacity assumptions and retained metadata. Bindings were regenerated for decisions, recommendation/run fields and shared exercise views/reducers. Newly appended fields have migration defaults. Fixture-specific Demo/Stress bundles now load into separate local test databases. The map retains regional households, preserves their real zone IDs, and groups them under geographic hotspots for inspection. Active regional assignments retain their destination; missing active destinations are omitted. Only unassigned teams use proximity grouping. See [commands and verification](SCENARIOS.md).

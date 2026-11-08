@@ -111,8 +111,4 @@ Stress evaluation. Every preset includes a seeded unresolved case that clears it
 overlooked flag after contact while retaining its assistance need.
 
 Recompute after contact, check-in, request, exposure, vulnerability, clock, or
-configuration changes. These are derived snapshots, not a timer or persisted
-queue. Authorized views, stored v3 layers/exposure, scheduled recomputation,
-subscriptions, and browser filtering remain integration work. Existing legacy
-Small seed/reset, schemas, reducers, and bindings are unchanged. Household-specific
-preparedness suggestions and team recommendations remain subsequent tasks.
+configuration changes. The pure helper remains a snapshot calculation. [Live integration](SHARED_WORKFLOW.md) now stores compact summaries, refreshes after mutations and on a private schedule, and exposes selected-case concerns plus queue filtering. A separate explicit synthetic deadline detects unanswered post-impact rounds independently of old contact freshness.

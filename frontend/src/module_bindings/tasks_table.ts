@@ -18,4 +18,6 @@ export default __t.row({
   status: __t.string(),
   createdAt: __t.timestamp().name("created_at"),
   completedAt: __t.option(__t.timestamp()).name("completed_at"),
+  scenarioRunId: __t.u64().name("scenario_run_id"),
+  recommendationId: __t.string().name("recommendation_id"),
 });

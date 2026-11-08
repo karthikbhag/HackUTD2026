@@ -1,0 +1,158 @@
+{
+  "name": "Fictional Dallas neighborhood welfare-check exercise",
+  "source": "Synthetic demo only; coordinates require Google road-snap acceptance before presentation",
+  "staging": {
+    "latitude": 32.8325,
+    "longitude": -96.7695
+  },
+  "households": [
+    {
+      "name": "Fictional routing household 01",
+      "latitude": 32.8304,
+      "longitude": -96.774,
+      "status": "safe",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 02",
+      "latitude": 32.8304,
+      "longitude": -96.7722,
+      "status": "safe",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 03",
+      "latitude": 32.8304,
+      "longitude": -96.7704,
+      "status": "safe",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 04",
+      "latitude": 32.8304,
+      "longitude": -96.7686,
+      "status": "needs_help",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 05",
+      "latitude": 32.8304,
+      "longitude": -96.7668,
+      "status": "needs_help",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 06",
+      "latitude": 32.832,
+      "longitude": -96.774,
+      "status": "needs_help",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 07",
+      "latitude": 32.832,
+      "longitude": -96.7722,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 08",
+      "latitude": 32.832,
+      "longitude": -96.7704,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 09",
+      "latitude": 32.832,
+      "longitude": -96.7686,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 10",
+      "latitude": 32.832,
+      "longitude": -96.7668,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 11",
+      "latitude": 32.8336,
+      "longitude": -96.774,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 12",
+      "latitude": 32.8336,
+      "longitude": -96.7722,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 13",
+      "latitude": 32.8336,
+      "longitude": -96.7704,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 14",
+      "latitude": 32.8336,
+      "longitude": -96.7686,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 15",
+      "latitude": 32.8336,
+      "longitude": -96.7668,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 16",
+      "latitude": 32.8352,
+      "longitude": -96.774,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 17",
+      "latitude": 32.8352,
+      "longitude": -96.7722,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 18",
+      "latitude": 32.8352,
+      "longitude": -96.7704,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 19",
+      "latitude": 32.8352,
+      "longitude": -96.7686,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    },
+    {
+      "name": "Fictional routing household 20",
+      "latitude": 32.8352,
+      "longitude": -96.7668,
+      "status": "unknown",
+      "outcome": "Simulated welfare visit completed; dispatcher follow-up may still be required"
+    }
+  ],
+  "teams": [
+    {
+      "name": "Dallas simulated welfare team A"
+    },
+    {
+      "name": "Dallas simulated welfare team B"
+    }
+  ]
+}

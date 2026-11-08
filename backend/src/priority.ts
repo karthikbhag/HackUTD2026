@@ -23,7 +23,7 @@ export interface PriorityConfig {
   readonly pointsPerDistinctNeed: number;
   readonly distinctNeedCap: number;
   readonly checkInPoints: Readonly<Record<PriorityHousehold['checkInStatus'], number>>;
-  readonly exposurePoints: Readonly<{ moderate: number; high: number }>;
+  readonly exposurePoints: Readonly<{ moderate: number; high: number; critical?: number }>;
   readonly vulnerabilityPoints: Readonly<Record<string, number>>;
   readonly vulnerabilityCap: number;
   readonly neverContactedPoints: number;
@@ -34,7 +34,7 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   urgencyPoints: [5, 10, 20, 35, 50],
   pointsPerDistinctNeed: 5, distinctNeedCap: 3,
   checkInPoints: { unknown: 0, safe: 0, needs_help: 10, urgent: 20 },
-  exposurePoints: { moderate: 15, high: 30 },
+  exposurePoints: { moderate: 15, high: 30, critical: 45 },
   vulnerabilityPoints: { limited_mobility: 15, transport_needed: 15 }, vulnerabilityCap: 30,
   neverContactedPoints: 30,
   contactTiers: [{ afterMinutes: 60, points: 5 }, { afterMinutes: 360, points: 15 }, { afterMinutes: 1440, points: 25 }],
@@ -63,6 +63,7 @@ function validateConfig(config: PriorityConfig) {
   for (const status of ['unknown', 'safe', 'needs_help', 'urgent'] as const) points(config.checkInPoints[status]);
   points(config.exposurePoints.moderate); points(config.exposurePoints.high);
   requireValid(config.exposurePoints.high >= config.exposurePoints.moderate, 'high exposure must not score below moderate');
+  if (config.exposurePoints.critical !== undefined) { points(config.exposurePoints.critical); requireValid(config.exposurePoints.critical >= config.exposurePoints.high, 'critical exposure must not score below high'); }
   Object.values(config.vulnerabilityPoints).forEach(points);
   points(config.vulnerabilityCap); points(config.neverContactedPoints);
   let previousMinutes = 0, previousPoints = 0;
@@ -97,7 +98,7 @@ export function rankHouseholds<Id extends RecordId>(
     requireValid(householdById.has(row.householdId) && !exposureByHousehold.has(row.householdId), 'unknown/duplicate exposure household');
     const seen = new Set<Id>();
     for (const e of row.exposures) {
-      requireValid(validId(e.layerId) && !seen.has(e.layerId) && ['moderate', 'high'].includes(e.severity), 'duplicate/invalid exposure evidence');
+      requireValid(validId(e.layerId) && !seen.has(e.layerId) && ['moderate', 'high', 'critical'].includes(e.severity), 'duplicate/invalid exposure evidence');
       seen.add(e.layerId);
     }
     exposureByHousehold.set(row.householdId, row.exposures);
@@ -120,7 +121,7 @@ export function rankHouseholds<Id extends RecordId>(
     const matched = [...exposureByHousehold.get(household.id)!].sort((a, b) => compareIds(a.layerId, b.layerId));
     const highestUrgency = active.reduce((highest, r) => Math.max(highest, r.urgency), 0);
     const needs = [...new Set(active.map(r => r.needType))].sort();
-    const highestSeverity = matched.some(e => e.severity === 'high') ? 'high' : matched.length ? 'moderate' : undefined;
+    const highestSeverity = matched.some(e => e.severity === 'critical') ? 'critical' : matched.some(e => e.severity === 'high') ? 'high' : matched.length ? 'moderate' : undefined;
     const flags = [...new Set(household.vulnerabilityFlags)].sort();
     const unknownFlags = flags.filter(f => !Object.prototype.hasOwnProperty.call(config.vulnerabilityPoints, f));
     const vulnerability = Math.min(config.vulnerabilityCap, flags.reduce((sum, f) => sum + (Object.prototype.hasOwnProperty.call(config.vulnerabilityPoints, f) ? config.vulnerabilityPoints[f] : 0), 0));
@@ -133,7 +134,7 @@ export function rankHouseholds<Id extends RecordId>(
       { factor: 'unresolved_needs', points: Math.min(config.distinctNeedCap, needs.length) * config.pointsPerDistinctNeed,
         explanation: needs.length ? `Distinct unresolved needs: ${needs.join(', ')}; scoring capped at ${config.distinctNeedCap}.` : 'No unresolved assistance needs from requests.' },
       { factor: 'check_in', points: config.checkInPoints[household.checkInStatus], explanation: `Check-in status: ${household.checkInStatus}; independent of assistance-request status.` },
-      { factor: 'exposure', points: highestSeverity ? config.exposurePoints[highestSeverity] : 0,
+      { factor: 'exposure', points: highestSeverity === 'critical' ? config.exposurePoints.critical ?? config.exposurePoints.high : highestSeverity ? config.exposurePoints[highestSeverity] : 0,
         explanation: highestSeverity ? `Highest matching impact severity: ${highestSeverity}; ${matched.length} layer(s) retained as evidence, scored once.` : 'No exposure in the supplied impact layers.' },
       { factor: 'vulnerability', points: vulnerability,
         explanation: `Vulnerability flags: ${flags.join(', ') || 'none'}; points capped at ${config.vulnerabilityCap}.${unknownFlags.length ? ` Unweighted flags: ${unknownFlags.join(', ')} (review needed).` : ''}` },

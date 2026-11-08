@@ -65,7 +65,7 @@ export function detectFollowUp<Id extends RecordId>(
     if (household.checkInStatus === 'urgent' || household.checkInStatus === 'needs_help') concerns.push({ code: 'check_in_need',
       explanation: `Household check-in is ${household.checkInStatus}; the reported concern needs follow-up independently of request status.`, requestIds: [], layerIds: [] });
     if (household.checkInStatus === 'unknown' && row.exposureEvidence.length) {
-      const qualifying = row.exposureEvidence.filter(e => config.minimumExposureSeverity === 'moderate' || e.severity === 'high');
+      const qualifying = row.exposureEvidence.filter(e => config.minimumExposureSeverity === 'moderate' || e.severity === 'high' || e.severity === 'critical');
       if (qualifying.length) concerns.push({ code: 'unconfirmed_exposure',
         explanation: `Safety remains unknown with ${qualifying.length} matching impact layer(s) at or above the ${config.minimumExposureSeverity} exposure threshold.`,
         requestIds: [], layerIds: qualifying.map(e => e.layerId) });

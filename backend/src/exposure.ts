@@ -3,7 +3,7 @@
  * Coordinates are [longitude, latitude]; boundaries count as exposed.
  */
 export type Hazard = 'tornado' | 'earthquake' | 'hurricane' | 'wildfire' | 'blizzard' | 'flood';
-export type Severity = 'moderate' | 'high';
+export type Severity = 'moderate' | 'high' | 'critical';
 export type RecordId = string | bigint;
 export type Position = readonly [number, number];
 export interface Polygon { type: 'Polygon'; coordinates: readonly (readonly Position[])[] }
@@ -98,7 +98,7 @@ export function calculateExposure<Id extends RecordId>(households: readonly Loca
   const prepared = [...layers].sort((a, b) => compareIds(a.id, b.id)).map(layer => {
     requireValid(validId(layer.id) && validId(layer.disaster_id) && !seenLayers.has(layer.id), 'duplicate/empty layer ID');
     seenLayers.add(layer.id);
-    requireValid(HAZARDS.includes(layer.hazard_type) && ['moderate', 'high'].includes(layer.severity), 'hazard/severity');
+    requireValid(HAZARDS.includes(layer.hazard_type) && ['moderate', 'high', 'critical'].includes(layer.severity), 'hazard/severity');
     requireValid(['simulation', 'forecast', 'report'].includes(layer.data_kind) && typeof layer.is_simulated === 'boolean' &&
       (layer.data_kind === 'simulation') === layer.is_simulated, 'simulation metadata');
     requireValid(layer.component.trim() && layer.source.trim() && layer.label.trim() &&
@@ -144,7 +144,7 @@ export function calculateExposure<Id extends RecordId>(households: readonly Loca
     for (const hazard of new Set(exposures.map(e => e.hazardType))) hazardCounts.set(hazard, hazardCounts.get(hazard)! + 1);
     for (const disaster of new Set(exposures.map(e => e.disasterId))) disasterCounts.set(disaster, disasterCounts.get(disaster)! + 1);
     if (exposures.length) affectedHouseholds++;
-    const highestSeverity: Severity | undefined = exposures.some(e => e.severity === 'high') ? 'high' : exposures.length ? 'moderate' : undefined;
+    const highestSeverity: Severity | undefined = exposures.some(e => e.severity === 'critical') ? 'critical' : exposures.some(e => e.severity === 'high') ? 'high' : exposures.length ? 'moderate' : undefined;
     return { householdId: household.id, affected: exposures.length > 0, highestSeverity, exposures };
   });
   return { households: results, totalHouseholds: households.length, affectedHouseholds,
