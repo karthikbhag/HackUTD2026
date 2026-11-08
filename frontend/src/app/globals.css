@@ -98,6 +98,27 @@ dl { font-size: 11px; margin-bottom: 0; } dt { color: #6a756e; margin-top: 12px;
 .source-note { font-size: 10px; color: #6a756e; line-height: 1.8; margin-top: 24px; border-top: 1px solid #e2e7df; padding-top: 16px; }
 .app-footer { padding: 18px 32px; display: flex; gap: 15px; justify-content: space-between; color: #788379; font-size: 10px; }
 .workflow-panel { margin: 20px 32px; }
+.operations { background: white; border: 1px solid #d8dfdb; border-radius: 8px; padding: 24px; margin-top: 16px; color: #263731; }
+.operations-heading, .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.operations-heading { justify-content: space-between; }
+.operations-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(320px, 2fr); gap: 28px; }
+.operations h2, .operations h3, .operations h4 { margin: 14px 0 10px; }
+.operations p, .operations li { font-size: 13px; line-height: 1.6; }
+.operations button { border: 1px solid #a9b8af; background: #f4f7f3; color: #173e2c; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+.operations button:disabled { opacity: .5; cursor: default; }
+.operations label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 7px 10px 7px 0; font-size: 13px; }
+.operations input, .operations select { border: 1px solid #a9b8af; border-radius: 4px; padding: 8px; max-width: 100%; }
+.operations input[type=number] { width: 80px; }
+.operations article { margin: 12px 0; border: 1px solid #d8dfdb; border-radius: 5px; padding: 14px; }
+.operations details { padding: 12px 0; border-bottom: 1px solid #e2e7df; }
+.operations summary { cursor: pointer; font-weight: 600; }
+.operations a { color: #1d583b; text-decoration: underline; }
+.priority-list { list-style: none; padding: 0; }
+.priority-list button { width: 100%; text-align: left; margin-bottom: 5px; }
+.priority-list button[aria-pressed=true] { border-color: #1d583b; background: #e6eee6; }
+.priority-list span { display: block; margin-top: 4px; font-size: 12px; }
+.operation-message { border-left: 3px solid #1d583b; padding: 10px; background: #f1f5ee; overflow-wrap: anywhere; }
+@media (max-width: 800px) { .operations-grid { grid-template-columns: minmax(0, 1fr); } .operations { padding: 16px; } .workflow-panel { margin: 16px 12px; } }
 
 /* Wide screens give sidebars more room while the map absorbs remaining space. */
 @media (min-width: 1600px) { .workspace-grid { grid-template-columns: 250px minmax(300px, 1fr) 340px; } }

@@ -1,6 +1,6 @@
 # Map integration handoff
 
-Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional read-only SpacetimeDB connection. It does not perform operational mutations.
+Person 1: Aalvee Ahtav. The dashboard supports local UI fixtures and an optional shared SpacetimeDB connection. The connected operational panel now provides employee-reviewed mutations and authoritative decision details.
 
 For the isolated 10,000/100,000-household flow, use the [local scenario runbook](../../../../backend/SCENARIOS.md).
 
@@ -30,7 +30,7 @@ at zoom 9+, Canvas household markers and team markers are limited to a padded
 viewport. Details use the complete filtered model and household lists page 50 rows.
 Context outlines and explicit synthetic hazard footprints are separate layers;
 footprint details retain overlapping components, provenance and severity basis.
-Legacy Small has no explicit footprints. Counts are never labeled as affected.
+Ordinary builds now use schema-v3 Small with ten explicit footprints; legacy-v1 converter coverage remains in tests. Counts are never labeled as affected.
 
 ## Components
 
@@ -42,7 +42,7 @@ Legacy Small has no explicit footprints. Counts are never labeled as affected.
 
 ## Person 4: extend the shared client
 
-The read-only connection is implemented in `connected-dashboard.tsx`. Extend that shared connection for operational controls rather than creating a second connection/identity. It adapts subscription rows to `MapData` and passes:
+The connection in `connected-dashboard.tsx` is now reused by `operational-panel.tsx`: a paged priority/overlooked queue, selected-case explanations, reviewed preparedness tasks, contact/check-in/request/assignment controls, recent activity, and administrator escalation/confirmed reset. Parameterized detail subscriptions are cleaned up when selection changes. Continue reusing this connection/identity for future controls. It adapts subscription rows to `MapData` and passes:
 
 ```tsx
 <MapDashboard
@@ -69,4 +69,4 @@ The read-only connection is implemented in `connected-dashboard.tsx`. Extend tha
 
 Leaflet 1.9.4 with OpenStreetMap standard raster tiles and visible attribution. No API key is needed. Browsers need internet access to load the basemap. Tile failure displays a connection warning; polygons and the hotspot list still work. Review the provider's usage policy before public deployment: https://operations.osmfoundation.org/policies/tiles/.
 
-The initial/reset views include Alaska and Hawaii; the large presets supply hotspots there. Resizing refits overview until the user navigates. Geometry remains mounted across selection changes; viewport records refresh on settled navigation. Browser acceptance and production build limitations are recorded in the scenario runbook.
+The initial/reset views include Alaska and Hawaii; the large presets supply hotspots there. Resizing refits overview until the user navigates. Geometry remains mounted across selection changes; viewport records refresh on settled navigation. The current production build passes. Browser acceptance remains pending because Computer Use could not verify Brave's URL; see the scenario and decision runbooks.

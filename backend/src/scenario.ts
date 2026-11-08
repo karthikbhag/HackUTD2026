@@ -1,13 +1,18 @@
 import { Timestamp } from 'spacetimedb';
 import rawSource from '../../data/scenarios/nationwide-v1.json';
+import defaultScenario from './default-scenario.json';
 import { calculateExposure, type ImpactLayer } from './exposure';
+import type { PreparednessTemplate } from './preparedness';
 
 export type Scenario = Omit<typeof rawSource, 'zones' | 'response_teams' | 'impact_layers'> & {
   zones: (typeof rawSource.zones[number] & { boundary_role?: string })[];
   response_teams: (typeof rawSource.response_teams[number] & { zone_id?: string })[];
-  impact_layers?: (ImpactLayer & { context_zone_id: string; severity_basis: string; limitations: string })[];
+  impact_layers?: (ImpactLayer & { context_zone_id: string; severity_basis: string; limitations: string; recommendation_ids?: string[] })[];
+  preparedness_recommendations?: PreparednessTemplate[];
 };
-export const source = rawSource as unknown as Scenario;
+// Normal Small builds include explicit footprints and reviewed templates. Staged
+// Demo/Stress builds replace rawSource with their selected v3 fixture as before.
+export const source = (rawSource.schema_version === 1 ? defaultScenario : rawSource) as unknown as Scenario;
 const needs = {
   shelter_support: 'shelter', welfare_check: 'welfare_check', evacuation_assistance: 'evacuation',
   smoke_support: 'fire_smoke_support', winter_weather_support: 'winter_weather_support',
@@ -100,8 +105,8 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
   });
   if (data.schema_version === 3) require(Array.isArray(data.impact_layers), 'v3 impact layers');
   const layers = data.schema_version === 3 ? data.impact_layers! : [];
-  // Reuse the geometry/provenance validator with no households; do not calculate
-  // or persist exposure as part of this display-only import.
+  // Validate imported geometry/provenance first; seed computes household
+  // decisions after all authoritative rows have been inserted.
   calculateExposure([], layers);
   const impactLayers = layers.map(row => {
     const context = zoneById.get(row.context_zone_id);
@@ -111,7 +116,8 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
     return { id: row.id, disasterId: fk(maps.disasters, row.disaster_id), contextZoneId: fk(maps.zones, row.context_zone_id),
       hazardType: row.hazard_type, component: row.component, severity: row.severity, severityBasis: row.severity_basis,
       geometry: JSON.stringify(row.geometry), dataKind: row.data_kind, isSimulated: row.is_simulated,
-      source: row.source, updatedAt: stamp(row.updated_at), label: row.label, limitations: row.limitations };
+      source: row.source, updatedAt: stamp(row.updated_at), label: row.label, limitations: row.limitations,
+      recommendationIds: row.recommendation_ids ?? defaultScenario.preparedness_recommendations.filter(t => t.hazard_type === row.hazard_type).map(t => t.id) };
   });
   return { maps, disasters, zones, households, teams, requests, impactLayers };
 }

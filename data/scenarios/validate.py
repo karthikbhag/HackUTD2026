@@ -112,7 +112,7 @@ def validate(data):
         require(sum(h["is_dense_demo"] for h in hotspots) == 6, "Missing dense hotspots")
         require(data["generation"]["preset"] in {"demo", "stress"}, "Unknown preset")
         require(type(data["generation"]["seed"]) is int, "Invalid seed")
-        require(data["generation"]["generator_version"] == (3 if schema_version == 3 else 2), "Unknown generator version")
+        require(data["generation"]["generator_version"] in ({3, 4} if schema_version == 3 else {2}), "Unknown generator version")
         require(len(households) == {"demo": 10000, "stress": 100000}[data["generation"]["preset"]], "Incorrect preset size")
         for hotspot in hotspots:
             require(hotspot["disaster_id"] in disasters, "Dangling hotspot disaster")

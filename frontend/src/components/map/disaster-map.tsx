@@ -65,7 +65,7 @@ export default function DisasterMap({ data, selection, onSelect, overviewVersion
         .on("click", () => onSelect({ kind: "zone", id: zone.id })).addTo(summaries);
     }
     for (const layer of data.impactLayers ?? []) {
-      L.polygon(layer.boundary, { color: hazards[layer.hazard].color, fillOpacity: layer.severity === "high" ? 0.24 : 0.12, weight: layer.severity === "high" ? 2 : 1 })
+      L.polygon(layer.boundary, { color: hazards[layer.hazard].color, fillOpacity: layer.severity === "critical" ? 0.36 : layer.severity === "high" ? 0.24 : 0.12, weight: layer.severity === "critical" ? 3 : layer.severity === "high" ? 2 : 1 })
         .bindTooltip(tooltip(`${layer.label} · ${layer.severity} · ${layer.severityBasis}`))
         .on("click", () => onSelect({ kind: "zone", id: layer.hotspotId })).addTo(geometry);
     }

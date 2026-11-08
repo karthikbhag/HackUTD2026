@@ -62,20 +62,18 @@ v1/v2 context rectangles must never be silently treated as impact polygons.
 
 ## Backend integration boundary
 
-The default production seed/reset still use the checked-in legacy v1 fixture.
+The default seed/reset now use bundled schema-v3 Small with ten impact layers.
 The converter now accepts v1/v2/v3, and isolated preset builds persist v3 impact
 layers through authorized subscription views; see [SCENARIOS.md](SCENARIOS.md).
 The importer reuses this helper with empty household input to validate layer
-geometry/provenance. It does not calculate or persist household exposure relations.
+geometry/provenance. The importer validates geometry; the authoritative decision integration calculates exposure and stores matched layer IDs with each household summary.
 The existing converter tests retain explicit v2 coverage alongside new v3 tests.
 
-For later integration, retain source layer/disaster IDs and map household IDs
+For fixture-based integration, retain source layer/disaster IDs and map household IDs
 using `adaptScenario(...).maps.households` when joining fixture-derived evidence
 to backend rows. Alternatively supply already-mapped bigint IDs for households,
 layers, and disasters. Do not coerce bigint IDs through JavaScript numbers.
-Schema ownership must define the layer/exposure relation, preserve employee read
-authorization, and recompute it transactionally or in controlled batches as data
-changes. Cross-hazard exposure is many-to-many; it must not overwrite `zoneId`.
+[Live integration](DECISIONS.md) preserves employee authorization and recomputes after mutations and on a private schedule. Selected-household details retain full cross-hazard evidence. Critical severity is supported. Exposure is many-to-many and never overwrites `zoneId`.
 
 ## Verification and limits
 

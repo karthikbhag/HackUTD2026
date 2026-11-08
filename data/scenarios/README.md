@@ -1,6 +1,6 @@
 # Repeatable nationwide scenario datasets
 
-Person 3's portable source data supports the map and future Spacetime seed reducer. The Small fixture is connected to backend seed/reset through a validated adapter; the larger presets can be built and loaded into isolated local databases using the [scenario runbook](../../backend/SCENARIOS.md). Python 3.11+ is needed only for generation and validation, with no dependencies.
+Person 3's portable source data supports the map and authoritative Spacetime seed/reset reducers. The Small fixture is connected to backend seed/reset through a validated adapter; the larger presets can be built and loaded into isolated local databases using the [scenario runbook](../../backend/SCENARIOS.md). Python 3.11+ is needed only for generation and validation, with no dependencies.
 
 ## Presets
 
@@ -33,7 +33,7 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 ## Contract and handoff
 
 - Schema v2 adds `generation`, `hotspots`, and regional `zone_id` on teams. The fixture version is independent of the changelog version. Existing collection field conventions remain intact.
-- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 3. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
+- Schema v3 adds `impact_layers`, `preparedness_recommendations`, and `boundary_role: geographic_context` on zones. Generator version is now 4 (schema remains v3), adding explicit team regions to generated Small; validation retains generator-v3 compatibility. Small retains its six-hotspot layout and does not add the v2 national hotspot summaries. Validation accepts legacy v1/v2 and current v3.
 - IDs are stable strings unique within each collection. `disaster_id`, `parent_zone_id`, `zone_id`, and `household_id` are foreign keys. Infer a zone's hazard through its disaster. The selected narrative hotspot remains `tornado-neighborhood`.
 - V2 hotspots identify state, disaster, neighborhood, dense-demo flag, and household/request/team totals. These summaries describe the initial fixture, not live operational counts; recompute them from authoritative tables after changes.
 - Boundaries are GeoJSON Polygon geometry in **longitude, latitude** order. Household/team coordinates are explicit fields. Zone rectangles now mean geographic context only; use `impact_layers[].geometry` to render actual synthetic hazard footprints. Household coordinates/memberships are preserved. The 80% neighborhood count is geographic membership, not an affected-household count.
@@ -56,7 +56,7 @@ Same generator version, preset, seed, and Python runtime produce identical data.
 Small has 10 impact layers; Demo/Stress each have 93. All presets include the
 same 12 reusable recommendation templates (two per hazard), linked by
 `recommendation_ids`. Recommendations are employee-review content, not persisted
-tasks or automatic household-specific suggestions; Person 3 task 6 remains pending.
+tasks. The restored preparedness helper now selects household-specific suggestions from exposure/phase/support needs; an employee must approve each operational task.
 
 Each impact layer identifies its disaster, context region, hazard, component,
 qualitative severity/basis, label, authored source, simulation kind, timestamp,
@@ -97,15 +97,15 @@ viewport filtering, indexed adapter joins and 50-row household pages are impleme
 Full subscriptions remain; server scoping/clustering/batched imports are deferred
 until actual tests justify them. Both datasets passed database/subscription checks;
 interactive browser acceptance remains pending. Exposure helper correctness is
-separate from browser performance and no exposure relations are persisted.
+separate from browser performance. Compact decision summaries now store matched layer IDs; authorized selected-household views expose full evidence.
 
-The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested across all three sizes. Persisted scores/flags, scheduled recomputation, household-specific suggestions and team recommendations remain subsequent work.
+The pure [priority scoring](../../backend/PRIORITY.md) and [follow-up detection](../../backend/FOLLOW_UP.md) helpers are tested across all three sizes. Persisted scores/flags, scheduled recomputation, household-specific suggestions and team recommendations are now integrated; see [decision integration](../../backend/DECISIONS.md).
 
 ## Backend integration
 
 Person 3 task 7 adds a separate [team recommendation fixture adapter and report](../../backend/TEAM_RECOMMENDATIONS.md). It shares the existing source need mapping and preserves the one-person party-size and numeric capacity demo assumptions; live/core matching requires explicit people counts. It does not require display-only team region metadata or change the full import converter's validation.
 
-`backend/src/scenario.ts` adapts the portable source to `backend/src/schema.ts`; `backend/src/seed.ts` is used by both administrator-only `seed_demo` and controlled `reset_demo`. The default bundles the checked-in Small JSON; staged preset builds select a large v3 fixture without replacing it. v3 impact layers retain source IDs, mapped disaster/context IDs and shifted timestamps in a separate authorized table/view. Source JSON/generator conventions are preserved, including source IDs, simulation labels, vulnerabilities, national framing, v2 hotspot summaries, and optional team regions. The backend stores the fields its current schema supports; it does not add these metadata fields to tables.
+`backend/src/scenario.ts` adapts the portable source to `backend/src/schema.ts`; `backend/src/seed.ts` is used by both administrator-only `seed_demo` and controlled `reset_demo`. The default bundles `backend/src/default-scenario.json`, generated schema-v3 Small with team regions; the immutable legacy v1 fixture remains available for regression coverage; staged preset builds select a large v3 fixture without replacing it. v3 impact layers retain source IDs, mapped disaster/context IDs and shifted timestamps in a separate authorized table/view. Source JSON/generator conventions are preserved, including source IDs, simulation labels, vulnerabilities, national framing, v2 hotspot summaries, and optional team regions. The backend stores the fields its current schema supports; it does not add these metadata fields to tables.
 
 - IDs: sorted source IDs receive positive bigint IDs within each collection, independent of row order. Foreign keys use the same maps. This crosswalk is stable within a fixture, not across different presets. Request IDs are actually allocated by SpacetimeDB on insert (`0n`) to avoid reusing historical request IDs across resets; source request IDs are provenance in JSON, not runtime primary keys. Tasks and activities also use database IDs.
 - Fields: snake_case becomes camelCase; null optional contacts/parents become `undefined`. Boundary objects become JSON strings without changing GeoJSON `[longitude, latitude]` ordering. Source `region` becomes backend `metro`; no national impact footprint is invented. Regional households retain their region.
@@ -122,4 +122,4 @@ is pending. Regional households are now included with explicit membership and
 separate hotspot grouping. Missing active team destinations are omitted rather than
 falling back to proximity. Team home-region metadata remains source-only. Hazard
 footprints persist separately from geographic context; calculated exposure,
-priority rules and operational UI controls remain outside this display integration.
+priority rules and operational controls are now supplied by the separate decision integration. Interactive browser acceptance remains pending.

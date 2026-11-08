@@ -15,12 +15,12 @@ validated emergency triage system, or automatic dispatch instruction.
 | Strongest active request | 5 / 10 / 20 / 35 / 50 | Urgency 1 / 2 / 3 / 4 / 5; maximum, not sum |
 | Distinct unresolved needs | 5 each, at most 15 | At most three distinct need types contribute |
 | Check-in | 0 / 0 / 10 / 20 | Unknown / safe / needs_help / urgent |
-| Exposure | 0 / 15 / 30 | None / moderate / high; highest matching layer once |
+| Exposure | 0 / 15 / 30 / 45 | None / moderate / high / critical; highest matching layer once |
 | Vulnerability | 15 per configured flag, at most 30 | `limited_mobility`, `transport_needed` |
 | Contact age | 0 / 5 / 15 / 25 | Less than 60 / at least 60 / at least 360 / at least 1,440 whole minutes |
 | Never contacted | 30 | Replaces the contact-age contribution |
 
-The score is the sum of the six reason contributions, ranging from 0 to 175 with
+The score is the sum of the six reason contributions, ranging from 0 to 190 with
 the default weights. An illustrative urgent safe household with one unresolved
 urgency-5 water request, no exposure/vulnerabilities, and recent contact scores
 55 (50 urgency + 5 need). “Safe” does not resolve the request or reduce its score.
@@ -85,7 +85,7 @@ contact, vulnerability, clock, or configuration changes. Results are snapshots.
 `src/priority-scenario.ts` adapts validated schema-v3 fixtures, mapping source
 moderate/urgent requests to urgency 3/5, preserving microsecond timestamps, and
 using `reference_time` as the scoring clock. It calls the exposure helper first.
-This is separate from the existing legacy v1/v2 seed converter.
+The converter accepts v1/v2/v3; ordinary seed/reset now use bundled schema-v3 Small.
 
 From the repository root:
 
@@ -108,9 +108,4 @@ cases, escalation, resolution, assignment independence, caps/deduplication,
 contact-tier boundaries, custom configuration, stable ties, invalid inputs,
 bigint IDs, and every household in Small/Demo/Stress.
 
-No schema, seed source, reducer, binding, or frontend queue is changed. Existing
-seed/reset still use v1, and the current database converter accepts v1/v2 only.
-Persisted impact/exposure/scoring relations, authenticated views, live
-recomputation, and browser rendering remain integration work. Overdue-contact
-flags are now available through the separate [follow-up helper](FOLLOW_UP.md).
-Preparedness/team recommendations remain subsequent Person 3 tasks.
+The helper now feeds [authoritative live decisions](DECISIONS.md), compact persisted summaries, authorized explanations, and the connected queue. Mutations refresh affected cases; a private one-minute scheduled reducer refreshes time-based decisions. Critical exposure contributes 45 points by default. Older custom configurations that omit the optional critical weight use their high weight. The helper remains SDK-independent. Browser interaction acceptance is pending.

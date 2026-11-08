@@ -25,4 +25,5 @@ export default __t.row({
   updatedAt: __t.timestamp().name("updated_at"),
   label: __t.string(),
   limitations: __t.string(),
+  recommendationIds: __t.array(__t.string()).name("recommendation_ids"),
 });

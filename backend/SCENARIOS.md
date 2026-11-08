@@ -87,9 +87,9 @@ switching back requires only restarting Next.js with the other database name.
 ## Small: 60 households
 
 `npm --prefix backend run build:scenario -- --preset small` stages the tracked
-legacy v1 fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
+schema-v3 `backend/src/default-scenario.json` fixture. Publish `.test-output/small/bundle.js` to `riskreach-small-60`,
 seed it, and run `verify:scenario -- --preset small --database riskreach-small-60`.
-It has no explicit impact layers; the map labels its outlines as context only.
+It includes ten explicit impact layers and 12 reviewed templates; context outlines remain distinct from exposure.
 The ordinary backend build/seed also still uses this Small fixture.
 
 ## Repeat runs and expected counts
@@ -106,7 +106,7 @@ tasks, 93 impact layers, zero assignments.
 Stress seed 2026: 100,000 households (80,000 neighborhood / 20,000 regional), 56
 hotspots/disasters, 112 zones, 1,970 teams, 20,000 requests, 24,931 outreach tasks,
 93 impact layers, zero assignments. Small: 60 households (48/12), six hotspots,
-12 zones, 12 teams, 12 requests, 18 outreach tasks, zero impact layers/assignments.
+12 zones, 12 teams, 12 requests, 18 outreach tasks, ten impact layers and zero assignments.
 Task counts are calculated from never-contacted source rows and can change with
 another seed; use the manifest as the fixture-specific authority.
 
@@ -142,7 +142,7 @@ spacetime sql riskreach-demo-10k 'SELECT COUNT(*) AS households FROM household' 
 
 ## Verification status and boundaries
 
-On 2026-11-07, Node 24.22.2 / CLI+SDK 2.14.1 built, published, seeded and verified
+At the earlier display-integration checkpoint on 2026-11-07, Node 24.22.2 / CLI+SDK 2.14.1 built, published, seeded and verified
 both Demo and Stress through actual local SDK subscriptions. Demo subscription /
 adaptation were approximately 142 / 17 ms; Stress 1,341 / 155 ms in single local
 runs. Development `riskreach-local` retained 60 households. No batch importer was
@@ -150,14 +150,6 @@ needed for either atomic seed. All 31 backend tests, backend/frontend typechecks
 and lint passed (lint has one existing generated-bindings warning). All nine Python
 generator/geometry tests passed.
 
-Interactive browser acceptance remains pending: the computer-use browser host was
-unavailable, and a second dev process was refused because this checkout already
-had a running Next.js server. Production build encounters the existing Turbopack
-CSS worker-port `Operation not permitted` error, including an elevated retry.
-These limits do not establish browser responsiveness or production-build success.
+Current decision integration verification uses Node 24.22.1 and CLI/SDK 2.14.1. The frontend production build passes; the earlier CSS worker-port error did not recur. Interactive browser acceptance remains pending: Computer Use stopped because it could not determine Brave's current URL confidently enough to enforce policy. SDK results do not establish browser responsiveness.
 
-Full authorized subscriptions are retained for now. Only observed Stress browser
-problems justify scoped server views/summaries, a viewport spatial index, clustering,
-or worker adaptation. No live-update simulation, dispatch UI, or benchmarking
-framework was added. The pure exposure helper remains available through `npm run
-exposure`; exposure relations/counts are not persisted or displayed by this path.
+See [DECISIONS.md](DECISIONS.md) for the new operational integration, scheduled decisions, run-aware approval, and live lifecycle checks. Full authorized subscriptions are retained. Queue pages contain 25 rows; map household lists contain 50. Large fixtures remain synthetic scale exercises, not a production capacity benchmark. Windows staged builds use a directory junction for shared dependencies rather than a privilege-requiring symlink. Select Python 3.11+ explicitly via `PYTHON` if `python3` resolves an older runtime.

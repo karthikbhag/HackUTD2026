@@ -68,7 +68,7 @@ Every impact layer should show whether it is a forecast, a report, or a simulati
 
 ## Technical design
 
-**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Leaflet/OpenStreetMap dashboard and operational backend are integrated through an optional read-only subscription connection. Demo mode remains available without configuration. See [backend setup and contract](backend/README.md) and [map integration handoff](frontend/src/components/map/README.md). Operational UI controls and final decision logic remain pending.
+**Confirmed stack: Next.js + TypeScript + SpacetimeDB.** The Leaflet/OpenStreetMap dashboard and operational backend are integrated through an optional shared subscription connection. Demo mode remains available without configuration. See [backend setup and contract](backend/README.md) and [map integration handoff](frontend/src/components/map/README.md). Connected operational controls and authoritative decision logic are implemented; interactive browser acceptance remains pending.
 
 | Layer | Proposed approach | Responsibility |
 | --- | --- | --- |
@@ -118,13 +118,13 @@ An optional AI feature can summarize structured evidence and suggest next steps 
 
 ## Four-person work split
 
-Aalvee Ahtav owns Person 1's map and interface work. Josh owns Person 2’s backend work; other role assignments remain pending. Each person owns one workstream and helps with integration.
+Aalvee Ahtav owns Person 1's map and interface work. Josh owns Person 2’s backend work, and Karthik Bhagavatula owns Person 3's data and decision logic. Person 4's assignment remains pending. Each person owns one workstream and helps with integration.
 
 | Owner | Workstream | Concrete deliverables | Dependencies and handoff |
 | --- | --- | --- | --- |
 | Person 1 — Aalvee Ahtav | Map and interface | App shell, nationwide pannable/zoomable map, hazard-layer controls, before/after toggle, zone/neighborhood selection, household detail panel, loading/error states | Agree on hazard-layer and geographic contracts with Persons 2 and 3; consume shared data and actions through Person 4's integration |
 | Person 2 — Josh | Spacetime backend | Project/module setup, multi-hazard schema, reducers, validation, subscriptions support, seed/reset behavior, activity events, and concurrent updates | Publish initial schema and generate bindings early; coordinate disaster types, status enums, and validation rules with everyone |
-| Person 3 — name TBD | Disaster data and decision logic | Fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods; hazard geometry, household exposure, priority rules/reasons, hazard-specific preparedness suggestions, team capability matching, and approximate ETA logic | Agree on geographic and hazard contracts with Persons 1 and 2; hand tested logic/data to Person 2 for authoritative backend use |
+| Person 3 — Karthik Bhagavatula | Disaster data and decision logic | Fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods; hazard geometry, household exposure, priority rules/reasons, hazard-specific preparedness suggestions, team capability matching, and approximate ETA logic | Agree on geographic and hazard contracts with Persons 1 and 2; hand tested logic/data to Person 2 for authoritative backend use |
 | Person 4 — name TBD | Operational workflow, integration, and demo | Multi-hazard filters, priority queue, outreach/task controls, request/assignment controls, shared client connection, two-session verification, hazard escalation flow, demo script, and documentation | Pair with Persons 1 and 2 to wire UI actions; use Person 3's explanations and recommendations |
 
 Integration ownership does not make Person 4 responsible for fixing every workstream. Each owner must deliver a working vertical slice and resolve issues in their own area. Person 1 owns map/detail components; Person 4 owns queue/action components to reduce editing conflicts.
@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.15 — 2026-11-07.** Person 3's team recommender now filters by exact capability, people capacity, availability, and active assignments, then ranks by straight-line distance with labeled approximate ETAs. The existing large-dataset map/subscription integration is preserved. Priority/follow-up/team recommendations remain pure helpers/offline reports; live score/flag/recommendation views and queue/dispatch controls are pending. See the [scenario runbook](backend/SCENARIOS.md) and [team handoff](backend/TEAM_RECOMMENDATIONS.md).
+**Current checkpoint: v1.16 — 2026-11-07.** Person 3's decision helpers now drive authorized live summaries, selected-household explanations, reviewed preparedness tasks, and selected-request team recommendations. Connected workflow controls, a paged priority/overlooked queue, scheduled refresh, isolated hazard escalation, and reproducible replay are implemented. See [decision integration and verification](backend/DECISIONS.md). Interactive browser acceptance remains pending.
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -166,7 +166,7 @@ Browser verification covers the fixture-backed UI. Integrated browser connection
 - [x] Scaffold the Next.js + TypeScript frontend and document how to run it.
 - [x] Separate the Next.js app into `frontend/` and reserve `backend/` for SpacetimeDB.
 - [x] Verify browser rendering of the fixture-backed dashboard. (verified by user)
-- [ ] Verify the production build in an environment that permits local worker/server ports. (blocked in agent environment — Turbopack worker-port restriction)
+- [x] Verify the production build in an environment that permits local worker/server ports. (Next.js production build passes on Node 24.22.1)
 - [x] Render a pannable/zoomable nationwide map, hazard-specific layers, and severity legends. (verified by user)
 - [x] Allow employees to filter visible hazards and inspect overlapping disaster zones. (verified by user)
 - [x] Render selectable household and response-team markers. (verified by user)
@@ -191,29 +191,29 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 
 - [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading and subscription checks now pass; national summaries and viewport rendering are implemented. Scoped server subscriptions remain deferred; interactive browser acceptance is pending.
 - [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Explicit footprint persistence and subscribed rendering are implemented; interactive browser acceptance remains pending.
-- [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); persistence and live UI integration remain pending.
-- [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted/live scores and queue rendering remain pending integration.
-- [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Live persistence, scheduled recomputation, and queue filtering remain pending integration.
-- [ ] Implement preparedness action suggestions.
-- [x] Implement capability/capacity-aware team recommendations and approximate distance/ETA. Karthik Bhagavatula supplied the [pure snapshot helper and offline report](backend/TEAM_RECOMMENDATIONS.md), with exact eligibility/exclusion reasons, top-K distance ranking, configurable approximate ETA, all-preset checks, and actual dispatch/release harness tests. Employee approval and reducer revalidation remain required; live/UI integration is pending.
-- [ ] Implement reproducible multi-hazard scenario escalation and reset behavior.
+- [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); exposure evidence now drives stored summaries and authorized household details.
+- [x] Implement priority scores and readable reasons. Karthik Bhagavatula supplied the [configurable helper, weights, and offline report](backend/PRIORITY.md), with customer-neutral scoring, overlap/need caps, stable ranking, and tests across all presets. Persisted summaries, live explanation views, and a paged priority queue are implemented.
+- [x] Implement overdue-contact/overlooked-case detection. Karthik Bhagavatula supplied the [configurable helper, transition rules, and offline report](backend/FOLLOW_UP.md), with independent concerns, fresh-contact clearing, customer-neutral behavior, and Small/Demo/Stress tests. Persisted flags, one-minute scheduled recomputation, and queue filtering are implemented.
+- [x] Implement preparedness action suggestions. Restored the reviewed template helper and added authorized per-household suggestions, run-aware approval, duplicate suppression, task completion, and replay tests. See [preparedness handoff](backend/PREPAREDNESS.md).
+- [x] Implement capability/capacity-aware team recommendations and approximate distance/ETA. Karthik Bhagavatula supplied the [pure snapshot helper and offline report](backend/TEAM_RECOMMENDATIONS.md), with exact eligibility/exclusion reasons, top-K distance ranking, configurable approximate ETA, all-preset checks, and actual dispatch/release harness tests. Authorized selected-request views and explicit employee assignment controls are implemented; reducers revalidate every assignment.
+- [x] Implement reproducible multi-hazard scenario escalation and reset behavior. Each hazard escalates independently through capped critical exposure; confirmed reset restores the selected fixture with a fresh run, shifted relative times, fresh request IDs, and retained access/history. All six hazards and all three presets are covered by lifecycle tests.
 
 ### Workflow, integration, and delivery — Person 4
 
-- [x] Connect the map to optional read-only SpacetimeDB subscriptions. (adapter datastore/live SDK checks passed; integrated browser verification pending)
-- [ ] Connect operational action controls to the shared SpacetimeDB connection.
-- [ ] Build priority queue and overlooked-case filtering.
-- [ ] Build preparedness/outreach action controls.
-- [ ] Build help-request and assignment controls.
-- [ ] Show synchronized assignment progress and activity history.
+- [x] Connect the map to optional SpacetimeDB subscriptions. (adapter datastore/live SDK checks passed; integrated browser verification pending)
+- [x] Connect operational action controls to the shared SpacetimeDB connection. (implemented; live SDK checks pass; browser acceptance pending)
+- [x] Build priority queue and overlooked-case filtering. (25-row pages, search, stable ranking; browser acceptance pending)
+- [x] Build preparedness/outreach action controls. (reviewed approval and simulated contact; browser acceptance pending)
+- [x] Build help-request and assignment controls. (explicit team selection and lifecycle; browser acceptance pending)
+- [x] Show synchronized assignment progress and activity history. (subscribed UI implemented; two-client SDK checks pass; browser acceptance pending)
 - [ ] Run the acceptance checks below and record outcomes.
-- [ ] Write setup instructions with actual commands, environment variables, and versions.
+- [x] Write setup instructions with actual commands, environment variables, and versions. See backend runbooks.
 - [ ] Prepare the demo script, pitch, screenshots, and submission materials.
 - [ ] Verify repository visibility meets the sponsor's public-source requirement.
 
 ## Acceptance checks
 
-The full browser acceptance checks below remain pending UI integration. Backend datastore/live SDK verification is recorded separately in `changelog.md`; it does not mark these browser checks complete.
+The full browser acceptance checks below remain pending interactive verification of the implemented UI. Backend datastore/live SDK verification is recorded separately in `changelog.md`; it does not mark these browser checks complete.
 
 1. **Shared updates:** Open two sessions on the same database. Change a check-in status in one; the other updates without refreshing.
 2. **Preparedness:** Pan/zoom to a forecast/scenario hotspot for any supported disaster type, inspect affected households, and record outreach. Both sessions show its new status and activity event.
@@ -238,19 +238,19 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.15
+### Current checkpoint — v1.16
 
 Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
 seed, verify and switch between separate Small/Demo/Stress databases. The default
-build retains Small; generated v3 presets persist explicit hazard footprints.
-Household exposure remains available as a pure helper/offline report; exposure
-relations and operational controls are not part of this display integration.
+build uses the bundled schema-v3 Small fixture with ten explicit impact layers.
+All presets feed authoritative exposure, scoring, follow-up and preparedness logic.
+Connected operational controls reuse the map connection.
 
-Person 3's [exposure](backend/EXPOSURE.md), [priority scoring](backend/PRIORITY.md) and [follow-up detection](backend/FOLLOW_UP.md) helpers remain available as pure calculations and offline reports. Score/flag persistence, scheduled recomputation and queue rendering remain pending.
+Person 3's pure helpers and offline reports remain available. [Live integration](backend/DECISIONS.md) adds compact score/flag persistence, scheduled refresh, authorized detail views, and queue/action rendering.
 
 ### Local setup
 
-Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. Lint retains one existing generated-bindings warning. The frontend production build still encounters the Turbopack CSS worker-port permission failure, including an elevated retry. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
+Use Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` for the SpacetimeDB SDK; `.nvmrc` selects the Node.js 24 line (install its latest patch). The initial checks ran with Node.js 26.13.0 and npm 11.20.0. PR #3 review verification used SDK-supported Node.js 24.22.1: 18 backend tests, backend typecheck/build, frontend typecheck/lint, six Python tests, and fixture validation passed. Lint retains one existing generated-bindings warning. The current frontend production build passes on Node 24.22.1; the previously recorded CSS worker-port failure did not recur. Interactive browser acceptance remains pending because Computer Use could not verify Brave's URL. This starter uses Next.js 16.4.5, React 19.3.0, TypeScript, Tailwind CSS 4, and ESLint.
 
 ```sh
 # Optional, if you use nvm:

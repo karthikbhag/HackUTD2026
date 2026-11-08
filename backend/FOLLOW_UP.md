@@ -111,8 +111,4 @@ Stress evaluation. Every preset includes a seeded unresolved case that clears it
 overlooked flag after contact while retaining its assistance need.
 
 Recompute after contact, check-in, request, exposure, vulnerability, clock, or
-configuration changes. These are derived snapshots, not a timer or persisted
-queue. Authorized views, stored v3 layers/exposure, scheduled recomputation,
-subscriptions, and browser filtering remain integration work. Existing legacy
-Small seed/reset, schemas, reducers, and bindings are unchanged. Household-specific
-preparedness suggestions and team recommendations remain subsequent tasks.
+configuration changes. The pure helper remains a snapshot calculation. [Live integration](DECISIONS.md) now persists compact flags, recomputes after relevant mutations and on a private one-minute schedule, and exposes authorized details and a filtered queue. Critical exposure qualifies wherever high exposure did. Preparedness and team recommendations are integrated. Browser acceptance remains pending.

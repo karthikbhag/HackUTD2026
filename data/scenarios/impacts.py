@@ -67,7 +67,10 @@ def footprints(hazard, x, y):
 def add_impacts(data, preset, seed):
     data["schema_version"] = 3
     data["scenario_id"] = f"nationwide-{preset}-v3"
-    data["generation"] = {"preset": preset, "seed": seed if preset != "small" else None, "generator_version": 3}
+    data["generation"] = {"preset": preset, "seed": seed if preset != "small" else None, "generator_version": 4}
+    if preset == "small":
+        for team in data["response_teams"]:
+            team["zone_id"] = team["id"].split("-team-")[0] + "-region"
     data["impact_layers"] = []
     data["preparedness_recommendations"] = []
     for hazard, (url, templates) in GUIDANCE.items():

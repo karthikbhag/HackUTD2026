@@ -10,7 +10,7 @@ const args = process.argv.slice(2);
 assert(args.length === 4 && args[0] === '--preset' && args[2] === '--database', 'Usage: npm run verify:scenario -- --preset small|demo|stress --database NAME');
 const preset = args[1], database = args[3];
 assert(['small', 'demo', 'stress'].includes(preset));
-assert(/^riskreach-(small|demo|stress)-[a-z0-9-]+$/.test(database), 'Use a separate scenario test database');
+assert(/^riskreach-(?:(small|demo|stress)-[a-z0-9-]+|person3-(small|demo|stress)-check)$/.test(database), 'Use a separate scenario test database');
 const uri = process.env.SPACETIMEDB_URI ?? 'http://127.0.0.1:3100';
 assert(['127.0.0.1', 'localhost'].includes(new URL(uri).hostname), 'Verification is local-only');
 const { expected } = JSON.parse(readFileSync(`.test-output/${preset}/manifest.json`, 'utf8'));

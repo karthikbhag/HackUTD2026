@@ -1,6 +1,6 @@
 # Changelog
 
-Current version: **1.15**
+Current version: **1.16**
 
 ## Instructions for future updates
 
@@ -30,6 +30,34 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.16 — 2026-11-07
+
+**Author:** Karthik Bhagavatula
+
+### Changes
+
+- Finished the remaining Person 3 implementation and connected it to authoritative backend decisions and employee workflow controls. Restored the task-6 preparedness helper, schema-v3 adapter, 17 tests, report CLI, and handoff that were absent from the merged checkout.
+- Added private scenario-run/catalog/decision-summary/timer state, authorized summary and selected-household/request views, and regenerated TypeScript client bindings. Persist compact score, urgency, exposure and follow-up fields; derive detailed explanations, sourced suggestions, and team eligibility on demand rather than storing full JSON for every household. Unchanged summary values are not rewritten by the periodic clock.
+- Refresh affected decisions transactionally after contact, check-in, request and assignment changes. Added an internal one-minute scheduled reducer for elapsed-contact thresholds and an employee-authorized explicit refresh. A non-destructive upgrade path initializes missing decision state/catalog/timer and recommendation links; it does not invent footprints for legacy databases.
+- Added run-aware employee preparedness approval with current-eligibility revalidation, recommendation identity on tasks, duplicate suppression across pending/in-progress/completed tasks, and stale-run rejection. Retained generic-task compatibility via migration defaults. Suggestions and assignments require human review; outreach remains simulated.
+- Completed isolated per-hazard escalation: selected disaster enters response, zones cap at severity 5, and matching impact layers advance through high to capped critical. Added critical support to exposure, priority, follow-up and map styling. Default critical exposure contributes 45 points (default maximum score 190); older custom configurations without a critical weight use their high weight.
+- Centralized selected-fixture reset/replay. Each reset advances the run, shifts relative source times, allocates fresh request/task IDs, restores baseline decisions, and preserves memberships, the single periodic timer, and durable activity history. Reset remains administrator-only with typed confirmation.
+- Bundled modern schema-v3 Small as `backend/src/default-scenario.json`, including ten impact layers, 12 reviewed templates, and team regions. Kept the legacy v1 fixture unchanged. Generator version 4 adds Small team-region metadata while retaining schema 3 and generator-v3 validation compatibility. Added reproducibility coverage for the bundled default.
+- Added a connected operational panel using the existing SDK connection: stable priority ranking, search, 25-row pages, overlooked filtering, score/exposure/concern explanations, contact/check-in controls, reviewed preparedness tasks, help requests, team recommendations and explicit assignment, assistance lifecycle controls, recent activity, and administrator escalation/confirmed reset.
+- Added nine integrated lifecycle tests covering authorization, non-destructive upgrade initialization, independent safety/contact/assistance transitions, preparedness history/replay, all six hazards, the private clock, and Small/Demo/Stress seed/escalate/reset. Added a disposable-local two-client decision verifier and allowed the manifest/map verifier to inspect those exact disposable database names.
+- Fixed staged scenario builds on Windows to use a directory junction instead of a privileged directory symlink. Made live-verifier CLI calls asynchronous so large resets do not block SDK heartbeat handling. Increased only the large lifecycle test's timeout allowance after a resource-contended verification run.
+- Updated the root task tracker, backend/map/data handoffs, and new `backend/DECISIONS.md` with current behavior, migration/replay commands, assumptions and verification boundaries. Preserved sponsor/submission and interactive-browser tasks as pending where appropriate.
+
+### Verification
+
+- Final backend suite: all 106 tests across nine files passed with one worker, including the new upgrade case and all-preset replay coverage. An earlier resource-contended repeat passed 104 but timed out on the 100,000-household replay; the workload-specific allowance was increased before the successful complete rerun.
+- Backend/frontend TypeScript checks, frontend lint, all nine Python tests, default-fixture equality and module generation/build passed on supported Node 24.22.1 with Python 3.12. Lint retains one existing generated-bindings warning. Frontend production build passed on Next.js 16.4.5; the historical CSS worker-port failure did not recur.
+- Built all three staged preset bundles. Live Small (60), Demo (10,000), and Stress (100,000) checks passed two-client decisions/contact/resolution, preparedness approval/completion/suppression, competing dispatch with one winner, team release, escalation, the real scheduled clock, baseline reset, fresh run/IDs, preserved history/access, stale approval rejection and revocation. Final Stress replay additionally checked every contact timestamp's exact reset shift and compared scores/flags at the replay-relative clock.
+- Small/Demo/Stress manifest-driven subscriptions, the actual map adapter, all hazard filters, regional household counts, unresolved safe cases and outsider isolation passed. Stress retained 80,000 neighborhood and 20,000 regional households plus 93 impact layers. These are SDK/adapter checks, not browser interaction or frame-rate measurements.
+- Initial Stress verifier attempts exposed verification issues: synchronous CLI execution blocked SDK heartbeats; a baseline comparison incorrectly froze aging scores; and repeated client index lookups scanned rows. Fixed them using asynchronous CLI execution, replay-relative expected decisions, and a single replay lookup map. Revoked temporary memberships from the interrupted attempt, then reran the complete Stress lifecycle successfully. Failed attempts are not counted as passing checks.
+- Interactive browser acceptance remains pending. Computer Use was retried as requested, then stopped because it could not determine Brave's current URL confidently enough to enforce policy. No further browser-control attempts were made after that stop; SDK checks do not establish layout, interaction quality or frame rate.
+- Verification databases are separate disposable databases on loopback port 3123; no cloud or existing application database was modified. Synthetic scale checks are not production throughput guarantees. No commit or push was made.
 
 ## Version 1.15 — 2026-11-07
 

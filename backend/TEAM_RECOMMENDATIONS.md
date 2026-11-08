@@ -129,7 +129,4 @@ empty results, invalid inputs, all requests in Small/Demo/Stress, and actual
 dispatch/cancellation/completion through the module test harness. Reducer
 distance/ETA values agree with recommendations at the default speed.
 
-No schema, reducer logic, bindings, frontend controls, or deployed database is
-changed. Source need mapping is shared with the existing converter without
-changing its behavior. Authorized live recommendation views, UI selection,
-freshness handling, and browser acceptance remain integration work.
+[Live integration](DECISIONS.md) now provides authorized selected-request recommendation views and explicit team selection in the connected UI. The assignment reducer revalidates current state transactionally; recommendations never reserve teams. Two-client competing dispatch is checked against disposable local databases. Interactive browser acceptance remains pending.
