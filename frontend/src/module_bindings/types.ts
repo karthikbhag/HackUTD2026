@@ -87,6 +87,27 @@ export type Household = __Infer<typeof Household>;
 export const Households = __t.object("Households", {});
 export type Households = __Infer<typeof Households>;
 
+export const ImpactLayer = __t.object("ImpactLayer", {
+  id: __t.string(),
+  disasterId: __t.u64(),
+  contextZoneId: __t.u64(),
+  hazardType: __t.string(),
+  component: __t.string(),
+  severity: __t.string(),
+  severityBasis: __t.string(),
+  geometry: __t.string(),
+  dataKind: __t.string(),
+  isSimulated: __t.bool(),
+  source: __t.string(),
+  updatedAt: __t.timestamp(),
+  label: __t.string(),
+  limitations: __t.string(),
+});
+export type ImpactLayer = __Infer<typeof ImpactLayer>;
+
+export const ImpactLayers = __t.object("ImpactLayers", {});
+export type ImpactLayers = __Infer<typeof ImpactLayers>;
+
 export const PreparednessTask = __t.object("PreparednessTask", {
   id: __t.u64(),
   zoneId: __t.u64(),

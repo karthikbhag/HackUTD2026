@@ -54,6 +54,7 @@ import ActivitiesRow from "./activities_table";
 import AssignmentsRow from "./assignments_table";
 import DisastersRow from "./disasters_table";
 import HouseholdsRow from "./households_table";
+import ImpactLayersRow from "./impact_layers_table";
 import RequestsRow from "./requests_table";
 import TasksRow from "./tasks_table";
 import TeamsRow from "./teams_table";
@@ -91,6 +92,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, HouseholdsRow),
+  impactLayers: __table({
+    name: 'impact_layers',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ImpactLayersRow),
   requests: __table({
     name: 'requests',
     indexes: [

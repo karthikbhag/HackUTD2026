@@ -1,8 +1,13 @@
 import { Timestamp } from 'spacetimedb';
-import source from '../../data/scenarios/nationwide-v1.json';
+import rawSource from '../../data/scenarios/nationwide-v1.json';
+import { calculateExposure, type ImpactLayer } from './exposure';
 
-export { source };
-export type Scenario = typeof source;
+export type Scenario = Omit<typeof rawSource, 'zones' | 'response_teams' | 'impact_layers'> & {
+  zones: (typeof rawSource.zones[number] & { boundary_role?: string })[];
+  response_teams: (typeof rawSource.response_teams[number] & { zone_id?: string })[];
+  impact_layers?: (ImpactLayer & { context_zone_id: string; severity_basis: string; limitations: string })[];
+};
+export const source = rawSource as unknown as Scenario;
 const needs: Record<string, string> = {
   shelter_support: 'shelter', welfare_check: 'welfare_check', evacuation_assistance: 'evacuation',
   smoke_support: 'fire_smoke_support', winter_weather_support: 'winter_weather_support',
@@ -38,7 +43,7 @@ function ids(rows: { id: string }[]) {
  * Raw metadata and source IDs stay in the versioned JSON; maps expose the crosswalk.
  */
 export function adaptScenario(data: Scenario, clock: Timestamp) {
-  require([1, 2].includes(data.schema_version) && data.is_simulated === true && !!data.source, 'simulation/version/source');
+  require([1, 2, 3].includes(data.schema_version) && data.is_simulated === true && !!data.source, 'simulation/version/source');
   const reference = iso(data.reference_time);
   const stamp = (value: string) => {
     const micros = iso(value); require(micros <= reference, 'future timestamp');
@@ -57,6 +62,7 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
   const zones = data.zones.map(row => {
     require(row.is_simulated === true && !!row.source && !!row.name, 'zone source');
     choice(row.level, ['region', 'neighborhood']);
+    if (data.schema_version === 3) require(row.boundary_role === 'geographic_context', 'context boundary role');
     const parent = row.parent_zone_id == null ? undefined : zoneById.get(row.parent_zone_id);
     require(row.level === 'region' ? row.parent_zone_id === null : parent?.level === 'region' && parent.disaster_id === row.disaster_id, 'zone hierarchy');
     const geometry = row.boundary;
@@ -77,7 +83,7 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
   const teams = data.response_teams.map(row => {
     point(row.longitude, row.latitude);
     const region = (row as typeof row & { zone_id?: string }).zone_id;
-    if (data.schema_version === 2) require(region !== undefined && zoneById.get(region)?.level === 'region', 'team region');
+    if (data.schema_version >= 2) require(region !== undefined && zoneById.get(region)?.level === 'region', 'team region');
     require(!!row.name && Number.isInteger(row.capacity) && row.capacity > 0 && row.capacity <= 0xffffffff && row.capabilities.length > 0, 'team capacity');
     // Source capacity counts household cases. Conservatively model one person per case
     // until Person 3 supplies party sizes; retain the numeric limit and single-assignment rule.
@@ -88,5 +94,20 @@ export function adaptScenario(data: Scenario, clock: Timestamp) {
     require(row.status === 'open' && row.resolved_at === null, 'baseline request status');
     return { id: fk(maps.requests, row.id), householdId: fk(maps.households, row.household_id), needType: capability(row.need_type), urgency: row.urgency === 'urgent' ? 5 : 3, people: 1, status: 'open', createdAt: stamp(row.created_at), resolvedAt: undefined };
   });
-  return { maps, disasters, zones, households, teams, requests };
+  if (data.schema_version === 3) require(Array.isArray(data.impact_layers), 'v3 impact layers');
+  const layers = data.schema_version === 3 ? data.impact_layers! : [];
+  // Reuse the geometry/provenance validator with no households; do not calculate
+  // or persist exposure as part of this display-only import.
+  calculateExposure([], layers);
+  const impactLayers = layers.map(row => {
+    const context = zoneById.get(row.context_zone_id);
+    const disaster = data.disasters.find(d => d.id === row.disaster_id);
+    require(context?.level === 'region' && context.disaster_id === row.disaster_id, 'impact context');
+    require(disaster?.type === row.hazard_type && row.is_simulated === true && !!row.severity_basis && !!row.limitations, 'impact metadata');
+    return { id: row.id, disasterId: fk(maps.disasters, row.disaster_id), contextZoneId: fk(maps.zones, row.context_zone_id),
+      hazardType: row.hazard_type, component: row.component, severity: row.severity, severityBasis: row.severity_basis,
+      geometry: JSON.stringify(row.geometry), dataKind: row.data_kind, isSimulated: row.is_simulated,
+      source: row.source, updatedAt: stamp(row.updated_at), label: row.label, limitations: row.limitations };
+  });
+  return { maps, disasters, zones, households, teams, requests, impactLayers };
 }

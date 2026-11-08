@@ -62,11 +62,12 @@ v1/v2 context rectangles must never be silently treated as impact polygons.
 
 ## Backend integration boundary
 
-Current production seed/reset still use the checked-in legacy v1 fixture and
-`adaptScenario` still accepts v1/v2 only. They do not store v3 impact layers or
-exposure relations. This contribution provides the decision helper and an offline
-report, not persisted/live exposure functionality. Existing converter tests
-explicitly generate v2 base fixtures so they keep verifying that separate contract.
+The default production seed/reset still use the checked-in legacy v1 fixture.
+The converter now accepts v1/v2/v3, and isolated preset builds persist v3 impact
+layers through authorized subscription views; see [SCENARIOS.md](SCENARIOS.md).
+The importer reuses this helper with empty household input to validate layer
+geometry/provenance. It does not calculate or persist household exposure relations.
+The existing converter tests retain explicit v2 coverage alongside new v3 tests.
 
 For later integration, retain source layer/disaster IDs and map household IDs
 using `adaptScenario(...).maps.households` when joining fixture-derived evidence

@@ -145,7 +145,7 @@ Times are relative to the team's build start, not a claim about the official sub
 
 ## Progress tracker
 
-**Current checkpoint: v1.9 — 2026-11-07.** Person 3's pure TypeScript exposure helper calculates coordinate-based matches against all supplied impact layers, retains overlapping hazard evidence, and deduplicates household totals. Small/Demo/Stress calculations and the existing backend suite pass. The map's optional authorized subscriptions and legacy Small seed/reset remain intact; persisted exposure/layer integration and new impact rendering are still pending.
+**Current checkpoint: v1.11 — 2026-11-07.** Isolated Small/Demo/Stress bundle builds and v3 footprint persistence now feed the existing authorized subscription/map pipeline. The map retains regional households, reports dataset/filter/drawn counts separately, summarizes hotspots nationally, filters local Canvas markers by viewport and pages household lists. Both large datasets passed real local seeding/subscription checks. Browser acceptance and production-build verification remain limited; see the [scenario runbook](backend/SCENARIOS.md).
 
 Use `[ ]` for pending and `[x]` for completed work. Add `(in progress — name)` or `(blocked — reason)` to an unchecked item as needed. Mark work complete only when its stated behavior has been verified. Update this tracker and add a changelog entry in the same contribution.
 
@@ -189,8 +189,8 @@ See [backend setup/contract](backend/README.md) and [remaining Person 2 integrat
 
 ### Data and decision logic — Person 3
 
-- [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading, aggregation, scoped subscriptions, and performance measurements remain pending.
-- [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Rendering and persisted layer integration remain pending.
+- [x] Create fictional nationwide datasets for tornadoes, earthquakes, hurricanes, wildfires, blizzards, and floods, with national context and concentrated high-risk neighborhoods/areas. Karthik Bhagavatula supplied the [portable fixtures and generator](data/scenarios/README.md): Small (60 households), Demo (10,000), Stress (100,000); the larger presets cover 50 states and 56 hotspots. Backend seed/reset now load the Small fixture through a validated adapter. Large-preset database loading and subscription checks now pass; national summaries and viewport rendering are implemented. Scoped server subscriptions remain deferred; interactive browser acceptance is pending.
+- [x] Define hazard-specific impact geometry, source labels, and preparedness recommendations. Karthik Bhagavatula supplied schema v3 synthetic layers and 12 sourced employee-review templates; geometry/data validation passes. Explicit footprint persistence and subscribed rendering are implemented; interactive browser acceptance remains pending.
 - [x] Determine affected households from the scenario zones. Karthik Bhagavatula implemented coordinate-based exposure against explicit impact layers in [backend/src/exposure.ts](backend/src/exposure.ts), with overlap evidence, unique counts, spatial indexing, and Small/Demo/Stress tests. [Handoff and offline report](backend/EXPOSURE.md); persistence and live UI integration remain pending.
 - [ ] Implement priority scores and readable reasons.
 - [ ] Implement overdue-contact/overlooked-case detection.
@@ -238,9 +238,13 @@ Pitch: **RiskReach helps State Farm employees prepare before disasters, coordina
 
 ## Development and change tracking
 
-### Current checkpoint — v1.9
+### Current checkpoint — v1.11
 
-The dashboard supports fixture mode and optional employee-authorized SpacetimeDB subscriptions. Existing operational reducers and legacy Small seed/reset remain available. Person 3's schema v3 generator provides synthetic hazard layers and preparedness templates; the new [exposure helper and report](backend/EXPOSURE.md) calculate household matches without changing the existing schema or seed source. Persisted impact/exposure relations, priority scores, operational UI controls, and integrated browser acceptance checks remain pending. See [changelog v1.9](changelog.md#version-19--2026-11-07).
+Follow [Local scenario inspection](backend/SCENARIOS.md) to generate, build, publish,
+seed, verify and switch between separate Small/Demo/Stress databases. The default
+build retains Small; generated v3 presets persist explicit hazard footprints.
+Household exposure remains available as a pure helper/offline report; exposure
+relations and operational controls are not part of this display integration.
 
 ### Local setup
 
@@ -329,6 +333,14 @@ The initial online npm audit reported eight moderate findings in the development
 
 ### Dataset integration checkpoint
 
-`seed_demo` and `reset_demo` import `data/scenarios/nationwide-v1.json` via `backend/src/scenario.ts`, using the existing schema and generated bindings. See the [mapping and limitations](data/scenarios/README.md#backend-integration). Source IDs map to bigint IDs; baseline times shift together to the reducer clock. Source `supply_delivery` becomes demo water assistance, and missing party sizes default to one person. Team capacity retains its numeric limit under the backend’s single-active-assignment rule; source household-case capacity is not a verified people count. No shared database was deployed.
+Default seed/reset still bundle `data/scenarios/nationwide-v1.json`. `build:scenario`
+stages a selected fixture without replacing that source, then produces a bundle and
+count/checksum manifest for a separate local database. The converter supports
+v1/v2/v3; explicit v3 footprints persist in an employee-authorized view.
 
-The map remains neighborhood-only: 48 of the 60 imported households are visible; 12 regional households stay available in backend views. Teams with active regional assignments (or missing subscribed destination rows) are omitted from neighborhood map markers, lists, and counts. Active neighborhood assignments retain destination grouping; only teams with no active assignment use proximity grouping, which resumes after cancellation/completion. Unconfigured UI fixture mode remains separate. Larger presets pass conversion tests but are not a measured database/browser scale claim.
+The adapter retains all households, including regional records, with actual zone
+membership separate from hotspot grouping. The map distinguishes dataset totals,
+hazard-filter matches and rendered viewport markers. National summaries, local
+Canvas household markers and 50-row lists bound rendering costs. Context outlines
+are not hazard footprints or affected-household counts. [Commands, expected counts,
+verification and remaining limits](backend/SCENARIOS.md).

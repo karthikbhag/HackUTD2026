@@ -19,6 +19,8 @@ export interface MapZone {
   severity: "moderate" | "high" | "critical";
   /** One polygon ring; holes and MultiPolygons need an extended renderer. */
   boundary: Coordinate[];
+  /** Regional geographic context, never a hazard footprint. */
+  contextBoundary?: Coordinate[];
   source: string;
   /** Valid ISO timestamp supplied by the scenario or backend adapter. */
   updatedAt: string;
@@ -27,6 +29,8 @@ export interface MapZone {
   response: string[];
 }
 export interface MapHousehold {
+  hotspotId?: string;
+  membership?: "neighborhood" | "regional";
   id: string;
   zoneId: string;
   name: string;
@@ -39,6 +43,7 @@ export interface MapHousehold {
   lastContactAt: string | null;
 }
 export interface MapTeam {
+  hotspotId?: string;
   id: string;
   /** UI grouping for filtering/details; not a required backend team field. */
   zoneId: string;
@@ -48,7 +53,13 @@ export interface MapTeam {
   capacity: number;
   capabilities: string[];
 }
+export interface MapImpactLayer {
+  id: string; hotspotId: string; hazard: Hazard; boundary: Coordinate[];
+  component: string; severity: string; severityBasis: string; source: string;
+  simulated: boolean; updatedAt: string; label: string; limitations: string;
+}
 export interface MapData {
+  impactLayers?: MapImpactLayer[];
   zones: MapZone[];
   households: MapHousehold[];
   teams: MapTeam[];

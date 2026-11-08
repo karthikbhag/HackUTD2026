@@ -2,6 +2,10 @@
 
 Person 2 owns this TypeScript module. It implements the operational backend for the nationwide **six-hazard MVP** in the root README. The default Person 3 dataset covers flood, tornado, earthquake, hurricane, wildfire, and blizzard hotspots; all data and operations are synthetic.
 
+## Large fixture inspection
+
+See [the local scenario runbook](SCENARIOS.md) for isolated Small/Demo/Stress builds, atomic seeding, startup, enrollment, count verification and browser checks. v3 impact layers now persist and subscribe separately from geographic context. Normal builds still use legacy Small. Household exposure remains a separate pure calculation.
+
 ## Requirements and local setup
 
 Use SpacetimeDB CLI **2.14.1** and SDK **2.14.1**. The SDK requires Node `^22.23.4 || ^24.22.1 || >=26.12.1`; the root `.nvmrc` selects the Node 24 line, so install its latest patch. Verification here used Node 24.20.0, which npm warns is below the supported patch range; repeat checks on a supported patch before deployment.
@@ -77,7 +81,15 @@ All operational changes persist an activity event transactionally. Assignment di
 
 ## Repeatable verification
 
-Eighteen backend tests (the original twelve workflow/map regressions plus six dataset integration cases) cover authorization/revocation, task transitions, check-in independence, request validation, dispatch conflicts, completion, cancellation/reassignment, all six seeded hazard types, isolated escalation, repeatable reset, and four backend-to-map adapter regressions. The production-seed regional dispatch regressions create a welfare check for `tornado-household-09`, assign `earthquake-team-1`, and check omission while assigned/in progress, missing destination rows, cancellation/completion, unavailable status, and access revocation. These passed on SDK-supported Node 24.22.1; backend typecheck/build, frontend typecheck/lint, six Python tests and fixture validation also passed. Frontend production build still fails at Turbopack CSS worker port binding (`Operation not permitted`), including an elevated retry. Integrated browser acceptance remains pending. Harness tests do not verify subscriptions; use the live check for that.
+All 31 backend tests cover authorization, workflow transitions, legacy/v2/v3 conversion,
+regional destination grouping, exposure correctness and large-fixture map/filter/
+viewport behavior. Backend/frontend typechecks and frontend lint pass on Node
+24.22.2; nine Python tests pass. Real Demo/Stress subscriptions are verified by the
+manifest-driven command in [SCENARIOS.md](SCENARIOS.md). Interactive browser
+acceptance remains pending; production build still encounters the Turbopack CSS
+worker-port permission failure, including an elevated retry. Harness tests alone
+do not establish subscription behavior. The older workflow-mutating live check
+below remains available for a disposable Small database.
 
 For a disposable local database published by your current CLI identity:
 
@@ -98,7 +110,7 @@ The live test creates three temporary client identities, authorizes two through 
 
 ## Remaining integration
 
-Person 3 task 3 now provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). It supports overlapping v3 impact layers and unique household counts, with full Small/Demo/Stress verification. It does not change the deployed schema, legacy seed/reset data, or current converter's v1/v2 contract. Persisted layers/exposure and live rendering remain integration work.
+Person 3 task 3 provides a pure TypeScript [exposure helper and offline report](EXPOSURE.md). The converter now accepts v1/v2/v3; v3 layers are persisted and rendered through authorized subscriptions. Exposure relations remain unpersisted. See [large fixture verification](SCENARIOS.md).
 
 See [Person 2 plan](PLAN.md). Person 3 supplied the portable datasets now used by seed/reset and still owns final hazard geometry/exposure, transparent priority scores/reasons, overdue-contact rules, and suitable-team recommendations. The fixture has one hotspot per hazard, 12 metro/neighborhood zones, 60 fictional households, 12 requests, 18 outreach tasks, and 12 teams; it is not a real hazard feed. The map and read-only subscription integration are implemented; Person 4's operational UI controls and integrated browser acceptance checks remain pending. OIDC login UX, production deployment, and team-wide contract sign-off remain pending.
 
@@ -106,4 +118,4 @@ See [Person 2 plan](PLAN.md). Person 3 supplied the portable datasets now used b
 
 `seedDemo` and `resetDemo` share `src/seed.ts`, which bundles `../data/scenarios/nationwide-v1.json` and validates/converts every row through `src/scenario.ts` before inserts. The default is the Small fixture: six disasters, 12 zones, 60 households, 12 teams, 12 open requests, and 18 synthesized outreach tasks for never-contacted households. No filesystem/network access occurs in reducers. The previous sparse fixture is retained only in a test helper to preserve the existing workflow/map regressions.
 
-See the [source mapping contract](../data/scenarios/README.md#backend-integration) for ID, time, enums, party-size/capacity assumptions and retained metadata. No schema/reducer arguments changed, so bindings remain valid without regeneration. Larger Demo/Stress presets are tested through pure conversion, not exposed as a deployed import endpoint or batched loader. The neighborhood-only map displays 48/60 households and initially all 12 teams. Active regional assignments are resolved using all backend households, then omitted from neighborhood map markers, lists, and counts. Active assignments with missing destination rows are also omitted; proximity grouping applies only without an active assignment and resumes on cancellation/completion. Regional households and assignments remain in authorized backend views.
+See the [source mapping contract](../data/scenarios/README.md#backend-integration) for ID, time, enums, party-size/capacity assumptions and retained metadata. No schema/reducer arguments changed, so bindings remain valid without regeneration. Fixture-specific Demo/Stress bundles now load into separate local test databases. The map retains regional households, preserves their real zone IDs, and groups them under geographic hotspots for inspection. Active regional assignments retain their destination; missing active destinations are omitted. Only unassigned teams use proximity grouping. See [commands and verification](SCENARIOS.md).

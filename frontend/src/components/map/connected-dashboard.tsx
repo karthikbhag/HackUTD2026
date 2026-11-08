@@ -42,7 +42,7 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
             disasters: [...connection.db.disasters.iter()], zones: [...connection.db.zones.iter()],
             households: [...connection.db.households.iter()], requests: [...connection.db.requests.iter()],
             teams: [...connection.db.teams.iter()], tasks: [...connection.db.tasks.iter()],
-            assignments: [...connection.db.assignments.iter()],
+            assignments: [...connection.db.assignments.iter()], impactLayers: [...connection.db.impactLayers.iter()],
           });
           setState({ data, status: "connected", identity });
         } catch (error) {
@@ -56,14 +56,14 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
         queued = true;
         queueMicrotask(() => { queued = false; refresh(); });
       };
-      const handles = [connection.db.disasters, connection.db.zones, connection.db.households, connection.db.requests, connection.db.teams, connection.db.tasks, connection.db.assignments];
+      const handles = [connection.db.disasters, connection.db.zones, connection.db.households, connection.db.requests, connection.db.teams, connection.db.tasks, connection.db.assignments, connection.db.impactLayers];
       for (const table of handles) {
         table.onInsert(changed); table.onDelete(changed); table.onUpdate(changed);
       }
       const subscription = connection.subscriptionBuilder()
         .onApplied(() => { ready = true; refresh(); })
         .onError(ctx => fail(ctx.event))
-        .subscribe([tables.disasters, tables.zones, tables.households, tables.requests, tables.teams, tables.tasks, tables.assignments]);
+        .subscribe([tables.disasters, tables.zones, tables.households, tables.requests, tables.teams, tables.tasks, tables.assignments, tables.impactLayers]);
       return () => {
         disposed = true;
         for (const table of handles) {
@@ -78,6 +78,7 @@ export function ConnectedDashboard({ uri, database }: { uri: string; database: s
 
   return <MapDashboard {...state} workflowPanel={<div className="guidance">
     <h3>Shared operational map</h3>
+    <p>Database: <strong>{database}</strong> · {uri}</p>
     <p>Read-only subscribed data. Check-in, outreach, and dispatch controls remain pending.</p>
     {state.identity && <p>Employee identity: <code style={{ overflowWrap: "anywhere" }}>{state.identity}</code></p>}
     {state.status === "connected" && !state.data.zones.length && <p>No visible scenario data. An administrator must enroll this identity; an enrolled employee may also see an empty database until it is seeded.</p>}

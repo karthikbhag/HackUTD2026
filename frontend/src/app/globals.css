@@ -105,3 +105,12 @@ dl { font-size: 11px; margin-bottom: 0; } dt { color: #6a756e; margin-top: 12px;
 @media (max-width: 1150px) { .workspace-grid { grid-template-columns: 200px minmax(300px, 1fr); } .detail-panel { grid-column: 1 / -1; border-left: 0; border-top: 1px solid #e2e7df; } .detail-panel section { max-width: 650px; } .brand-subtitle { display: none; } }
 /* Phones stack panels and scroll hotspot cards horizontally to preserve map space. */
 @media (max-width: 700px) { .app-header { padding: 16px; flex-wrap: wrap; gap: 12px; } .brand { font-size: 21px; } .workspace-heading { padding: 22px 16px 18px; align-items: start; flex-direction: column; } .workspace-grid { margin: 0 12px; grid-template-columns: minmax(0, 1fr); } .demo-banner, .error-banner { margin: 0 12px 16px; flex-direction: column; gap: 3px; } .layers-panel { border-right: 0; border-bottom: 1px solid #e2e7df; padding: 18px; } .hazard-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 18px; margin: 12px 0; } .hotspot-list { display: flex; overflow-x: auto; max-height: none; } .hotspot-list button { min-width: 165px; } .map-wrapper, .map-loading { min-height: 420px; } .detail-panel { grid-column: auto; } .app-footer { padding: 18px 16px; flex-direction: column; gap: 7px; } }
+
+/* Large scenario inspection: national summaries, local records, bounded lists. */
+.hotspot-count.leaflet-tooltip { background: transparent; border: 0; box-shadow: none; color: white; font-size: 10px; font-weight: 700; padding: 0; }
+.hotspot-count.leaflet-tooltip::before { display: none; }
+.map-render-count { position: absolute; z-index: 450; bottom: 24px; left: 10px; max-width: calc(100% - 20px); background: #fff; color: #263731; padding: 6px 9px; border: 1px solid #d8dfdb; border-radius: 4px; font-size: 11px; pointer-events: none; }
+.list-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 0; font-size: 12px; }
+.list-pagination button { padding: 6px 10px; border: 1px solid #d8dfdb; border-radius: 4px; }
+.list-pagination button:disabled { opacity: .45; cursor: default; }
+.detail-panel select { margin: 8px; max-width: 100%; padding: 6px; border: 1px solid #d8dfdb; border-radius: 4px; }

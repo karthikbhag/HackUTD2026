@@ -1,5 +1,5 @@
 import { t, SenderError, type InferSchema, type ReducerCtx } from 'spacetimedb/server';
-import db, { disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent } from './schema';
+import db, { disaster, zone, household, helpRequest, responseTeam, assignment, preparednessTask, activityEvent, impactLayer } from './schema';
 import { seed } from './seed';
 export default db;
 type Ctx = ReducerCtx<InferSchema<typeof db>>;
@@ -43,6 +43,7 @@ export const resetDemo = db.reducer({ confirmation: t.string() }, (ctx, { confir
   for (const row of [...ctx.db.preparednessTask.iter()]) ctx.db.preparednessTask.id.delete(row.id);
   for (const row of [...ctx.db.household.iter()]) ctx.db.household.id.delete(row.id);
   for (const row of [...ctx.db.responseTeam.iter()]) ctx.db.responseTeam.id.delete(row.id);
+  for (const row of [...ctx.db.impactLayer.iter()]) ctx.db.impactLayer.id.delete(row.id);
   for (const row of [...ctx.db.zone.iter()]) ctx.db.zone.id.delete(row.id);
   for (const row of [...ctx.db.disaster.iter()]) ctx.db.disaster.id.delete(row.id);
   // Preserve durable history across resets.
@@ -151,3 +152,4 @@ export const teams = db.view({ public: true }, t.array(responseTeam.rowType), ct
 export const assignments = db.view({ public: true }, t.array(assignment.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.assignment.iter()] : []);
 export const tasks = db.view({ public: true }, t.array(preparednessTask.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.preparednessTask.iter()] : []);
 export const activities = db.view({ public: true }, t.array(activityEvent.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.activityEvent.iter()] : []);
+export const impactLayers = db.view({ public: true }, t.array(impactLayer.rowType), ctx => ctx.db.employee.identity.find(ctx.sender) ? [...ctx.db.impactLayer.iter()] : []);

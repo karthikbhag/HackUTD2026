@@ -1,13 +1,13 @@
 # Changelog
 
-Current version: **1.9**
+Current version: **1.11**
 
 ## Instructions for future updates
 
 When a contributor asks to update this changelog:
 
 - Keep these rules and the entry template above the changelog entries. Add each new version entry below the rules and above the previous entries, keeping the full history.
-- Increase the version by one minor step for each new update: `1.1`, `1.2`, through `1.9`, then `2.0`, `2.1`, and so on. After any `.9`, increase the first number and reset the second number to `0`; do not use `1.10`.
+- Keep versions in the `1.x` series and increase the second number for each update: `1.9`, `1.10`, `1.11`, `1.12`, and so on. Do not advance to `2.x` unless explicitly requested.
 - Update the current version shown at the top of this file.
 - Record the contributor's full name under **Author** and the update date as `YYYY-MM-DD`. Ask for the name if it is unknown; do not reuse the previous author's name automatically. List all authors for a shared contribution.
 - Review the actual changes since the previous checkpoint and describe what changed, why it matters, and how it was verified. Do not repeat earlier changes as new work.
@@ -30,6 +30,42 @@ Entry template:
 - Record checks performed and their results.
 - Note relevant checks still pending.
 ```
+
+## Version 1.11 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Switched the ignored local frontend configuration from the development database to Demo and then Stress for manual inspection. The running Next.js server reloaded each environment change without replacing existing development data.
+- Enrolled the supplied browser identities in their respective local test databases. Local environment values, identity tokens, generated fixtures and database contents are not part of this commit.
+
+### Verification
+
+- Repeated the real SDK subscription/adapter check for Demo: 10,000 households (8,000 neighborhood / 2,000 regional) and 93 footprints; approximately 171 ms subscription application and 17 ms adaptation.
+- Repeated the same check for Stress: 100,000 households (80,000 neighborhood / 20,000 regional) and 93 footprints; approximately 1,364 ms subscription application and 152 ms adaptation. Authorized counts, hazard filtering, regional inspection data and outsider isolation passed.
+- Confirmed the localhost frontend returned HTTP success after switching to Demo and observed Next.js environment reload/reconnection logs for both datasets. These checks do not establish interactive browser rendering or responsiveness; manual acceptance and the production-build limitation recorded in v1.10 remain outstanding.
+
+## Version 1.10 — 2026-11-07
+
+**Author:** Josh Sebastian
+
+### Changes
+
+- Added isolated `build:scenario` commands for Small/Demo/Stress. Builds validate and stage the selected fixture, invoke the installed SpacetimeDB CLI, and write a bundle plus generation/count/checksum manifest without replacing the tracked Small fixture. Normal builds retain Small.
+- Extended conversion to schema v3 and added private impact-layer persistence with employee-authorized subscriptions, seed/reset handling and regenerated frontend bindings. Reused the existing exposure helper to validate layer geometry/provenance with empty household input; no exposure relations or live-update simulation were added.
+- Retained regional households and actual zone IDs in the frontend adapter, adding separate hotspot/membership grouping. Regional assignment destinations now remain inspectable; missing active destinations still never fall back to proximity. Replaced repeated request/task/assignment scans with indexes and per-team centroid sorting with a nearest-centroid pass.
+- Added national hotspot summaries with Alaska/Hawaii framing, viewport-limited Canvas household markers at zoom 9+, selection styling independent of geometry rebuilding, and 50-row household pages with membership filtering. Dataset totals, neighborhood/regional counts, hazard-filter matches and drawn marker counts are distinct.
+- Rendered geographic context as dashed unfilled outlines and actual synthetic hazard footprints separately, retaining overlapping components and source/time/severity-basis/limitation details. Geographic membership is not labeled as hazard exposure.
+- Added a manifest-driven local SDK subscription verification command and `backend/SCENARIOS.md` with generation, loading, startup, browser enrollment, size switching, repeat runs, expected counts and browser acceptance checks. Updated backend, scenario, exposure, map and root documentation.
+
+### Verification
+
+- All 31 backend tests passed on Node 24.22.2, including v3 Demo/Stress conversion/map/filter/viewport tests, Demo insertion/authorization/reset checks, damaged-input rejection and existing workflow/exposure regressions. Backend and frontend typechecks passed. Frontend lint passed with one existing generated-bindings warning. All nine Python generator/geometry tests passed.
+- CLI/SDK 2.14.1 built, published and atomically seeded separate local `riskreach-demo-10k` and `riskreach-stress-100k` databases. No batched importer was needed. The existing `riskreach-local` database retained 60 households.
+- Real authorized SDK subscriptions and map adaptation verified Demo's 10,000 households (8,000 neighborhood / 2,000 regional), 220 teams, 2,000 requests, 2,597 tasks and 93 footprints, and Stress's 100,000 households (80,000 / 20,000), 1,970 teams, 20,000 requests, 24,931 tasks and 93 footprints. Both have 56 disasters/hotspots, 112 zones and no assignments. Outsider isolation, hazard filters, regional inspection data and safe households with unresolved needs passed.
+- Single local subscription/adaptation runs measured approximately 142/17 ms for Demo and 1,341/155 ms for Stress. These exclude browser rendering and are not responsiveness guarantees.
+- Interactive browser acceptance remains pending because the computer-use browser host was unavailable. A second development process was refused by Next.js's existing per-checkout server lock; the user's existing server was left running. Production builds failed at the existing Turbopack CSS worker-port `Operation not permitted` error, including an elevated retry. No production-build or interactive-browser success is claimed.
 
 ## Version 1.9 — 2026-11-07
 

@@ -8,7 +8,9 @@
     "test": "vitest run",
     "exposure": "esbuild scripts/exposure.ts --bundle --platform=node --format=esm --outfile=.test-output/exposure.mjs && node .test-output/exposure.mjs",
     "generate": "spacetime generate --lang typescript --module-path . --out-dir ../frontend/src/module_bindings --yes",
-    "test:live": "esbuild scripts/live-smoke.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/live-smoke.mjs && node .test-output/live-smoke.mjs"
+    "test:live": "esbuild scripts/live-smoke.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/live-smoke.mjs && node .test-output/live-smoke.mjs",
+    "build:scenario": "node scripts/build-scenario.ts",
+    "verify:scenario": "esbuild scripts/verify-scenario.ts --bundle --platform=node --packages=external --format=esm --outfile=.test-output/verify-scenario.mjs && node .test-output/verify-scenario.mjs"
   },
   "keywords": [],
   "author": "",
